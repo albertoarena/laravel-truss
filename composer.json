@@ -1,0 +1,63 @@
+{
+    "name": "albertoarena/laravel-truss",
+    "description": "A Telescope-style live database structure viewer for Laravel. Renders your schema (never data) as a scrollable, zoomable ER diagram.",
+    "keywords": [
+        "laravel",
+        "database",
+        "schema",
+        "er-diagram",
+        "mermaid",
+        "introspection"
+    ],
+    "homepage": "https://github.com/albertoarena/laravel-truss",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alberto Arena",
+            "email": "arena.alberto@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^12.0",
+        "illuminate/support": "^12.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.18",
+        "orchestra/testbench": "^10.0",
+        "pestphp/pest": "^3.5",
+        "pestphp/pest-plugin-laravel": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AlbertoArena\\Truss\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AlbertoArena\\Truss\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "lint": "vendor/bin/pint --test",
+        "lint:fix": "vendor/bin/pint"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AlbertoArena\\Truss\\TrussServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

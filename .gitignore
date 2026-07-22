@@ -1,5 +1,12 @@
 # Dependencies
 /vendor/
+composer.lock
+
+# Test / tooling caches
+/.phpunit.cache/
+.phpunit.result.cache
+/build/
+/coverage/
 
 # Private/local docs (note: the tracked docs/ folder is NOT ignored)
 /.docs/

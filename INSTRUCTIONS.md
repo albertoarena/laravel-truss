@@ -64,4 +64,4 @@ Follow this order. Each phase should be finishable and independently verifiable 
 
 _Update as phases complete. One line per completed phase, dated._
 
-- (empty, not started)
+- 2026-07-22 — Phase 1: package skeleton (composer.json, MIT license, `TrussServiceProvider` via spatie/laravel-package-tools, Pest + Pint, GitHub Actions CI on PHP 8.3/8.4 × Laravel 12). `composer test` and `composer lint` run clean. Namespace `AlbertoArena\Truss`.
