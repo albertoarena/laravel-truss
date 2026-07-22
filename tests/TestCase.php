@@ -15,4 +15,17 @@ abstract class TestCase extends Orchestra
             TrussServiceProvider::class,
         ];
     }
+
+    protected function defineEnvironment($app): void
+    {
+        // A real, disposable SQLite connection with FK enforcement on, so
+        // introspection tests run against actual schema behaviour.
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+        ]);
+    }
 }
