@@ -27,5 +27,8 @@ abstract class TestCase extends Orchestra
             'prefix' => '',
             'foreign_key_constraints' => true,
         ]);
+
+        // In-memory cache so snapshot caching tests need no cache table.
+        $app['config']->set('cache.default', 'array');
     }
 }
