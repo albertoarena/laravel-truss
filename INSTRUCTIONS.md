@@ -12,7 +12,7 @@ Follow this order. Each phase should be finishable and independently verifiable 
 
 ## Phase 2 — Config
 
-6. Build `config/truss.php` per the reference in `docs/DESIGN.md`: `route_prefix`, `gate`, `enabled`, `cache.ttl`, `connections`, `excluded_tables`, `diagram` (incl. `diagram.type_labels`), `focus.default_depth`, `large_schema.warn_above`; register via `mergeConfigFrom` and make it publishable
+6. Build `config/truss.php` per the reference in `docs/DESIGN.md`: `route_prefix`, `enabled`, `cache.ttl`, `connections`, `excluded_tables`, `diagram` (incl. `diagram.type_labels`), `focus.default_depth`, `large_schema.warn_above` (no `gate` key — the `viewTruss` ability name is fixed); register via `mergeConfigFrom` and make it publishable
 7. Test: the config publishes and merges; every key resolves to its expected default. (Behavioural assertions that depend on later layers — exclusions actually filtering, disabled connections not visualizable — live in those phases, not here.)
 
 ## Phase 3 — Introspection layer
@@ -65,3 +65,4 @@ Follow this order. Each phase should be finishable and independently verifiable 
 _Update as phases complete. One line per completed phase, dated._
 
 - 2026-07-22 — Phase 1: package skeleton (composer.json, MIT license, `TrussServiceProvider` via spatie/laravel-package-tools, Pest + Pint, GitHub Actions CI on PHP 8.3/8.4 × Laravel 12). `composer test` and `composer lint` run clean. Namespace `AlbertoArena\Truss`.
+- 2026-07-22 — Phase 2: config (`config/truss.php` merged under the `truss` key via `hasConfigFile()`, publishable as `truss-config`). Keys: `route_prefix`, `enabled`, `cache.ttl`, `connections`, `excluded_tables`, `diagram` (+`type_labels`), `focus.default_depth`, `large_schema.warn_above`; no `gate` key (fixed `viewTruss`). Tested for defaults + publishability.

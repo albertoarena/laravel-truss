@@ -12,10 +12,14 @@ class TrussServiceProvider extends PackageServiceProvider
     public function configurePackage(Package $package): void
     {
         /*
-         * This package's configuration, routes, views, and commands are wired
-         * up in later phases. For now the skeleton just names the package so it
-         * boots cleanly and is discoverable.
+         * The package short name is "truss" (spatie strips the "laravel-"
+         * prefix), so hasConfigFile() merges config/truss.php under the "truss"
+         * config key and registers it for publishing (tag: truss-config).
+         *
+         * Routes, views, and commands are wired up in later phases.
          */
-        $package->name('laravel-truss');
+        $package
+            ->name('laravel-truss')
+            ->hasConfigFile();
     }
 }
