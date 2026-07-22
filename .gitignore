@@ -1,0 +1,14 @@
+# Dependencies
+/vendor/
+
+# Private/local docs (note: the tracked docs/ folder is NOT ignored)
+/.docs/
+
+# IDE files
+/.idea/
+/.vscode/
+*.iml
+
+# Local Claude files
+CLAUDE.local.md
+CLAUDE.*.local.md
