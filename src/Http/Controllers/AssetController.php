@@ -26,6 +26,7 @@ class AssetController
         'truss.js' => 'js/truss.js',
         'selection.js' => 'js/selection.js',
         'mermaid-definition.js' => 'js/mermaid-definition.js',
+        'table-export.js' => 'js/table-export.js',
         'type-labels.js' => 'js/type-labels.js',
         'viewport.js' => 'js/viewport.js',
         'url-state.js' => 'js/url-state.js',

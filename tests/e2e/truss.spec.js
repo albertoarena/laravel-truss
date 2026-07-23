@@ -140,6 +140,50 @@ test('an enum label is clickable and reveals its values in a popover', async ({ 
   await expect(pop).toBeHidden();
 });
 
+const tableName = (page, name) =>
+  page.locator('#truss-canvas .truss-table-name', { hasText: new RegExp(`^${name}$`) });
+
+test('clicking a table name opens the export/focus menu', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await tableName(page, 'users').click();
+
+  const pop = page.locator('#truss-popover');
+  await expect(pop).toBeVisible();
+  await expect(pop.locator('.truss-menu button')).toHaveCount(4);
+  await expect(pop).toContainText('Focus this table');
+  await expect(pop).toContainText('Download JSON');
+  await expect(pop).toContainText('Download CSV');
+});
+
+test('the menu Focus action focuses the table and updates the URL', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await tableName(page, 'users').click();
+  await page.locator('#truss-popover').getByText('Focus this table').click();
+
+  await expect(page.locator('#truss-popover')).toBeHidden();
+  await expect(canvas(page)).toContainText('role_user'); // users + FK neighbours
+  await expect(canvas(page)).not.toContainText('roles');
+  await expect(page.locator('#truss-focus')).toHaveValue('users');
+  await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBe('users');
+});
+
+test('the menu downloads a table structure as JSON and CSV', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await tableName(page, 'posts').click();
+  const jsonDownload = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('Download JSON').click();
+  expect((await jsonDownload).suggestedFilename()).toBe('posts.json');
+
+  await tableName(page, 'posts').click();
+  const csvDownload = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('Download CSV').click();
+  const csv = await csvDownload;
+  expect(csv.suggestedFilename()).toBe('posts.csv');
+});
+
 test('a focus in the URL is applied on load', async ({ page }) => {
   await page.goto('/tests/e2e/harness.html?focus=users');
   await expect(canvas(page).locator('svg')).toBeVisible();

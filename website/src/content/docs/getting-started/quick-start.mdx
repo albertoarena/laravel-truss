@@ -29,6 +29,17 @@ Your current view is reflected in the URL (for example `/truss?focus=projects`),
 - The **legend** (in the top-right) explains the `PK` / `FK` badges and the crow's-foot cardinality.
 - A **theme toggle** cycles automatic, light, and dark. Automatic follows your operating system.
 
+## Exporting a table
+
+Click a **table name** in the diagram to open a small menu for that table:
+
+- **Focus this table** reduces the diagram to it and its neighbours (the same as picking it in the Focus box).
+- **Copy JSON** copies its full structure to the clipboard.
+- **Download JSON** saves its full structure (columns, keys, indexes) as `<table>.json`.
+- **Download CSV** saves a flat, spreadsheet-friendly column list (name, type, nullable, default, and a `PK` / `FK` key column) as `<table>.csv`.
+
+Exports are generated in your browser from the schema Truss already loaded, and contain **structure only, never row data**, consistent with the rest of Truss.
+
 ## Multiple connections
 
 If you have configured more than one visualizable connection, a connection switcher appears. Switching re-fetches and re-renders without a full page reload.

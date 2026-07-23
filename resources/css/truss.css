@@ -239,6 +239,24 @@ body {
 .truss-popover li { white-space: nowrap; }
 .truss-popover li::before { content: "•"; color: var(--bp-cyan); margin-right: 7px; }
 
+/* table name as the per-table export/focus trigger. Kept subtle so headers stay
+   clean: it only reveals itself as clickable on hover. */
+#truss-canvas svg .nodeLabel.truss-table-name { cursor: pointer; pointer-events: auto; }
+#truss-canvas svg .nodeLabel.truss-table-name:hover,
+#truss-canvas svg .nodeLabel.truss-table-name:hover p {
+  color: var(--bp-cyan) !important;
+  text-decoration: underline dotted; text-underline-offset: 3px;
+}
+
+/* action menu inside the shared popover */
+.truss-menu { display: flex; flex-direction: column; gap: 2px; min-width: 150px; }
+.truss-menu button {
+  all: unset; box-sizing: border-box; display: block; width: 100%;
+  font-family: var(--bp-mono); font-size: 12px; color: var(--bp-fg);
+  padding: 7px 9px; border-radius: 3px; cursor: pointer;
+}
+.truss-menu button:hover, .truss-menu button:focus-visible { background: var(--bp-info-bg); color: var(--bp-info-fg); }
+
 /* status footer */
 .truss-footer {
   height: 28px; display: flex; align-items: center; gap: 14px; padding: 0 16px;

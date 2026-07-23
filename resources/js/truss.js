@@ -6,6 +6,7 @@ import { filterTables, focusTables } from './selection.js';
 import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 import { buildQuery, parseQuery } from './url-state.js';
+import { toJson, toCsv } from './table-export.js';
 
 const app = document.getElementById('truss-app');
 
@@ -185,9 +186,16 @@ function annotateColumnTypes(tables) {
   const svg = el.canvas.querySelector('svg');
   if (!svg) return;
   for (const node of svg.querySelectorAll('g.node')) {
-    const name = node.querySelector('g.label.name .nodeLabel')?.textContent.trim();
+    const nameLabel = node.querySelector('g.label.name .nodeLabel');
+    const name = nameLabel?.textContent.trim();
     const table = byName.get(name);
     if (!table) continue;
+    // The table name doubles as the trigger for the per-table export/focus menu.
+    nameLabel.classList.add('truss-table-name');
+    nameLabel.dataset.table = table.name;
+    nameLabel.setAttribute('role', 'button');
+    nameLabel.setAttribute('tabindex', '0');
+    nameLabel.setAttribute('title', `Export or focus ${table.name}`);
     const typeCells = node.querySelectorAll('g.label.attribute-type');
     table.columns.forEach((col, i) => {
       const label = typeCells[i]?.querySelector('.nodeLabel');
@@ -204,27 +212,76 @@ function annotateColumnTypes(tables) {
   }
 }
 
-let openEye = null;
+// The single floating popover is shared: enum/set value lists anchor to a type
+// label, the per-table export/focus menu anchors to a table name.
+let openAnchor = null;
+let menuTable = null;
 
-function showEnumPopover(eye) {
-  const values = JSON.parse(eye.dataset.values || '[]');
-  el.popover.innerHTML = `<div class="truss-popover-head">enum · ${values.length}</div>`
-    + `<ul>${values.map((v) => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
+function positionPopover(anchor) {
   el.popover.hidden = false;
-
-  const r = eye.getBoundingClientRect();
+  const r = anchor.getBoundingClientRect();
   const w = el.popover.offsetWidth;
   const h = el.popover.offsetHeight;
   const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 10));
   const top = r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6;
   el.popover.style.left = `${left}px`;
   el.popover.style.top = `${top}px`;
-  openEye = eye;
+  openAnchor = anchor;
 }
 
-function hideEnumPopover() {
+function showEnumPopover(anchor) {
+  const values = JSON.parse(anchor.dataset.values || '[]');
+  menuTable = null;
+  el.popover.innerHTML = `<div class="truss-popover-head">enum · ${values.length}</div>`
+    + `<ul>${values.map((v) => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
+  positionPopover(anchor);
+}
+
+function showTableMenu(anchor, table) {
+  menuTable = table;
+  el.popover.innerHTML = `<div class="truss-popover-head">${escapeHtml(table.name)}</div>`
+    + '<div class="truss-menu">'
+    + '<button type="button" data-act="focus">Focus this table</button>'
+    + '<button type="button" data-act="copy">Copy JSON</button>'
+    + '<button type="button" data-act="json">Download JSON</button>'
+    + '<button type="button" data-act="csv">Download CSV</button>'
+    + '</div>';
+  positionPopover(anchor);
+}
+
+function hidePopover() {
   if (el.popover) el.popover.hidden = true;
-  openEye = null;
+  openAnchor = null;
+  menuTable = null;
+}
+
+function downloadFile(name, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function runMenuAction(act) {
+  const table = menuTable;
+  hidePopover();
+  if (!table) return;
+  if (act === 'focus') {
+    state.focusRoot = table.name;
+    if (el.focus) el.focus.value = table.name;
+    render();
+  } else if (act === 'copy') {
+    navigator.clipboard?.writeText(toJson(table));
+  } else if (act === 'json') {
+    downloadFile(`${table.name}.json`, toJson(table), 'application/json');
+  } else if (act === 'csv') {
+    downloadFile(`${table.name}.csv`, toCsv(table), 'text/csv');
+  }
 }
 
 /** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
@@ -318,7 +375,7 @@ async function render() {
 
   try {
     const { svg } = await mermaid.render('truss-graph', definition);
-    hideEnumPopover(); // the eye it anchored to is about to be replaced
+    hidePopover(); // the eye it anchored to is about to be replaced
     el.canvas.innerHTML = svg;
     normalizeSvg();
     markFocusedTable();
@@ -465,21 +522,35 @@ function wireEvents() {
   // Wheel zooms toward the cursor (never scrolls the page).
   el.viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
-    hideEnumPopover();
+    hidePopover();
     const rect = el.viewport.getBoundingClientRect();
     zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1, { x: e.clientX - rect.left, y: e.clientY - rect.top });
   }, { passive: false });
 
-  // Enum label: open/close the value popover. Delegated so it survives re-renders.
+  // Enum label and table name: open/close the shared popover. Delegated so it
+  // survives re-renders. A menu action click is handled by its own listener below.
   el.canvas.addEventListener('click', (e) => {
-    const trigger = e.target.closest('.truss-enum-type');
-    if (!trigger) return;
-    e.stopPropagation();
-    if (openEye === trigger) hideEnumPopover();
-    else showEnumPopover(trigger);
+    const enumLabel = e.target.closest('.truss-enum-type');
+    if (enumLabel) {
+      e.stopPropagation();
+      if (openAnchor === enumLabel) hidePopover();
+      else showEnumPopover(enumLabel);
+      return;
+    }
+    const nameLabel = e.target.closest('.truss-table-name');
+    if (nameLabel) {
+      e.stopPropagation();
+      const table = state.tables.find((t) => t.name === nameLabel.dataset.table);
+      if (openAnchor === nameLabel || !table) hidePopover();
+      else showTableMenu(nameLabel, table);
+    }
+  });
+  el.popover.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (btn) runMenuAction(btn.dataset.act);
   });
   document.addEventListener('click', (e) => {
-    if (openEye && !e.target.closest('.truss-popover, .truss-enum-type')) hideEnumPopover();
+    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name')) hidePopover();
   });
 
   // Unified pointer handling: one pointer pans (mouse or touch), two pointers
@@ -490,8 +561,8 @@ function wireEvents() {
   const mid = (rect) => { const p = [...pointers.values()]; return { x: (p[0].x + p[1].x) / 2 - rect.left, y: (p[0].y + p[1].y) / 2 - rect.top }; };
 
   el.viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-popover')) return;
-    hideEnumPopover();
+    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-table-name, .truss-popover')) return;
+    hidePopover();
     e.preventDefault();
     el.viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
