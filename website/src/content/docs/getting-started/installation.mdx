@@ -1,0 +1,43 @@
+---
+title: Installation
+description: Install Laravel Truss into your application
+---
+
+## Requirements
+
+- PHP 8.3 or higher
+- Laravel 12 or higher
+
+## Install via Composer
+
+Truss is a development and inspection tool, so install it as a dev dependency:
+
+```bash
+composer require albertoarena/laravel-truss --dev
+```
+
+The service provider is auto-discovered by Laravel. There is nothing to publish to get started.
+
+## Publish the config (optional)
+
+To customise Truss, publish its configuration file to `config/truss.php`:
+
+```bash
+php artisan vendor:publish --tag=truss-config
+```
+
+Every option is documented inline and has a sensible default. See the [Configuration reference](/laravel-truss/reference/configuration/).
+
+## That is it
+
+By default Truss is enabled in the `local` environment only. Start your app and open:
+
+```
+/truss
+```
+
+You should see your schema as an ER diagram. Head to the [Quick start](/laravel-truss/getting-started/quick-start/) for a tour of the interface, or [Authorization](/laravel-truss/guides/authorization/) to run it safely in a non-local environment.
+
+:::note
+Truss reads the **live** database connection, so make sure your app's database is migrated and there is a schema to draw. If no connection is reachable, Truss falls back to replaying your migrations on an in-memory SQLite database and shows a banner saying so.
+:::

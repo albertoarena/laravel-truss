@@ -2,7 +2,7 @@
 /vendor/
 composer.lock
 /node_modules/
-package-lock.json
+/package-lock.json
 
 # Playwright
 /test-results/

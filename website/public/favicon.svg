@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>:root{--c:#12356b}@media(prefers-color-scheme:dark){:root{--c:#5fd0e6}}path{stroke:var(--c);fill:none;stroke-width:1.7;stroke-linejoin:miter}circle{fill:var(--c)}</style>
+  <path d="M16 5 L27 26 H5 Z"/><path d="M16 5 V17"/><path d="M5 26 L16 17"/><path d="M27 26 L16 17"/>
+  <circle cx="16" cy="5" r="2.4"/><circle cx="5" cy="26" r="2.4"/><circle cx="27" cy="26" r="2.4"/><circle cx="16" cy="17" r="2.4"/>
+</svg>

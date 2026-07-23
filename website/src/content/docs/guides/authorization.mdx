@@ -1,0 +1,61 @@
+---
+title: Authorization
+description: Gate access to Truss so it is safe to run in production
+---
+
+Truss is designed to be safe to install in production and gated there. Access is guarded by two independent layers, and **both** must pass.
+
+## The two layers
+
+1. **`truss.enabled`** is the deploy switch. When it is off, the routes respond **404**, as if they do not exist. It defaults to the `local` environment only, so a production deploy stays dark until you set `TRUSS_ENABLED=true`.
+2. **The fixed `viewTruss` gate** is the access control. It is consulted **only in non-local environments** (in `local` it is open). A denial returns **404**, not 403, so the dashboard never confirms it exists to someone who may not view it.
+
+`enabled` alone does not grant access, and the gate alone does not make the routes exist. To expose Truss in a non-local environment you must do both: enable it, and authorize the viewers.
+
+:::caution
+Both failure modes return 404 on purpose. If you set `TRUSS_ENABLED=true` in production but see 404, check that your user passes the `viewTruss` gate (see below).
+:::
+
+## Authorize by email (zero code)
+
+For the common "let these admins in" case, the shipped `viewTruss` gate admits the emails you list. Set them via `TRUSS_ALLOWED_EMAILS` as a comma-separated list:
+
+```dotenv
+TRUSS_ENABLED=true
+TRUSS_ALLOWED_EMAILS="ada@example.com,grace@example.com"
+```
+
+The list is ignored in `local`, and it **fails closed**: an empty list means no one may view in a non-local environment until you add emails or override the gate.
+
+## Authorize by role (override the gate)
+
+For anything beyond an email list, define your own `viewTruss` gate in one of your service providers' `boot()` methods. Your definition fully replaces the shipped default:
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('viewTruss', fn (User $user) => $user->isAdmin());
+```
+
+The ability name is fixed (`viewTruss`); only the callback varies, and that lives in your app. A guest resolves to a `null` user, so a non-nullable `User $user` type-hint safely denies unauthenticated requests.
+
+## The auth context (middleware)
+
+The gate can only identify the viewer if the request has already passed through session and auth middleware. The `truss.middleware` config key provides that stack, and it defaults to `['web']`:
+
+```php
+// config/truss.php
+'middleware' => ['web'],
+```
+
+Without it, `$request->user()` would be `null` in production and the gate would deny everyone, including the admins who should have access. If your app authenticates differently (a custom guard, or Sanctum for an SPA), swap the stack here. The `viewTruss` check is always appended after this stack and cannot be configured away.
+
+## Summary
+
+| Environment | `enabled` off | `enabled` on |
+| --- | --- | --- |
+| **local** | 404 | open (the gate is not consulted) |
+| **non-local** | 404 | the `viewTruss` gate decides; a denial is 404 |
+
+The production recipe: set `TRUSS_ENABLED=true`, list admin emails in `TRUSS_ALLOWED_EMAILS` (or override the gate), and be logged in as an allowed user.

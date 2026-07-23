@@ -1,0 +1,61 @@
+---
+title: Laravel Truss
+description: A live database structure viewer for Laravel
+template: splash
+hero:
+  tagline: See your database structure as a live, scrollable, zoomable ER diagram, right inside your app. Structure only, never row data.
+  actions:
+    - text: Get Started
+      link: /laravel-truss/getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: Configuration
+      link: /laravel-truss/reference/configuration/
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/albertoarena/laravel-truss
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Laravel Truss?
+
+You are staring at an unfamiliar Laravel codebase (or your own, six months later) and you want to see how the tables actually connect. Truss reads your **live schema** and renders it as an ER diagram inside your app, so you do not have to open a DB client or reverse-engineer migrations by hand.
+
+It reads **structure only**: tables, columns, keys, and indexes. Row contents are never queried or exposed. That is a hard guarantee, not a config default.
+
+<CardGrid stagger>
+  <Card title="Live ER diagram" icon="seti:db">
+    Your real schema, introspected from the live connection and rendered with Mermaid. No static migration parsing, no Doctrine DBAL.
+  </Card>
+  <Card title="Focus mode" icon="magnifier">
+    Click a table to see just it and its foreign-key neighbours, centred and highlighted, so large schemas stay legible.
+  </Card>
+  <Card title="Pan and zoom" icon="random">
+    Drag to pan, scroll or pinch to zoom, like a map. The diagram auto-fits to a readable zoom, and a Fit button frames the whole thing.
+  </Card>
+  <Card title="Structure only" icon="approve-check">
+    Only the `CREATE TABLE` shape. No row data is ever read. Safe to gate and run in production.
+  </Card>
+  <Card title="Self-contained" icon="rocket">
+    Mermaid and fonts are vendored and served from the package. No CDN, so it works offline and under a strict Content-Security-Policy.
+  </Card>
+  <Card title="Cached and auto-rebuilt" icon="setting">
+    The snapshot is cached and refreshed automatically after migrations run. A manual rebuild command is available too.
+  </Card>
+</CardGrid>
+
+---
+
+## Next steps
+
+<CardGrid>
+  <Card title="Installation" icon="rocket">
+    [Install the package](/laravel-truss/getting-started/installation/), one Composer command, auto-discovered.
+  </Card>
+  <Card title="Authorization" icon="approve-check">
+    [Gate access safely](/laravel-truss/guides/authorization/) so Truss is production-safe.
+  </Card>
+</CardGrid>

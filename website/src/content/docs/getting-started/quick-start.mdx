@@ -1,0 +1,37 @@
+---
+title: Quick start
+description: A tour of the Truss dashboard and its controls
+---
+
+By default Truss is enabled in the `local` environment only. Start your app and open `/truss` (the prefix is configurable). You will see your schema as an ER diagram: each table is an entity box with its columns, native types, and `PK` / `FK` badges, and foreign keys are drawn as crow's-foot relationships.
+
+## Moving around
+
+The diagram behaves like a map:
+
+- **Pan** by dragging.
+- **Zoom** by scrolling, pinching (on touch), or using the zoom slider.
+- **Fit** frames the whole diagram in one click. Auto-fit also runs whenever the content changes, never below a readable zoom, so a large schema stays legible and you pan around it.
+
+## Filtering and focusing
+
+- **Filter** narrows the diagram to tables whose name matches what you type.
+- **Focus** reduces the diagram to one table and its foreign-key neighbours, up to a configurable depth. The focused table is centred and highlighted. This is the main tool for keeping large schemas readable.
+
+Filter and focus compose: focus operates on whatever the filter left in.
+
+## Reading the diagram
+
+- **Type labels** show the native database type (for example `varchar(255)`) by default. Toggle **Laravel types** to see best-effort short labels (for example `string`).
+- **`enum` / `set` columns** are compacted to the keyword so a long value list does not blow out the column. Click the `enum` label to see the full list of allowed values.
+- The **legend** (in the top-right) explains the `PK` / `FK` badges and the crow's-foot cardinality.
+- A **theme toggle** cycles automatic, light, and dark. Automatic follows your operating system.
+
+## Multiple connections
+
+If you have configured more than one visualizable connection, a connection switcher appears. Switching re-fetches and re-renders without a full page reload.
+
+## Next steps
+
+- [Authorization](/laravel-truss/guides/authorization/): run Truss safely in staging or production.
+- [Configuration reference](/laravel-truss/reference/configuration/): every option and its default.

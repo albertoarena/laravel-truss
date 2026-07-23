@@ -1,0 +1,37 @@
+---
+title: Troubleshooting
+description: Common issues and how to resolve them
+---
+
+## `/truss` returns 404
+
+Two things can cause this, and both return 404 on purpose:
+
+1. **Truss is disabled.** It is enabled in `local` only by default. In any other environment, set `TRUSS_ENABLED=true`.
+2. **The `viewTruss` gate denied you.** In non-local environments the gate is consulted. Make sure your user is allowed, either via `TRUSS_ALLOWED_EMAILS` or your own gate definition, and that you are logged in. See the [Authorization guide](/laravel-truss/guides/authorization/).
+
+## The page loads but the diagram is blank
+
+- Check the browser console and network tab. If an asset request (for example `truss.js`) failed, ensure requests can reach `/{prefix}/assets/...`.
+- Under a strict Content-Security-Policy, allow `script-src 'self'`, `style-src 'self' 'unsafe-inline'`, and `font-src 'self'`. Mermaid needs `'unsafe-inline'` in `style-src`. See [Configuration](/laravel-truss/reference/configuration/#content-security-policy).
+- If you set `TRUSS_MERMAID_URL` to a CDN, make sure your CSP allows that host in `script-src`.
+
+## A banner says the SQLite fallback was used
+
+Truss could not reach the target database connection, so it replayed your migrations on an in-memory SQLite database and drew that instead. Column types may be approximate, and any migration that fails on SQLite is skipped and listed. Fix the connection to see the real schema.
+
+## A connection is not visualizable
+
+If you set `truss.connections`, only the connections you listed are visualizable. A request for any other connection returns 404. Add the connection to the list, or leave `connections` empty to use the application's default.
+
+## Changes to the schema are not showing
+
+The snapshot is cached (`cache.ttl`, default one hour) and rebuilt automatically after migrations. If you changed the schema another way, force a refresh:
+
+```bash
+php artisan truss:rebuild
+```
+
+## A table is missing from the diagram
+
+Check `excluded_tables` (global and per-connection). Excluded tables are removed server-side and never reach the browser. Framework tables such as `migrations`, `sessions`, `cache`, and `jobs` are excluded by default.

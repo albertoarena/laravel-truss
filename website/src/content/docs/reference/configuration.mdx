@@ -1,0 +1,77 @@
+---
+title: Configuration
+description: Every Laravel Truss configuration option
+---
+
+All behaviour lives in `config/truss.php`. Publish it with:
+
+```bash
+php artisan vendor:publish --tag=truss-config
+```
+
+Every key has a sensible default and, where relevant, an `env()` override.
+
+## Reference
+
+| Key | Env | Default | Purpose |
+| --- | --- | --- | --- |
+| `route_prefix` | `TRUSS_ROUTE_PREFIX` | `truss` | URL prefix for the page and the JSON / asset routes |
+| `enabled` | `TRUSS_ENABLED` | `local` only | Global on/off switch. Off means the routes 404 |
+| `middleware` | | `['web']` | Auth-context middleware so the gate can see the user |
+| `authorization.allowed_emails` | `TRUSS_ALLOWED_EMAILS` | `[]` | Emails the default gate admits in non-local (comma-separated) |
+| `cache.ttl` | `TRUSS_CACHE_TTL` | `3600` | Seconds a schema snapshot is cached |
+| `connections` | | `[]` | Which DB connections are visualizable (defaults to the app's default) |
+| `excluded_tables` | | framework tables | Tables filtered out server-side, never sent to the browser |
+| `diagram.type_labels` | `TRUSS_TYPE_LABELS` | `native` | Default column-type labels: `native` or `laravel` |
+| `diagram.theme` | `TRUSS_DIAGRAM_THEME` | `default` | Mermaid base theme |
+| `diagram.mermaid_url` | `TRUSS_MERMAID_URL` | `null` | Where to load Mermaid from. Null self-hosts (no CDN) |
+| `diagram.min_zoom` | `TRUSS_MIN_ZOOM` | `0.7` | Readable floor for auto-fit. The Fit button ignores it |
+| `focus.default_depth` | `TRUSS_FOCUS_DEPTH` | `1` | Foreign-key neighbour depth when focusing a table |
+| `large_schema.warn_above` | `TRUSS_LARGE_SCHEMA_WARN_ABOVE` | `60` | Table count above which a "large schema" hint is shown |
+
+## Notes on individual keys
+
+### `enabled` and `middleware`
+
+These, together with the `viewTruss` gate, control access. See the [Authorization guide](/laravel-truss/guides/authorization/).
+
+### `connections`
+
+Leave empty to use the application's default connection. To visualize specific connections, list them:
+
+```php
+'connections' => [
+    'mysql' => [],
+    'reporting' => ['excluded_tables' => ['legacy_import']],
+],
+```
+
+Only listed connections are visualizable; a request for any other connection returns 404. Per-connection `excluded_tables` are merged on top of the global list.
+
+### `excluded_tables`
+
+Applied **server-side at serve time**, so their structure never reaches the browser and toggling the list needs no rebuild. The defaults cover framework and infrastructure tables (`migrations`, `password_reset_tokens`, `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`).
+
+### `diagram.type_labels`
+
+`native` shows the exact database type (`varchar(255)`, `bigint unsigned`), which is the source of truth. `laravel` shows a best-effort short label (`string`, `integer`), computed in the browser. The mode is also toggleable live in the UI; this key sets the default.
+
+### `diagram.mermaid_url`
+
+Null (the default) self-hosts Mermaid from the package, so no CDN is contacted. Set a URL to load Mermaid from a CDN or your own copy instead.
+
+### `diagram.min_zoom`
+
+The lowest zoom the automatic fit will use, so a large schema stays legible and you pan around it rather than being dumped into an unreadable overview. The Fit button ignores this floor.
+
+## Content-Security-Policy
+
+Truss serves its JavaScript, CSS, a vendored copy of Mermaid, and the IBM Plex Mono font from a gated route inside the package. No CDN is used by default. Under a strict CSP, the following cover Truss's own assets:
+
+```
+script-src 'self';
+style-src 'self' 'unsafe-inline';
+font-src 'self';
+```
+
+`style-src` needs `'unsafe-inline'` because Mermaid injects styles into the rendered SVG at runtime. To load Mermaid from a CDN instead, set `TRUSS_MERMAID_URL` and adjust `script-src` accordingly.

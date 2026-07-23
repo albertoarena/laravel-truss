@@ -1,0 +1,63 @@
+import { defineConfig } from 'astro/config'
+import starlight from '@astrojs/starlight'
+
+export default defineConfig({
+  site: 'https://albertoarena.github.io',
+  base: '/laravel-truss',
+  integrations: [
+    starlight({
+      title: 'Laravel Truss',
+      description: 'A live database structure viewer for Laravel',
+      logo: {
+        light: './src/assets/truss-mark-light.svg',
+        dark: './src/assets/truss-mark-dark.svg',
+      },
+      favicon: '/favicon.svg',
+      social: {
+        github: 'https://github.com/albertoarena/laravel-truss',
+      },
+      editLink: {
+        baseUrl: 'https://github.com/albertoarena/laravel-truss/edit/main/website/',
+      },
+      customCss: [
+        './src/styles/custom.css',
+      ],
+      sidebar: [
+        {
+          label: 'Introduction',
+          items: [
+            { label: 'Overview', link: '/' },
+          ],
+        },
+        {
+          label: 'Getting Started',
+          items: [
+            { label: 'Installation', link: '/getting-started/installation/' },
+            { label: 'Quick start', link: '/getting-started/quick-start/' },
+          ],
+        },
+        {
+          label: 'Guides',
+          items: [
+            { label: 'Authorization', link: '/guides/authorization/' },
+            { label: 'Focus & filter', link: '/guides/focus-and-filter/' },
+          ],
+        },
+        {
+          label: 'Reference',
+          items: [
+            { label: 'Configuration', link: '/reference/configuration/' },
+            { label: 'Commands', link: '/reference/commands/' },
+          ],
+        },
+        {
+          label: 'Help',
+          items: [
+            { label: 'Troubleshooting', link: '/help/troubleshooting/' },
+          ],
+        },
+        { label: 'Credits', link: '/credits/' },
+      ],
+    }),
+  ],
+})

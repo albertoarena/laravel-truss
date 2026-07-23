@@ -1,0 +1,33 @@
+---
+title: Focus and filter
+description: Keep large schemas legible with focus mode and filtering
+---
+
+Real applications have dozens or hundreds of tables. Rendering all of them at once is possible (Truss raises Mermaid's size guards so large schemas draw rather than error), but it is rarely what you want to read. Focus and filter are how you keep things legible.
+
+## Filter
+
+Type in the **Filter** box to narrow the diagram to tables whose name contains what you typed. It is a plain, case-insensitive substring match on the table name. Clearing the box shows everything again.
+
+## Focus
+
+Pick a table in **Focus** to reduce the diagram to that table plus its foreign-key neighbours. Neighbours are followed in both directions: tables the focused table references, and tables that reference it.
+
+- The focused table is **centred** in the viewport and **highlighted** with an accent border, so you can always find it.
+- **Depth** controls how many hops of neighbours are shown. Depth `1` (the default, configurable via `focus.default_depth`) shows immediate neighbours; increase it to pull in neighbours-of-neighbours.
+
+Focus and filter **compose**: focus operates on whatever the filter left in, so you can filter to a group of tables and then focus within it.
+
+## Auto-fit and the readable floor
+
+Whenever the content changes (on load, filter, focus, or connection switch) the diagram auto-fits the viewport. The auto-fit honours a **readable floor** (`diagram.min_zoom`, default `0.7`): a large schema is framed at a legible zoom that you pan around, rather than shrunk to an unreadable speck.
+
+The **Fit** button ignores the floor and frames the whole diagram at once, so the full overview is always one click away.
+
+## Large-schema hint
+
+Above a configurable table count (`large_schema.warn_above`, default `60`), an unfocused, unfiltered diagram shows a hint suggesting you filter or focus. It is only a hint; the diagram still renders.
+
+## Excluded tables
+
+Framework and infrastructure tables (`migrations`, `sessions`, `cache`, `jobs`, and so on) are excluded by default via `excluded_tables`. Exclusions are applied **server-side**, so excluded tables never reach the browser at all. See the [Configuration reference](/laravel-truss/reference/configuration/).

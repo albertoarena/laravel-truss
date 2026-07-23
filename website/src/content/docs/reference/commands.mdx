@@ -1,0 +1,33 @@
+---
+title: Commands
+description: Artisan commands and asset publishing
+---
+
+## `truss:rebuild`
+
+Rebuild the cached schema snapshot. Useful in CI, in seeding workflows, or whenever you want to force a refresh.
+
+```bash
+# Rebuild every managed connection
+php artisan truss:rebuild
+
+# Rebuild a specific connection
+php artisan truss:rebuild --connection=mysql
+```
+
+The command always runs, regardless of `truss.enabled`.
+
+## Automatic rebuilds
+
+You rarely need to run the command by hand. Truss listens for the `Illuminate\Database\Events\MigrationsEnded` event and rebuilds the snapshot automatically after `migrate`, `migrate:fresh`, and `migrate:rollback` (when Truss is enabled).
+
+The snapshot is derived, disposable data cached via the `Cache` facade, keyed per connection, and it respects `cache.ttl`. No database table is used to store it.
+
+## Publishing
+
+```bash
+# Publish the config file to config/truss.php
+php artisan vendor:publish --tag=truss-config
+```
+
+There is no separate assets publish step. Truss serves its JavaScript, CSS, fonts, and a vendored copy of Mermaid from a route inside the package, so there is nothing to publish and no CDN to reach.
