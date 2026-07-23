@@ -63,14 +63,48 @@ test('the Laravel-types toggle swaps native types for short labels', async ({ pa
   await expect(canvas(page)).not.toContainText('bigint_unsigned');
 });
 
-test('zoom controls scale the canvas via CSS transform', async ({ page }) => {
+const scaleOf = (page) => canvas(page).evaluate((el) => Number(/scale\(([-0-9.]+)\)/.exec(el.style.transform)?.[1] ?? 'NaN'));
+const translateOf = (page) => canvas(page).evaluate((el) => {
+  const m = /translate\(([-0-9.]+)px,\s*([-0-9.]+)px\)/.exec(el.style.transform);
+  return { x: Number(m?.[1]), y: Number(m?.[2]) };
+});
+
+test('the wheel zooms toward the cursor', async ({ page }) => {
   await expect(canvas(page).locator('svg')).toBeVisible();
+  const before = await scaleOf(page);
 
-  await page.click('[data-zoom="in"]');
-  await expect(canvas(page)).toHaveAttribute('style', /scale\(1\.2\)/);
+  const box = await page.locator('#truss-viewport').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -300);
 
-  await page.click('[data-zoom="reset"]');
-  await expect(canvas(page)).toHaveAttribute('style', /scale\(1\)/);
+  expect(await scaleOf(page)).toBeGreaterThan(before);
+});
+
+test('dragging pans the canvas', async ({ page }) => {
+  await expect(canvas(page).locator('svg')).toBeVisible();
+  const before = await translateOf(page);
+
+  const box = await page.locator('#truss-viewport').boundingBox();
+  await page.mouse.move(box.x + 200, box.y + 200);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 340, box.y + 260);
+  await page.mouse.up();
+
+  const after = await translateOf(page);
+  expect(after.x).not.toBe(before.x);
+  expect(after.y).not.toBe(before.y);
+});
+
+test('the slider sets the zoom level and Fit re-frames', async ({ page }) => {
+  await expect(canvas(page).locator('svg')).toBeVisible();
+  const fitted = await scaleOf(page);
+
+  await page.locator('#truss-zoom-range').fill('2');
+  expect(await scaleOf(page)).toBeCloseTo(2, 1);
+  await expect(page.locator('#truss-zoom-pct')).toHaveText('200%');
+
+  await page.click('[data-fit]');
+  expect(await scaleOf(page)).toBeCloseTo(fitted, 1);
 });
 
 test('the connection switcher re-fetches and re-renders without reload', async ({ page }) => {

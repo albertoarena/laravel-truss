@@ -40,9 +40,10 @@ class AssetController
 
         return response()->file($path, [
             'Content-Type' => $this->contentType($file),
-            // Gated per-user, so keep it out of shared caches; a day is plenty
-            // and a package upgrade changes the file (and its Last-Modified).
-            'Cache-Control' => 'private, max-age=86400',
+            // Gated per-user, so keep it out of shared caches. In debug (local
+            // dev of the package itself) never cache, so edits show on refresh;
+            // otherwise a day is plenty and a package upgrade changes the file.
+            'Cache-Control' => config('app.debug') ? 'no-store' : 'private, max-age=86400',
         ]);
     }
 

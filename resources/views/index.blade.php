@@ -51,9 +51,10 @@
             </label>
 
             <span class="truss-zoom">
-                <button type="button" data-zoom="out" title="Zoom out">&minus;</button>
-                <button type="button" data-zoom="reset" title="Reset zoom">reset</button>
-                <button type="button" data-zoom="in" title="Zoom in">&plus;</button>
+                <button type="button" data-fit title="Fit the diagram to the screen">Fit</button>
+                <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1"
+                       title="Zoom (or scroll over the diagram, drag to pan)">
+                <span id="truss-zoom-pct">100%</span>
             </span>
         </div>
 

@@ -32,6 +32,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/tests/e2e/harness.html');
 });
 
+test('auto-fits a large schema so the whole diagram frames on load', async ({ page }) => {
+  await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
+
+  const scale = await page.locator('#truss-canvas').evaluate((el) => Number(/scale\(([-0-9.]+)\)/.exec(el.style.transform)?.[1] ?? 'NaN'));
+  expect(scale).toBeGreaterThan(0);
+  expect(scale).toBeLessThan(1); // 100 tables must shrink to fit the viewport
+});
+
 test(`renders a ${TABLE_COUNT}-table schema without hitting Mermaid limits`, async ({ page }) => {
   const started = Date.now();
   await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });

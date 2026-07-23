@@ -1,12 +1,10 @@
 // Browser entry for the Truss dashboard. Thin DOM/fetch/Mermaid glue over the
-// pure, unit-tested modules (selection + generator). No build step: this is a
-// native ES module and Mermaid is loaded as a global from a CDN <script>.
-//
-// The logic worth testing lives in the imported modules and is covered by
-// Vitest; this file's rendering/interaction behaviour is covered by Playwright.
+// pure, unit-tested modules (selection, generator, viewport math). No build
+// step: native ES module; Mermaid is a global from a <script> tag.
 
 import { filterTables, focusTables } from './selection.js';
 import { generateErDiagram } from './mermaid-definition.js';
+import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 
 const app = document.getElementById('truss-app');
 
@@ -26,7 +24,9 @@ const state = {
   focusRoot: '',
   depth: config.focusDepth,
   laravelLabels: config.typeLabels === 'laravel',
-  zoom: 1,
+  view: { zoom: 1, x: 0, y: 0 }, // translate(x,y) scale(zoom)
+  content: { width: 0, height: 0 }, // natural SVG size
+  lastKey: null, // subset signature; drives auto-fit only on content change
 };
 
 const el = {
@@ -38,7 +38,9 @@ const el = {
   banners: document.getElementById('truss-banners'),
   viewport: document.getElementById('truss-viewport'),
   canvas: document.getElementById('truss-canvas'),
-  zoom: document.querySelectorAll('[data-zoom]'),
+  fit: document.querySelector('[data-fit]'),
+  zoomRange: document.getElementById('truss-zoom-range'),
+  zoomPct: document.getElementById('truss-zoom-pct'),
 };
 
 const mermaid = window.mermaid;
@@ -46,12 +48,12 @@ mermaid.initialize({
   startOnLoad: false,
   theme: app.dataset.theme || 'default',
   securityLevel: 'strict',
-  // Raise the guards so large schemas render instead of erroring out.
-  maxTextSize: 5_000_000,
+  maxTextSize: 5_000_000, // raise the guards so large schemas render
   maxEdges: 10_000,
 });
 
-/** The subset to draw: filter first, then focus operates on what's left. */
+/* ---- selection -------------------------------------------------------- */
+
 function currentSubset() {
   let subset = filterTables(state.tables, state.search);
   if (state.focusRoot) {
@@ -59,6 +61,52 @@ function currentSubset() {
   }
   return subset;
 }
+
+/* ---- pan / zoom ------------------------------------------------------- */
+
+function applyTransform() {
+  const { x, y, zoom } = state.view;
+  el.canvas.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+  syncZoomUi();
+}
+
+function syncZoomUi() {
+  if (el.zoomRange) el.zoomRange.value = String(clamp(state.view.zoom, Number(el.zoomRange.min), Number(el.zoomRange.max)));
+  if (el.zoomPct) el.zoomPct.textContent = `${Math.round(state.view.zoom * 100)}%`;
+}
+
+function viewportSize() {
+  return { width: el.viewport.clientWidth, height: el.viewport.clientHeight };
+}
+
+function fitToViewport() {
+  state.view = fitTransform(state.content, viewportSize());
+  applyTransform();
+}
+
+/** Size the freshly-rendered SVG to its natural pixels so our transform drives scale. */
+function normalizeSvg() {
+  const svg = el.canvas.querySelector('svg');
+  if (!svg) {
+    state.content = { width: 0, height: 0 };
+    return;
+  }
+  const box = svg.viewBox?.baseVal;
+  const width = box?.width || svg.getBoundingClientRect().width;
+  const height = box?.height || svg.getBoundingClientRect().height;
+
+  svg.removeAttribute('style');
+  svg.setAttribute('width', String(width));
+  svg.setAttribute('height', String(height));
+  state.content = { width, height };
+}
+
+function zoomBy(factor, point) {
+  state.view = zoomAtPoint(state.view, point, factor);
+  applyTransform();
+}
+
+/* ---- rendering -------------------------------------------------------- */
 
 function banner(kind, text) {
   const node = document.createElement('div');
@@ -83,11 +131,6 @@ function renderBanners(subsetCount) {
   }
 }
 
-function applyZoom() {
-  el.canvas.style.transform = `scale(${state.zoom})`;
-  el.canvas.style.transformOrigin = 'top left';
-}
-
 async function render() {
   const subset = currentSubset();
   renderBanners(subset.length);
@@ -100,28 +143,45 @@ async function render() {
   const definition = generateErDiagram(subset, {
     typeLabels: state.laravelLabels ? 'laravel' : 'native',
   });
+  const key = subset.map((t) => t.name).join('|');
 
   try {
     const { svg } = await mermaid.render('truss-graph', definition);
     el.canvas.innerHTML = svg;
-    applyZoom();
+    normalizeSvg();
+
+    // Auto-fit only when the *content* changed (new tables): so filtering and
+    // focusing always frame their result, but a label toggle keeps your view.
+    if (key !== state.lastKey) {
+      fitToViewport();
+    } else {
+      applyTransform();
+    }
+    state.lastKey = key;
   } catch (error) {
     el.canvas.replaceChildren(banner('error', `Diagram failed to render: ${error?.message ?? error}`));
   }
 }
 
+/* ---- data ------------------------------------------------------------- */
+
 function populateFocusOptions() {
-  const options = ['<option value="">— none —</option>']
-    .concat(state.tables.map((t) => `<option value="${t.name}">${t.name}</option>`));
-  el.focus.innerHTML = options.join('');
+  el.focus.innerHTML = ['<option value="">— none —</option>']
+    .concat(state.tables.map((t) => `<option value="${t.name}">${t.name}</option>`))
+    .join('');
   el.focus.value = state.focusRoot;
+}
+
+function populateConnectionOptions() {
+  if (!el.connection) return;
+  el.connection.innerHTML = config.connections.map((name) => `<option value="${name}">${name}</option>`).join('');
+  if (state.connection) el.connection.value = state.connection;
+  el.connection.closest('.truss-field')?.toggleAttribute('hidden', config.connections.length < 2);
 }
 
 async function loadSchema() {
   const url = new URL(config.endpoint, window.location.origin);
-  if (state.connection) {
-    url.searchParams.set('connection', state.connection);
-  }
+  if (state.connection) url.searchParams.set('connection', state.connection);
 
   el.banners.replaceChildren(banner('info', 'Loading schema…'));
 
@@ -135,21 +195,12 @@ async function loadSchema() {
   state.tables = payload.tables ?? [];
   state.fallback = Boolean(payload.fallback);
   state.focusRoot = '';
+  state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
   await render();
 }
 
-function populateConnectionOptions() {
-  if (!el.connection) return;
-  el.connection.innerHTML = config.connections
-    .map((name) => `<option value="${name}">${name}</option>`)
-    .join('');
-  if (state.connection) {
-    el.connection.value = state.connection;
-  }
-  // Hide the switcher entirely when there is only one connection to offer.
-  el.connection.closest('.truss-field')?.toggleAttribute('hidden', config.connections.length < 2);
-}
+/* ---- events ----------------------------------------------------------- */
 
 function debounce(fn, ms) {
   let handle;
@@ -157,6 +208,11 @@ function debounce(fn, ms) {
     clearTimeout(handle);
     handle = setTimeout(() => fn(...args), ms);
   };
+}
+
+function pointerInViewport(event) {
+  const rect = el.viewport.getBoundingClientRect();
+  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 
 function wireEvents() {
@@ -185,17 +241,44 @@ function wireEvents() {
     render();
   });
 
-  el.zoom.forEach((btn) => btn.addEventListener('click', () => {
-    const kind = btn.dataset.zoom;
-    if (kind === 'in') state.zoom = Math.min(4, state.zoom + 0.2);
-    else if (kind === 'out') state.zoom = Math.max(0.2, state.zoom - 0.2);
-    else state.zoom = 1;
-    applyZoom();
-  }));
+  // Wheel zooms toward the cursor (natural, Maps-style); never scrolls the page.
+  el.viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1, pointerInViewport(e));
+  }, { passive: false });
+
+  // Drag to pan.
+  let pan = null;
+  el.viewport.addEventListener('pointerdown', (e) => {
+    pan = { x: e.clientX, y: e.clientY, ox: state.view.x, oy: state.view.y };
+    el.viewport.setPointerCapture(e.pointerId);
+    el.viewport.classList.add('is-panning');
+  });
+  el.viewport.addEventListener('pointermove', (e) => {
+    if (!pan) return;
+    state.view = { ...state.view, x: pan.ox + (e.clientX - pan.x), y: pan.oy + (e.clientY - pan.y) };
+    applyTransform();
+  });
+  const endPan = () => { pan = null; el.viewport.classList.remove('is-panning'); };
+  el.viewport.addEventListener('pointerup', endPan);
+  el.viewport.addEventListener('pointercancel', endPan);
+
+  // Slider zooms around the viewport centre.
+  el.zoomRange?.addEventListener('input', (e) => {
+    const target = clamp(Number(e.target.value), ZOOM_LIMITS.min, ZOOM_LIMITS.max);
+    const { width, height } = viewportSize();
+    zoomBy(target / state.view.zoom, { x: width / 2, y: height / 2 });
+  });
+
+  el.fit?.addEventListener('click', fitToViewport);
+
+  window.addEventListener('resize', debounce(() => applyTransform(), 200));
 }
 
-el.depth && (el.depth.value = String(state.depth));
-el.labels && (el.labels.checked = state.laravelLabels);
+/* ---- boot ------------------------------------------------------------- */
+
+if (el.depth) el.depth.value = String(state.depth);
+if (el.labels) el.labels.checked = state.laravelLabels;
 populateConnectionOptions();
 wireEvents();
 loadSchema();

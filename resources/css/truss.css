@@ -14,9 +14,10 @@ body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, s
 .truss-toolbar input, .truss-toolbar select { font: inherit; padding: 4px 8px; border: 1px solid var(--bd); border-radius: 6px; background: #fff; color: var(--fg); }
 .truss-toolbar input[type="number"] { width: 56px; }
 
-.truss-zoom { margin-left: auto; display: inline-flex; gap: 4px; }
-.truss-zoom button { font: inherit; width: 32px; height: 30px; border: 1px solid var(--bd); border-radius: 6px; background: #fff; cursor: pointer; }
-.truss-zoom button[data-zoom="reset"] { width: auto; padding: 0 10px; }
+.truss-zoom { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.truss-zoom button { font: inherit; height: 30px; padding: 0 12px; border: 1px solid var(--bd); border-radius: 6px; background: #fff; cursor: pointer; }
+.truss-zoom input[type="range"] { width: 140px; accent-color: var(--accent); }
+#truss-zoom-pct { min-width: 42px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 #truss-banners { display: flex; flex-direction: column; gap: 1px; }
 .truss-banner { padding: 8px 16px; font-size: 13px; }
@@ -24,5 +25,8 @@ body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, s
 .truss-banner--warn { background: #fff6e6; color: #8a5a00; }
 .truss-banner--error { background: #fdecec; color: #a11; }
 
-#truss-viewport { overflow: auto; height: calc(100vh - 52px); padding: 20px; }
-#truss-canvas { display: inline-block; transform-origin: top left; }
+/* The viewport clips; the canvas is panned/zoomed via a CSS transform (never a
+   re-layout), so scroll/zoom stay smooth on large diagrams. */
+#truss-viewport { position: relative; overflow: hidden; height: calc(100vh - 52px); cursor: grab; touch-action: none; }
+#truss-viewport.is-panning { cursor: grabbing; }
+#truss-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }

@@ -110,7 +110,7 @@ The host definition always wins (the package registers its default only if the a
 ## Frontend
 
 - Mermaid.js renders the ER diagram from the JSON schema, no build step required.
-- Container wraps the resulting SVG with `overflow: auto` plus a small pan/zoom script (zoom via CSS `transform: scale()`, never a re-layout) for scrolling and zooming on large diagrams.
+- **Pan/zoom.** The viewport clips; the rendered SVG sits on a canvas transformed by `translate(x, y) scale(zoom)` (never a re-layout). The diagram **auto-fits** the viewport whenever the content changes (load, filter, focus, connection switch) so it is never stranded tiny or at a stale zoom — but a label toggle keeps your current view. Manual control is Google-Maps-style: wheel zooms toward the cursor, drag pans, plus a zoom slider and a **Fit** button. The fit/zoom math is a pure, unit-tested module (`resources/js/viewport.js`).
 - **Selection pipeline.** Table selection happens in two places, split by nature:
   - *Config `excluded_tables`* — applied **server-side**: removed from the API response entirely, so their structure never reaches the browser (kept out of the payload, not hidden via CSS). The cached snapshot stays the full schema; exclusions are applied when serving, so toggling `excluded_tables` needs no rebuild.
   - *Filter and focus* — applied **client-side** on the received JSON, both feeding the same `MermaidDefinitionGenerator`. Filter (text search / table multiselect) and focus mode (a table plus its foreign-key neighbours, depth 1, configurable) are the same operation with different predicates, and they compose: focus operates on whatever the filter left in.

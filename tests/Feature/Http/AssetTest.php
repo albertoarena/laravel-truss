@@ -27,10 +27,12 @@ it('serves the vendored Mermaid library locally (no CDN needed)', function () {
     expect($response->headers->get('content-type'))->toContain('javascript');
 });
 
-it('sends a cache-control header so browsers cache the assets', function () {
-    $response = $this->get('/truss/assets/truss.js')->assertOk();
+it('caches assets in production but never in debug (so local edits show)', function () {
+    config()->set('app.debug', false);
+    expect($this->get('/truss/assets/truss.js')->assertOk()->headers->get('cache-control'))->toContain('max-age');
 
-    expect($response->headers->get('cache-control'))->toContain('max-age');
+    config()->set('app.debug', true);
+    expect($this->get('/truss/assets/truss.js')->assertOk()->headers->get('cache-control'))->toContain('no-store');
 });
 
 it('404s any file not on the allow-list', function () {
