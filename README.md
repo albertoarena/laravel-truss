@@ -1,6 +1,9 @@
 # Laravel Truss
 
-<!-- Cover image placeholder: add art/cover-light.png / art/cover-dark.png from a demo schema (not a real app's). -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="art/cover-dark.png">
+  <img src="art/cover-light.png" alt="Laravel Truss — see your database structure as a live, zoomable ER diagram">
+</picture>
 
 [![Documentation](https://img.shields.io/badge/docs-website-2f6feb?style=flat-square)](https://albertoarena.github.io/laravel-truss)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/albertoarena/laravel-truss.svg?style=flat-square)](https://packagist.org/packages/albertoarena/laravel-truss)
