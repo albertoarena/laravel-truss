@@ -25,9 +25,8 @@ return [
     | Enabled
     |--------------------------------------------------------------------------
     |
-    | Global on/off switch. Defaults to enabled only in the local environment,
-    | matching the Telescope/Horizon convention. Authorization is enforced
-    | separately by the fixed `viewTruss` gate.
+    | Global on/off switch. Defaults to enabled only in the local environment.
+    | Authorization is enforced separately by the fixed `viewTruss` gate.
     |
     */
 

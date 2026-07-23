@@ -1,6 +1,6 @@
 {
     "name": "albertoarena/laravel-truss",
-    "description": "A Telescope-style live database structure viewer for Laravel. Renders your schema (never data) as a scrollable, zoomable ER diagram.",
+    "description": "A live database structure viewer for Laravel. Renders your schema (never data) as a scrollable, zoomable ER diagram.",
     "keywords": [
         "laravel",
         "database",

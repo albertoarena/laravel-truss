@@ -69,19 +69,19 @@ This layer has no knowledge of HTTP, Blade, caching, or Mermaid. It is a pure fu
 
 ### 3. HTTP layer (`src/Http/`)
 
-Two routes, matching the "index page + JSON endpoint" pattern used by Telescope/Horizon-style dashboards:
+Two routes, matching the "index page + JSON endpoint" pattern used by in-app admin dashboards:
 
 - `GET {route_prefix}` — renders the Blade shell (layout, connection switcher, container for the diagram).
 - `GET {route_prefix}/api/schema?connection=...` — returns the cached schema JSON for the requested connection, with config `excluded_tables` filtered out **server-side** so they never reach the client. The frontend fetches from this endpoint and builds the Mermaid `erDiagram` definition client-side, applying interactive filter/focus to what it received.
 
-Both routes sit behind a **fixed `viewTruss` gate** (same pattern as Telescope's `viewTelescope`). The package ships a default definition that allows access in `local` only; the host app customizes *who* may view by redefining the `viewTruss` gate in its own service provider. The ability name is not configurable — only its callback is, and that lives in the app, not in config.
+Both routes sit behind a **fixed `viewTruss` gate** (a fixed ability name). The package ships a default definition that allows access in `local` only; the host app customizes *who* may view by redefining the `viewTruss` gate in its own service provider. The ability name is not configurable — only its callback is, and that lives in the app, not in config.
 
 #### Authorization model
 
 Truss is designed to be safe to install in **production** and gated there — not merely a local-only tool. Access is guarded by two independent layers, enforced by the `Authorize` middleware, plus the auth-context middleware that runs ahead of it:
 
 1. **`truss.enabled`** — when off, the routes respond **404**, behaving as if they do not exist. Defaults to local-only, so a production deploy is dark until you set `TRUSS_ENABLED=true`. This is the deploy switch: "does the dashboard exist in this environment at all".
-2. **The `viewTruss` gate** — the access control: "who may view". It is consulted **only in non-local** environments (local is unconditionally open, mirroring Telescope). A denial returns **404**, not 403, so the dashboard never confirms it exists to someone who may not see it.
+2. **The `viewTruss` gate** — the access control: "who may view". It is consulted **only in non-local** environments (local is unconditionally open). A denial returns **404**, not 403, so the dashboard never confirms it exists to someone who may not see it.
 
 `enabled` alone does not grant access, and the gate alone does not make the routes exist. To expose Truss in a non-local environment (staging or production), a host must **both** set `TRUSS_ENABLED=true` *and* authorize the viewers.
 
@@ -96,7 +96,7 @@ TRUSS_ALLOWED_EMAILS="ada@example.com,grace@example.com"
 
 No gate code is needed. The list is ignored in local (the gate is not consulted there) and **fails closed** — an empty list means no one may view in non-local until emails are added or the gate is overridden. A guest resolves to a `null` user and is denied.
 
-**Authorizing by role — override the gate.** When email lists aren't enough (e.g. a role or permission check), the host defines its own `viewTruss` gate in a service provider, exactly as with Telescope. A host definition fully replaces the default and the allow-list is then unused:
+**Authorizing by role — override the gate.** When email lists aren't enough (e.g. a role or permission check), the host defines its own `viewTruss` gate in a service provider. A host definition fully replaces the default and the allow-list is then unused:
 
 ```php
 use App\Models\User;
@@ -105,7 +105,7 @@ use Illuminate\Support\Facades\Gate;
 Gate::define('viewTruss', fn (User $user) => $user->isAdmin());
 ```
 
-The host definition always wins (the package registers its default only if the app has not already defined the gate, and a later app definition overrides it regardless of order). The ability *name* is fixed — only the callback varies, and that lives in the app. See `DECISIONS.md` → *Authorization: production-gated, Telescope-mirroring model*.
+The host definition always wins (the package registers its default only if the app has not already defined the gate, and a later app definition overrides it regardless of order). The ability *name* is fixed — only the callback varies, and that lives in the app. See `DECISIONS.md` → *Authorization: production-gated model*.
 
 ## Frontend
 
@@ -123,7 +123,7 @@ The host definition always wins (the package registers its default only if the a
 
 ### Asset delivery (self-hosted, no build, no CDN)
 
-The frontend ships as native ES modules plus a stylesheet, served from the package by a **gated asset route** (`GET {route_prefix}/assets/{file}`, Telescope-style) — no `vendor:publish` step and nothing on `public/`. The `{file}` param is allow-listed by basename, which both maps names to paths and makes traversal impossible. The route sits inside the same gated group as the page, so unauthorized users get 404 on the assets too — they never confirm Truss is installed (consistent with the 404-on-denial decision).
+The frontend ships as native ES modules plus a stylesheet, served from the package by a **gated asset route** (`GET {route_prefix}/assets/{file}`) — no `vendor:publish` step and nothing on `public/`. The `{file}` param is allow-listed by basename, which both maps names to paths and makes traversal impossible. The route sits inside the same gated group as the page, so unauthorized users get 404 on the assets too — they never confirm Truss is installed (consistent with the 404-on-denial decision).
 
 Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served from the same route, so there is no CDN dependency by default and a strict CSP needs only `script-src 'self'`. A host that prefers a CDN or its own copy sets `diagram.mermaid_url` (`TRUSS_MERMAID_URL`); when null (default) Mermaid is self-hosted. The **IBM Plex Mono** font (the Blueprint UI face, used for the chrome and the diagram type labels) is likewise vendored as `woff2` in `resources/fonts/` and served from the route via `@font-face` — no font CDN, so `font-src 'self'` suffices.
 

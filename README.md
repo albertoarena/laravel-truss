@@ -8,16 +8,16 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/albertoarena/laravel-truss.svg?style=flat-square)](https://packagist.org/packages/albertoarena/laravel-truss)
 [![License](https://img.shields.io/packagist/l/albertoarena/laravel-truss.svg?style=flat-square)](LICENSE)
 
-Laravel Truss is a Telescope-style live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app — so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
+Laravel Truss is a live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app, so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
 
 ## Features
 
 - Live ER diagram of your database, rendered with Mermaid.
-- Focus mode — a table and its foreign-key neighbours, centred and highlighted.
-- Filter by table name, and toggle native types vs. Laravel-style labels.
+- Focus mode: a table and its foreign-key neighbours, centred and highlighted.
+- Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
 - Light and dark "blueprint" theme.
-- Self-contained — Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
+- Self-contained: Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
 - Cached snapshot, rebuilt automatically after migrations.
 
 ## Documentation
@@ -35,7 +35,7 @@ Full documentation is at **[albertoarena.github.io/laravel-truss](https://albert
 composer require albertoarena/laravel-truss --dev
 ```
 
-Requires **PHP 8.3+** and **Laravel 12+**. The service provider is auto-discovered — there's nothing to publish to get started.
+Requires **PHP 8.3+** and **Laravel 12+**. The service provider is auto-discovered, so there is nothing to publish to get started.
 
 ## Quick start
 
@@ -45,7 +45,7 @@ By default Truss is enabled in the `local` environment only. Start your app and 
 /truss
 ```
 
-To use Truss in a non-local environment you must both enable it and authorize the viewers — see [Authorization](https://albertoarena.github.io/laravel-truss/guides/authorization/).
+To use Truss in a non-local environment you must both enable it and authorize the viewers. See [Authorization](https://albertoarena.github.io/laravel-truss/guides/authorization/).
 
 ## Security
 
@@ -53,7 +53,7 @@ Truss exposes structure only and never queries row data. Access is protected by 
 
 ## Contributing
 
-Contributions are welcome — feel free to fork, improve, and open a pull request.
+Contributions are welcome. Feel free to fork, improve, and open a pull request.
 
 ## License
 

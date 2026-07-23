@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Serves the dashboard's static assets from the package itself, Telescope-style,
+ * Serves the dashboard's static assets from the package itself,
  * so no `vendor:publish` step is needed and there is no CDN dependency (Mermaid
  * is vendored and served from here too). Requests are allow-listed by basename —
  * only the known files map to a path, which is also what makes path traversal
