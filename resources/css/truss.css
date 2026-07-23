@@ -27,6 +27,6 @@ body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, s
 
 /* The viewport clips; the canvas is panned/zoomed via a CSS transform (never a
    re-layout), so scroll/zoom stay smooth on large diagrams. */
-#truss-viewport { position: relative; overflow: hidden; height: calc(100vh - 52px); cursor: grab; touch-action: none; }
+#truss-viewport { position: relative; overflow: hidden; height: calc(100vh - 52px); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 #truss-viewport.is-panning { cursor: grabbing; }
 #truss-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }

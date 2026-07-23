@@ -32,12 +32,21 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/tests/e2e/harness.html');
 });
 
-test('auto-fits a large schema so the whole diagram frames on load', async ({ page }) => {
+const scaleOf = (page) => page.locator('#truss-canvas').evaluate((el) => Number(/scale\(([-0-9.]+)\)/.exec(el.style.transform)?.[1] ?? 'NaN'));
+
+test('auto-fits a large schema but not below the readable floor', async ({ page }) => {
   await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
 
-  const scale = await page.locator('#truss-canvas').evaluate((el) => Number(/scale\(([-0-9.]+)\)/.exec(el.style.transform)?.[1] ?? 'NaN'));
-  expect(scale).toBeGreaterThan(0);
-  expect(scale).toBeLessThan(1); // 100 tables must shrink to fit the viewport
+  // True fit of 100 tables is a tiny speck; the auto-fit floors at min_zoom (0.4)
+  // so it stays legible and you pan, rather than dumping an unreadable overview.
+  expect(await scaleOf(page)).toBeCloseTo(0.4, 5);
+});
+
+test('the Fit button frames the whole large schema, below the floor', async ({ page }) => {
+  await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
+
+  await page.click('[data-fit]');
+  expect(await scaleOf(page)).toBeLessThan(0.4); // explicit Fit ignores the floor
 });
 
 test(`renders a ${TABLE_COUNT}-table schema without hitting Mermaid limits`, async ({ page }) => {

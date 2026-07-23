@@ -29,6 +29,23 @@ describe('fitTransform', () => {
     expect(fitTransform({ width: 0, height: 0 }, { width: 100, height: 100 })).toEqual({ zoom: 1, x: 0, y: 0 });
     expect(fitTransform({ width: 100, height: 100 }, { width: 0, height: 0 })).toEqual({ zoom: 1, x: 0, y: 0 });
   });
+
+  it('does not zoom out below the readable floor, centring the overflow', () => {
+    const content = { width: 8000, height: 6000 };
+    const viewport = { width: 1000, height: 800 };
+    const { zoom, x } = fitTransform(content, viewport, { minScale: 0.4 });
+
+    expect(zoom).toBe(0.4); // true fit (~0.12) would be smaller; floored to stay legible
+    expect(x).toBeCloseTo((1000 - 8000 * 0.4) / 2, 5); // centred → overflow is symmetric
+    expect(x).toBeLessThan(0);
+  });
+
+  it('ignores the floor when content already fits above it', () => {
+    const { zoom } = fitTransform({ width: 1100, height: 800 }, { width: 1000, height: 800 }, { minScale: 0.4 });
+
+    expect(zoom).toBeGreaterThan(0.4);
+    expect(zoom).toBeLessThan(1);
+  });
 });
 
 describe('zoomAtPoint', () => {

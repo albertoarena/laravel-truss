@@ -20,13 +20,16 @@ export function clamp(value, min, max) {
  * @param {{padding?:number,maxScale?:number}} [options]
  * @returns {{zoom:number,x:number,y:number}}
  */
-export function fitTransform(content, viewport, { padding = 0.95, maxScale = 1 } = {}) {
+export function fitTransform(content, viewport, { padding = 0.95, maxScale = 1, minScale = 0 } = {}) {
   if (!content.width || !content.height || !viewport.width || !viewport.height) {
     return { zoom: 1, x: 0, y: 0 };
   }
 
   const raw = Math.min(viewport.width / content.width, viewport.height / content.height) * padding;
-  const zoom = clamp(Math.min(raw, maxScale), ZOOM_LIMITS.min, ZOOM_LIMITS.max);
+  // Floor at `minScale` (the "readable" auto-fit) so a big schema is never
+  // zoomed into an illegible speck; the overflow is centred and you pan/Fit.
+  const floor = Math.max(minScale, ZOOM_LIMITS.min);
+  const zoom = clamp(Math.min(raw, maxScale), floor, ZOOM_LIMITS.max);
 
   return {
     zoom,

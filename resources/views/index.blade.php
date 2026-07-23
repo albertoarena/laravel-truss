@@ -22,6 +22,7 @@
         data-theme="{{ config('truss.diagram.theme') }}"
         data-warn-above="{{ config('truss.large_schema.warn_above') }}"
         data-focus-depth="{{ config('truss.focus.default_depth') }}"
+        data-min-zoom="{{ config('truss.diagram.min_zoom') }}"
     >
         <div class="truss-toolbar">
             <span class="truss-brand">Truss</span>

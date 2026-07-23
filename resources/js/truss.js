@@ -14,6 +14,7 @@ const config = {
   typeLabels: app.dataset.typeLabels || 'native',
   warnAbove: Number(app.dataset.warnAbove || 60),
   focusDepth: Number(app.dataset.focusDepth || 1),
+  minZoom: Number(app.dataset.minZoom || 0.4),
 };
 
 const state = {
@@ -79,8 +80,11 @@ function viewportSize() {
   return { width: el.viewport.clientWidth, height: el.viewport.clientHeight };
 }
 
-function fitToViewport() {
-  state.view = fitTransform(state.content, viewportSize());
+// `minScale` floors the zoom: the auto-fit passes config.minZoom so a large
+// schema stays readable (you pan), while the Fit button passes 0 to frame the
+// whole diagram at once.
+function fitToViewport(minScale = 0) {
+  state.view = fitTransform(state.content, viewportSize(), { minScale });
   applyTransform();
 }
 
@@ -152,8 +156,9 @@ async function render() {
 
     // Auto-fit only when the *content* changed (new tables): so filtering and
     // focusing always frame their result, but a label toggle keeps your view.
+    // The auto-fit honours the readable floor; the Fit button does not.
     if (key !== state.lastKey) {
-      fitToViewport();
+      fitToViewport(config.minZoom);
     } else {
       applyTransform();
     }
@@ -247,9 +252,10 @@ function wireEvents() {
     zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1, pointerInViewport(e));
   }, { passive: false });
 
-  // Drag to pan.
+  // Drag to pan. preventDefault stops the drag from selecting the SVG text.
   let pan = null;
   el.viewport.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     pan = { x: e.clientX, y: e.clientY, ox: state.view.x, oy: state.view.y };
     el.viewport.setPointerCapture(e.pointerId);
     el.viewport.classList.add('is-panning');
@@ -270,7 +276,8 @@ function wireEvents() {
     zoomBy(target / state.view.zoom, { x: width / 2, y: height / 2 });
   });
 
-  el.fit?.addEventListener('click', fitToViewport);
+  // The explicit Fit button frames the whole diagram (no readable floor).
+  el.fit?.addEventListener('click', () => fitToViewport(0));
 
   window.addEventListener('resize', debounce(() => applyTransform(), 200));
 }

@@ -153,6 +153,11 @@ return [
         // `script-src 'self'`. Set a URL (e.g. a CDN or your own copy) to opt out
         // of self-hosting: TRUSS_MERMAID_URL=https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
         'mermaid_url' => env('TRUSS_MERMAID_URL'),
+
+        // Lower bound for the automatic fit-to-screen: a large schema is never
+        // auto-zoomed below this (it stays legible and you pan). The "Fit" button
+        // ignores this and frames the whole diagram. 1.0 = 100%.
+        'min_zoom' => (float) env('TRUSS_MIN_ZOOM', 0.4),
     ],
 
     /*
