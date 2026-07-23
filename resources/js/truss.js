@@ -128,6 +128,42 @@ function zoomBy(factor, point) {
   applyTransform();
 }
 
+/** Centre of the focused table's rendered node, in content coordinates (or null). */
+function focusedTableCenter() {
+  const svg = el.canvas.querySelector('svg');
+  if (!svg) return null;
+
+  for (const node of svg.querySelectorAll('g.node')) {
+    // g.label.name is the entity-name cell (attribute cells are label.attribute-*).
+    const label = node.querySelector('g.label.name .nodeLabel');
+    if (!label || label.textContent.trim() !== state.focusRoot) continue;
+    try {
+      const bb = node.getBBox();
+      const m = node.getCTM(); // node user space → svg (viewBox = content) space
+      if (!m) return null;
+      const cx = bb.x + bb.width / 2;
+      const cy = bb.y + bb.height / 2;
+      return { x: m.a * cx + m.c * cy + m.e, y: m.b * cx + m.d * cy + m.f };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Pan so the focused table sits at the viewport centre, keeping the fit zoom. */
+function centerOnFocusedTable() {
+  const c = focusedTableCenter();
+  if (!c) return;
+  const vp = viewportSize();
+  state.view = {
+    ...state.view,
+    x: vp.width / 2 - c.x * state.view.zoom,
+    y: vp.height / 2 - c.y * state.view.zoom,
+  };
+  applyTransform();
+}
+
 /* ---- rendering -------------------------------------------------------- */
 
 function banner(kind, text) {
@@ -174,9 +210,11 @@ async function render() {
 
     // Auto-fit only when the *content* changed (new tables): filtering and
     // focusing frame their result (honouring the readable floor), while a label
-    // toggle keeps your view.
+    // toggle keeps your view. When focusing, re-centre on the focused table so
+    // it lands in the middle rather than wherever the layout put it.
     if (key !== state.lastKey) {
       fitToViewport(config.minZoom);
+      if (state.focusRoot) centerOnFocusedTable();
     } else {
       applyTransform();
     }

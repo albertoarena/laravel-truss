@@ -54,6 +54,31 @@ test('focus mode reduces to a table and its FK neighbours', async ({ page }) => 
   await expect(canvas(page)).not.toContainText('roles');
 });
 
+test('focus centres the focused table in the viewport', async ({ page }) => {
+  await expect(canvas(page).locator('svg')).toBeVisible();
+  await page.selectOption('#truss-focus', 'users');
+  await expect(canvas(page)).toContainText('role_user'); // wait for the re-render
+
+  const offset = await page.evaluate(() => {
+    const svg = document.querySelector('#truss-canvas svg');
+    let node = null;
+    svg.querySelectorAll('g.node').forEach((n) => {
+      const l = n.querySelector('g.label.name .nodeLabel');
+      if (l && l.textContent.trim() === 'users') node = n;
+    });
+    const n = node.getBoundingClientRect();
+    const v = document.getElementById('truss-viewport').getBoundingClientRect();
+    return {
+      dx: Math.abs((n.left + n.right) / 2 - (v.left + v.right) / 2) / v.width,
+      dy: Math.abs((n.top + n.bottom) / 2 - (v.top + v.bottom) / 2) / v.height,
+    };
+  });
+
+  // The focused node's centre should sit near the viewport centre.
+  expect(offset.dx).toBeLessThan(0.1);
+  expect(offset.dy).toBeLessThan(0.1);
+});
+
 test('the Laravel-types toggle swaps native types for short labels', async ({ page }) => {
   await expect(canvas(page)).toContainText('bigint_unsigned');
 
