@@ -147,6 +147,12 @@ return [
     'diagram' => [
         'type_labels' => env('TRUSS_TYPE_LABELS', 'native'),
         'theme' => env('TRUSS_DIAGRAM_THEME', 'default'),
+
+        // Where the browser loads Mermaid from. Null (the default) self-hosts it
+        // from the package's own asset route — no CDN, so a strict CSP needs only
+        // `script-src 'self'`. Set a URL (e.g. a CDN or your own copy) to opt out
+        // of self-hosting: TRUSS_MERMAID_URL=https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+        'mermaid_url' => env('TRUSS_MERMAID_URL'),
     ],
 
     /*

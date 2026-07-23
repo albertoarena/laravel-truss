@@ -48,6 +48,13 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 **Decision:** index page + JSON endpoint (matches the Telescope/Horizon dashboard pattern).
 **Trade-off:** more moving parts up front (an API route, a loading state) versus a single server-rendered route, but makes connection switching and manual refresh trivial without a full page reload, which the config's per-connection support makes a real, not hypothetical, need.
 
+## Asset delivery: served from the package, Mermaid vendored, no CDN
+
+**Context:** the frontend needs to load its ES modules, a stylesheet, and Mermaid. Two axes to decide: how our own assets reach the browser (publish to `public/` vs. serve from the package) and where Mermaid comes from (CDN vs. self-hosted).
+**Decision — serve assets from a gated package route.** A `GET {route_prefix}/assets/{file}` route (Telescope-style) serves the files straight from the package: zero-config (no `vendor:publish`), and the delivery mechanism becomes Pest-testable. The `{file}` param is allow-listed by basename — that mapping is also the traversal guard. The route lives **inside the gated group**, so unauthorized users get 404 on assets exactly as on the page; a public asset route would leak Truss's existence and undo the 404-on-denial decision. Assets are served with `Cache-Control: private, max-age` (gated → per-user, not shared-cacheable). The earlier `truss-assets` publish tag is removed — one delivery path.
+**Decision — vendor Mermaid, self-host by default.** A verbatim `mermaid.min.js` (MIT, ~3.4 MB) ships in the package and is served from the same route, so there is no CDN dependency out of the box and a strict CSP needs only `script-src 'self'`. `diagram.mermaid_url` (`TRUSS_MERMAID_URL`) is an escape hatch: set it to load Mermaid from a CDN or a custom copy; null (default) self-hosts.
+**Trade-off:** +3.4 MB in the (dev-only) package and a manual bump on Mermaid releases, in exchange for a tool that works offline, out of the box, and under CSP — which the user prioritised over package weight. Serving through PHP is slightly slower than a static file, but the assets are few, small (bar Mermaid), and browser-cached. **CSP caveat:** self-hosting fixes `script-src`, and moving the CSS out of the Blade into a served file keeps `style-src 'self'` for our own styles — but Mermaid injects a `<style>` into the rendered SVG at runtime, so a strict policy still needs `style-src 'self' 'unsafe-inline'`. That is a Mermaid limitation, documented rather than worked around.
+
 ## License & CI
 
 **Decision:** MIT license. CI via GitHub Actions running Pest across the supported PHP/Laravel matrix.

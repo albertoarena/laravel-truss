@@ -121,6 +121,14 @@ The host definition always wins (the package registers its default only if the a
 - Connection switcher re-fetches from the JSON endpoint and re-renders, no full page reload.
 - When the snapshot was built via the SQLite fallback, a banner states the connection was unavailable and native types may be approximate.
 
+### Asset delivery (self-hosted, no build, no CDN)
+
+The frontend ships as native ES modules plus a stylesheet, served from the package by a **gated asset route** (`GET {route_prefix}/assets/{file}`, Telescope-style) — no `vendor:publish` step and nothing on `public/`. The `{file}` param is allow-listed by basename, which both maps names to paths and makes traversal impossible. The route sits inside the same gated group as the page, so unauthorized users get 404 on the assets too — they never confirm Truss is installed (consistent with the 404-on-denial decision).
+
+Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served from the same route, so there is no CDN dependency by default and a strict CSP needs only `script-src 'self'`. A host that prefers a CDN or its own copy sets `diagram.mermaid_url` (`TRUSS_MERMAID_URL`); when null (default) Mermaid is self-hosted.
+
+**CSP note.** With self-hosting, our own script and stylesheet need only `'self'` (the CSS is a served file, not inlined). Mermaid, however, injects a `<style>` element into the rendered SVG at runtime, so a strict policy still needs `style-src 'self' 'unsafe-inline'`. That is a Mermaid limitation, not something Truss can remove without patching it; it is documented rather than worked around.
+
 ## Config reference (`config/truss.php`)
 
 | Key | Purpose |
@@ -132,6 +140,9 @@ The host definition always wins (the package registers its default only if the a
 | `excluded_tables` | Tables hidden by default (e.g. `sessions`, `jobs`, `cache`, `cache_locks`), toggleable |
 | `diagram` | Styling options passed through to the Mermaid theme (colors, font, spacing) |
 | `diagram.type_labels` | Default column-type label mode: `native` (full DB type, default) or `laravel` (best-effort short label); user-toggleable in the UI |
+| `diagram.mermaid_url` | Where the browser loads Mermaid from. Null (default) self-hosts it from the package's asset route (no CDN); set a URL to opt into a CDN or a custom copy |
+| `middleware` | Middleware stack wrapping the routes, establishing the auth context so the gate sees the user (default `['web']`); the fixed `viewTruss` guard is always appended |
+| `authorization.allowed_emails` | Emails admitted by the default `viewTruss` gate in non-local environments (`TRUSS_ALLOWED_EMAILS`); ignored in local and when the host overrides the gate |
 | `focus.default_depth` | Foreign-key neighbour depth shown when focusing a table (default `1`) |
 | `large_schema.warn_above` | Table count above which the UI shows a "large schema — use focus/filter" warning |
 
@@ -169,7 +180,8 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── IndexController.php
-│   │   │   └── SchemaApiController.php
+│   │   │   ├── SchemaApiController.php
+│   │   │   └── AssetController.php   # serves JS/CSS + vendored Mermaid (gated, no publish)
 │   │   └── Middleware/
 │   │       └── Authorize.php
 │   └── Listeners/
@@ -177,18 +189,22 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 ├── resources/
 │   ├── views/
 │   │   └── index.blade.php          # Blade shell (toolbar, banners, viewport)
-│   └── js/                          # client-side, no build step; published as assets
+│   ├── css/
+│   │   └── truss.css                # served, not inlined (CSP-friendly)
+│   └── js/                          # client-side, no build step; served by AssetController
 │       ├── truss.js                 # browser entry: fetch → select → Mermaid render
 │       ├── mermaid-definition.js    # schema subset → erDiagram string (the generator)
 │       ├── selection.js             # filter + focus reducers
-│       └── type-labels.js           # native → Laravel-style short label
+│       ├── type-labels.js           # native → Laravel-style short label
+│       └── vendor/
+│           └── mermaid.min.js       # vendored Mermaid (MIT), self-hosted, no CDN
 └── tests/
     ├── TestCase.php
     ├── Unit/
     │   ├── Introspection/
     │   └── Cache/
     ├── Feature/
-    │   └── Http/                     # IndexRoute, SchemaApi, Authorization
+    │   └── Http/                     # IndexRoute, SchemaApi, Authorization, Asset
     ├── js/                           # Vitest unit tests for resources/js
     └── e2e/                          # Playwright browser tests (harness + specs)
 ```

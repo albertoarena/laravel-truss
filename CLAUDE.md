@@ -25,8 +25,9 @@
 - `npm test` — Vitest unit tests for the client-side diagram logic (`resources/js`)
 - `npx playwright test` — browser tests for the dashboard (`tests/e2e`)
 - `php artisan truss:rebuild` — manually rebuild the cached schema snapshot
-- `php artisan vendor:publish --tag=truss-assets` — publish the frontend assets to `public/vendor/truss`
 - `cd website && npm run dev` — run the docs site locally
+
+Frontend assets (JS/CSS + a vendored Mermaid) are served from the package via a gated `{prefix}/assets/{file}` route — no `vendor:publish`, no CDN. Set `TRUSS_MERMAID_URL` to load Mermaid from a CDN instead.
 
 ## Conventions (always true)
 

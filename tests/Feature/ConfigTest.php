@@ -15,7 +15,8 @@ it('merges the truss config under the "truss" key with expected defaults', funct
         ->and(config('truss.focus.default_depth'))->toBe(1)
         ->and(config('truss.large_schema.warn_above'))->toBe(60)
         ->and(config('truss.middleware'))->toBe(['web'])
-        ->and(config('truss.authorization.allowed_emails'))->toBe([]);
+        ->and(config('truss.authorization.allowed_emails'))->toBe([])
+        ->and(config('truss.diagram.mermaid_url'))->toBeNull(); // self-hosted by default
 });
 
 it('exposes no configurable gate name (the viewTruss ability is fixed)', function () {
