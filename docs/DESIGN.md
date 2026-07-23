@@ -160,7 +160,6 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 
 Post-v1 ideas, not yet scheduled:
 
-- **Export the current view as PDF** — PNG and SVG export shipped (see the frontend section above); a hand-rolled, single-image PDF wrapper is a feasible follow-up (a valid one was prototyped) but was deferred to keep the feature lean.
 - **Semantic relationship labels from Eloquent models** (see *Out of scope for v1* above).
 
 ## Directory structure
