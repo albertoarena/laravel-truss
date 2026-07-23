@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Truss harness</title>
+    <!-- Mermaid global (UMD) from node_modules, served same-origin by serve.mjs. -->
+    <script src="/node_modules/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        .truss-field[hidden] { display: none; }
+        #truss-canvas { display: inline-block; transform-origin: top left; }
+    </style>
+</head>
+<body>
+    <div
+        id="truss-app"
+        data-schema-endpoint="/api/schema"
+        data-connections='["primary","secondary"]'
+        data-type-labels="native"
+        data-theme="default"
+        data-warn-above="3"
+        data-focus-depth="1"
+    >
+        <div class="truss-toolbar">
+            <span class="truss-brand">Truss</span>
+            <label class="truss-field" hidden>Connection <select id="truss-connection"></select></label>
+            <label class="truss-field">Filter <input id="truss-search" type="search"></label>
+            <label class="truss-field">Focus <select id="truss-focus"></select></label>
+            <label class="truss-field">depth <input id="truss-depth" type="number" min="0"></label>
+            <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
+            <span class="truss-zoom">
+                <button type="button" data-zoom="out">&minus;</button>
+                <button type="button" data-zoom="reset">reset</button>
+                <button type="button" data-zoom="in">&plus;</button>
+            </span>
+        </div>
+        <div id="truss-banners"></div>
+        <main id="truss-viewport"><div id="truss-canvas"></div></main>
+    </div>
+
+    <script type="module" src="/resources/js/truss.js"></script>
+</body>
+</html>

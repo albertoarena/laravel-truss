@@ -1,6 +1,13 @@
 # Dependencies
 /vendor/
 composer.lock
+/node_modules/
+package-lock.json
+
+# Playwright
+/test-results/
+/playwright-report/
+/.playwright/
 
 # Test / tooling caches
 /.phpunit.cache/

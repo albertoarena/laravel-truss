@@ -22,12 +22,15 @@
 - `composer test` — run the Pest suite
 - `composer lint` — Laravel Pint (code style check)
 - `composer lint:fix` — fix Pint issues automatically
+- `npm test` — Vitest unit tests for the client-side diagram logic (`resources/js`)
+- `npx playwright test` — browser tests for the dashboard (`tests/e2e`)
 - `php artisan truss:rebuild` — manually rebuild the cached schema snapshot
+- `php artisan vendor:publish --tag=truss-assets` — publish the frontend assets to `public/vendor/truss`
 - `cd website && npm run dev` — run the docs site locally
 
 ## Conventions (always true)
 
-- **TDD is mandatory.** Write a failing Pest test first, then implement. Never commit implementation code without a corresponding test. Applies to every change: features, fixes, refactors.
+- **TDD is mandatory.** Write a failing test first, then implement. Never commit implementation code without a corresponding test. Applies to every change: features, fixes, refactors. PHP uses Pest; client-side code under `resources/js` uses Vitest for pure logic and Playwright for rendering/interaction.
 - **No data exposed, ever.** Only table, column, index, and foreign key structure. Never row contents. This is the package's core promise, treat it as a hard constraint, not a config default. The boundary is the `CREATE TABLE` definition vs. table rows: column defaults count as structure and are in scope (see `docs/DECISIONS.md`).
 - **Introspection stays pure.** Code under `src/Introspection/` must have zero knowledge of HTTP, Blade, or Mermaid. It only builds and returns a schema representation. See `src/Introspection/CLAUDE.md` for the rules that apply there.
 - **Config is the single source of truth** for excluded tables, route path, cache TTL, per-connection settings, diagram styling, focus depth, the large-schema warning threshold, the route middleware stack, and the default viewer allow-list (`authorization.allowed_emails`). Don't hardcode any of these. Authorization is a fixed `viewTruss` gate — the ability *name* is not configurable, and the gate callback is always the app's to override. The allow-list only feeds the *default* gate; it is not a renamable ability. The gate is consulted only in non-local environments (local is open), and a denial returns 404. See `docs/DECISIONS.md` → *Authorization: production-gated, Telescope-mirroring model*.

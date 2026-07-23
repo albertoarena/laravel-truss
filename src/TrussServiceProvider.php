@@ -44,6 +44,12 @@ class TrussServiceProvider extends PackageServiceProvider
 
         $this->registerGate();
         $this->registerRoutes();
+
+        // The client-side ES modules + app entry. No build step: they ship as-is
+        // and are published to the app's public dir, loaded as native modules.
+        $this->publishes([
+            __DIR__.'/../resources/js' => public_path('vendor/truss'),
+        ], 'truss-assets');
     }
 
     /**

@@ -20,6 +20,16 @@ it('hides the index page entirely when Truss is disabled', function () {
     $this->get('/truss')->assertNotFound();
 });
 
+it('passes the managed connections to the view for the connection switcher', function () {
+    config()->set('truss.enabled', true);
+    Gate::define('viewTruss', fn ($user = null) => true);
+
+    $this->get('/truss')
+        ->assertOk()
+        ->assertSee('data-connections', false)
+        ->assertSee('["testing"]', false); // the default managed connection under test
+});
+
 it('honours a custom route prefix', function () {
     config()->set('truss.enabled', true);
     Gate::define('viewTruss', fn ($user = null) => true);

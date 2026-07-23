@@ -1,0 +1,79 @@
+// Turns a selected subset of schema tables into a Mermaid `erDiagram` string.
+// This is the shared sink of the selection pipeline: config exclusions, text
+// filter, and focus mode all reduce to a table subset that arrives here.
+//
+// Per-column PK/FK badges are DERIVED here from `primary_key` and
+// `foreign_keys[].columns` — they are not stored on columns (see docs/DESIGN.md).
+
+import { toShortLabel } from './type-labels.js';
+
+/**
+ * Collapse a native type into a single Mermaid-safe attribute-type token.
+ * Mermaid's ER grammar splits attributes on whitespace, so `bigint unsigned`
+ * and `varchar(255)` must become one word: `bigint_unsigned`, `varchar_255`.
+ */
+function mermaidType(nativeType, mode) {
+  const label = mode === 'laravel' ? toShortLabel(nativeType) : nativeType;
+
+  return String(label)
+    .trim()
+    .replace(/[^A-Za-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'unknown';
+}
+
+/**
+ * The PK/FK badge for a column, or '' when it is neither.
+ */
+function keyBadge(columnName, primaryKey, foreignKeyColumns) {
+  const badges = [];
+  if (primaryKey.includes(columnName)) {
+    badges.push('PK');
+  }
+  if (foreignKeyColumns.has(columnName)) {
+    badges.push('FK');
+  }
+
+  return badges.join(', ');
+}
+
+function entityBlock(table, mode) {
+  const primaryKey = table.primary_key ?? [];
+  const fkColumns = new Set((table.foreign_keys ?? []).flatMap((fk) => fk.columns));
+
+  const lines = table.columns.map((column) => {
+    const type = mermaidType(column.type, mode);
+    const badge = keyBadge(column.name, primaryKey, fkColumns);
+
+    return `    ${type} ${column.name}${badge ? ` ${badge}` : ''}`.trimEnd();
+  });
+
+  return [`  ${table.name} {`, ...lines, '  }'].join('\n');
+}
+
+/**
+ * @param {Array} tables the selected subset (already filtered/focused)
+ * @param {{ typeLabels?: 'native' | 'laravel' }} [options]
+ * @returns {string} a Mermaid erDiagram definition
+ */
+export function generateErDiagram(tables, options = {}) {
+  const mode = options.typeLabels === 'laravel' ? 'laravel' : 'native';
+  const present = new Set(tables.map((table) => table.name));
+
+  const entities = tables.map((table) => entityBlock(table, mode));
+
+  // Only emit an edge when BOTH endpoints are in the subset, so focus/filter
+  // never conjure a phantom entity for an out-of-scope referenced table.
+  const relationships = [];
+  for (const table of tables) {
+    for (const fk of table.foreign_keys ?? []) {
+      if (!present.has(fk.references_table)) {
+        continue;
+      }
+      const label = fk.name || fk.columns.join('_');
+      // parent ||--o{ child : "constraint" (child is the referencing table).
+      relationships.push(`  ${fk.references_table} ||--o{ ${table.name} : "${label}"`);
+    }
+  }
+
+  return ['erDiagram', ...entities, ...relationships].join('\n');
+}

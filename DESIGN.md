@@ -171,18 +171,30 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 │   │   │   ├── IndexController.php
 │   │   │   └── SchemaApiController.php
 │   │   └── Middleware/
-│   ├── Listeners/
-│   │   └── RebuildOnMigrationsEnded.php
-│   └── Support/
-│       └── MermaidDefinitionGenerator.php
+│   │       └── Authorize.php
+│   └── Listeners/
+│       └── RebuildOnMigrationsEnded.php
+├── resources/
+│   ├── views/
+│   │   └── index.blade.php          # Blade shell (toolbar, banners, viewport)
+│   └── js/                          # client-side, no build step; published as assets
+│       ├── truss.js                 # browser entry: fetch → select → Mermaid render
+│       ├── mermaid-definition.js    # schema subset → erDiagram string (the generator)
+│       ├── selection.js             # filter + focus reducers
+│       └── type-labels.js           # native → Laravel-style short label
 └── tests/
     ├── TestCase.php
     ├── Unit/
     │   ├── Introspection/
-    │   ├── Cache/
-    │   └── Support/
-    └── Feature/
-        ├── IndexRouteTest.php
-        ├── SchemaApiTest.php
-        └── RebuildCommandTest.php
+    │   └── Cache/
+    ├── Feature/
+    │   └── Http/                     # IndexRoute, SchemaApi, Authorization
+    ├── js/                           # Vitest unit tests for resources/js
+    └── e2e/                          # Playwright browser tests (harness + specs)
 ```
+
+> Note: the Mermaid definition generator is **client-side JavaScript**
+> (`resources/js/mermaid-definition.js`), not PHP — the interactive
+> filter/focus/label pipeline runs in the browser with no refetch, so generation
+> must live there too. Pure logic is unit-tested with Vitest; rendering and
+> interaction are covered by Playwright.

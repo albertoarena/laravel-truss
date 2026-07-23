@@ -1,0 +1,16 @@
+{
+  "name": "laravel-truss",
+  "private": true,
+  "type": "module",
+  "description": "Client-side diagram logic for albertoarena/laravel-truss (no build step; shipped as native ES modules).",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "mermaid": "^11.16.0",
+    "vitest": "^2.1.0"
+  }
+}
