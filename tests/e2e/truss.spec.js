@@ -79,6 +79,29 @@ test('focus centres the focused table in the viewport', async ({ page }) => {
   expect(offset.dy).toBeLessThan(0.1);
 });
 
+test('the focused table is flagged for highlighting', async ({ page }) => {
+  await expect(canvas(page).locator('svg')).toBeVisible();
+  await page.selectOption('#truss-focus', 'users');
+  await expect(canvas(page)).toContainText('role_user');
+
+  const flags = await page.evaluate(() => {
+    const named = (name) => {
+      let node = null;
+      document.querySelectorAll('#truss-canvas g.node').forEach((n) => {
+        if (n.querySelector('g.label.name .nodeLabel')?.textContent.trim() === name) node = n;
+      });
+      return node;
+    };
+    return {
+      focused: named('users')?.classList.contains('truss-focused'),
+      neighbour: named('posts')?.classList.contains('truss-focused'),
+    };
+  });
+
+  expect(flags.focused).toBe(true);
+  expect(flags.neighbour).toBe(false);
+});
+
 test('the Laravel-types toggle swaps native types for short labels', async ({ page }) => {
   await expect(canvas(page)).toContainText('bigint_unsigned');
 

@@ -128,27 +128,39 @@ function zoomBy(factor, point) {
   applyTransform();
 }
 
-/** Centre of the focused table's rendered node, in content coordinates (or null). */
-function focusedTableCenter() {
+/** The rendered SVG node for a table by name (g.label.name holds the entity name). */
+function findTableNode(name) {
   const svg = el.canvas.querySelector('svg');
-  if (!svg) return null;
-
+  if (!svg || !name) return null;
   for (const node of svg.querySelectorAll('g.node')) {
-    // g.label.name is the entity-name cell (attribute cells are label.attribute-*).
     const label = node.querySelector('g.label.name .nodeLabel');
-    if (!label || label.textContent.trim() !== state.focusRoot) continue;
-    try {
-      const bb = node.getBBox();
-      const m = node.getCTM(); // node user space → svg (viewBox = content) space
-      if (!m) return null;
-      const cx = bb.x + bb.width / 2;
-      const cy = bb.y + bb.height / 2;
-      return { x: m.a * cx + m.c * cy + m.e, y: m.b * cx + m.d * cy + m.f };
-    } catch {
-      return null;
-    }
+    if (label && label.textContent.trim() === name) return node;
   }
   return null;
+}
+
+/** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
+function markFocusedTable() {
+  const svg = el.canvas.querySelector('svg');
+  if (!svg) return;
+  svg.querySelectorAll('g.node.truss-focused').forEach((n) => n.classList.remove('truss-focused'));
+  findTableNode(state.focusRoot)?.classList.add('truss-focused');
+}
+
+/** Centre of the focused table's rendered node, in content coordinates (or null). */
+function focusedTableCenter() {
+  const node = findTableNode(state.focusRoot);
+  if (!node) return null;
+  try {
+    const bb = node.getBBox();
+    const m = node.getCTM(); // node user space → svg (viewBox = content) space
+    if (!m) return null;
+    const cx = bb.x + bb.width / 2;
+    const cy = bb.y + bb.height / 2;
+    return { x: m.a * cx + m.c * cy + m.e, y: m.b * cx + m.d * cy + m.f };
+  } catch {
+    return null;
+  }
 }
 
 /** Pan so the focused table sits at the viewport centre, keeping the fit zoom. */
@@ -207,6 +219,7 @@ async function render() {
     const { svg } = await mermaid.render('truss-graph', definition);
     el.canvas.innerHTML = svg;
     normalizeSvg();
+    markFocusedTable();
 
     // Auto-fit only when the *content* changed (new tables): filtering and
     // focusing frame their result (honouring the readable floor), while a label

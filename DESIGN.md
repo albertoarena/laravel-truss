@@ -153,6 +153,14 @@ Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served f
 
 _Focus mode was originally deferred to v2 but is now v1: it is the primary large-schema legibility and performance mechanism, and it shares the selection pipeline with filtering, so the marginal cost is small._
 
+## Future enhancements (backlog)
+
+Post-v1 ideas, not yet scheduled:
+
+- **Export the current view** as PDF or PNG — render the on-screen diagram (the current filter/focus selection) to an image/document for sharing or docs.
+- **Export a table's structure** as CSV and/or JSON — a per-table action (with an icon) to dump its columns/keys/indexes in a structured, copy-pasteable format. Structure only, consistent with the no-data guarantee.
+- **Semantic relationship labels from Eloquent models** (see *Out of scope for v1* above).
+
 ## Directory structure
 
 ```
