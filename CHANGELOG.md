@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-23
+
 ### Added
 
 - `truss:show` Artisan command: print the database structure as a terminal table (table, column count, foreign-key count), the text counterpart to the visual dashboard. Structure only.
