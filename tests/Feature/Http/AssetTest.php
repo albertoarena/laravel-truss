@@ -27,6 +27,21 @@ it('serves the vendored Mermaid library locally (no CDN needed)', function () {
     expect($response->headers->get('content-type'))->toContain('javascript');
 });
 
+it('serves every shipped JS module (guards against an allow-list omission)', function () {
+    // Every top-level module the browser might import via a relative path must
+    // be reachable through the asset route — a missing entry 404s at runtime and
+    // breaks the whole page (as happened when viewport.js was first added).
+    $modules = glob(dirname(__DIR__, 3).'/resources/js/*.js');
+
+    expect($modules)->not->toBeEmpty();
+
+    foreach ($modules as $module) {
+        $name = basename($module);
+        $response = $this->get("/truss/assets/{$name}")->assertOk();
+        expect($response->headers->get('content-type'))->toContain('javascript');
+    }
+});
+
 it('caches assets in production but never in debug (so local edits show)', function () {
     config()->set('app.debug', false);
     expect($this->get('/truss/assets/truss.js')->assertOk()->headers->get('cache-control'))->toContain('max-age');

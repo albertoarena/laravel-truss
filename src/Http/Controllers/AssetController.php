@@ -27,6 +27,7 @@ class AssetController
         'selection.js' => 'js/selection.js',
         'mermaid-definition.js' => 'js/mermaid-definition.js',
         'type-labels.js' => 'js/type-labels.js',
+        'viewport.js' => 'js/viewport.js',
         'mermaid.min.js' => 'js/vendor/mermaid.min.js',
         'truss.css' => 'css/truss.css',
     ];
