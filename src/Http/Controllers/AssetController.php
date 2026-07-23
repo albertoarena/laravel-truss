@@ -28,6 +28,7 @@ class AssetController
         'mermaid-definition.js' => 'js/mermaid-definition.js',
         'type-labels.js' => 'js/type-labels.js',
         'viewport.js' => 'js/viewport.js',
+        'url-state.js' => 'js/url-state.js',
         'mermaid.min.js' => 'js/vendor/mermaid.min.js',
         'truss.css' => 'css/truss.css',
         'ibm-plex-mono-400.woff2' => 'fonts/ibm-plex-mono-400.woff2',

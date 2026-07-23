@@ -5,6 +5,7 @@
 import { filterTables, focusTables } from './selection.js';
 import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
+import { buildQuery, parseQuery } from './url-state.js';
 
 const app = document.getElementById('truss-app');
 
@@ -17,15 +18,22 @@ const config = {
   minZoom: Number(app.dataset.minZoom || 0.4),
 };
 
+// Seed the initial view from the URL query string so a shared/bookmarked link
+// (e.g. ?focus=projects&filter=...) opens in that state.
+const urlView = parseQuery(window.location.search);
+
 const state = {
   tables: [],
   fallback: false,
   generatedAt: null,
-  connection: config.connections[0] ?? null,
-  search: '',
+  connection: (urlView.connection && config.connections.includes(urlView.connection))
+    ? urlView.connection
+    : (config.connections[0] ?? null),
+  search: urlView.filter,
   focusRoot: '',
-  depth: config.focusDepth,
-  laravelLabels: config.typeLabels === 'laravel',
+  pendingFocus: urlView.focus, // applied once the schema is loaded and validated
+  depth: urlView.depth != null ? Math.max(0, urlView.depth) : config.focusDepth,
+  laravelLabels: urlView.labels || config.typeLabels === 'laravel',
   view: { zoom: 1, x: 0, y: 0 }, // translate(x,y) scale(zoom)
   content: { width: 0, height: 0 }, // natural SVG size
   lastKey: null, // subset signature; drives auto-fit only on content change
@@ -281,8 +289,21 @@ function renderBanners(subsetCount) {
   }
 }
 
+/** Reflect the current view (filter, focus, depth, type labels, connection) in the URL. */
+function syncUrl() {
+  const qs = buildQuery({
+    connection: config.connections.length > 1 ? state.connection : null,
+    filter: state.search,
+    focus: state.focusRoot,
+    depth: (state.focusRoot && state.depth !== config.focusDepth) ? state.depth : null,
+    labels: state.laravelLabels,
+  });
+  window.history.replaceState(null, '', qs || window.location.pathname);
+}
+
 async function render() {
   const subset = currentSubset();
+  syncUrl();
   renderBanners(subset.length);
 
   if (subset.length === 0) {
@@ -372,7 +393,11 @@ async function loadSchema() {
   state.tables = payload.tables ?? [];
   state.fallback = Boolean(payload.fallback);
   state.generatedAt = payload.generated_at ?? null;
-  state.focusRoot = '';
+  // Apply a focus requested via the URL, once we can confirm the table exists.
+  state.focusRoot = (state.pendingFocus && state.tables.some((t) => t.name === state.pendingFocus))
+    ? state.pendingFocus
+    : '';
+  state.pendingFocus = null;
   state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
   updateFooter();
@@ -523,6 +548,7 @@ function wireEvents() {
 
 /* ---- boot ------------------------------------------------------------- */
 
+if (el.search) el.search.value = state.search;
 if (el.depth) el.depth.value = String(state.depth);
 if (el.labels) el.labels.checked = state.laravelLabels;
 applyTheme();

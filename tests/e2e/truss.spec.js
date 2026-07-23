@@ -140,6 +140,39 @@ test('an enum label is clickable and reveals its values in a popover', async ({ 
   await expect(pop).toBeHidden();
 });
 
+test('a focus in the URL is applied on load', async ({ page }) => {
+  await page.goto('/tests/e2e/harness.html?focus=users');
+  await expect(canvas(page).locator('svg')).toBeVisible();
+
+  // depth 1 from users -> users + posts + role_user, not roles.
+  await expect(canvas(page)).toContainText('role_user');
+  await expect(canvas(page)).not.toContainText('roles');
+  await expect(page.locator('#truss-focus')).toHaveValue('users');
+});
+
+test('a filter in the URL is applied on load', async ({ page }) => {
+  await page.goto('/tests/e2e/harness.html?filter=post');
+  await expect(canvas(page).locator('svg')).toBeVisible();
+
+  await expect(page.locator('#truss-search')).toHaveValue('post');
+  await expect(canvas(page)).toContainText('posts');
+  await expect(canvas(page)).not.toContainText('roles');
+});
+
+test('changing focus and filter updates the URL', async ({ page }) => {
+  await expect(canvas(page).locator('svg')).toBeVisible();
+
+  await page.selectOption('#truss-focus', 'users');
+  await expect(canvas(page)).toContainText('role_user');
+  await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBe('users');
+
+  await page.selectOption('#truss-focus', '');
+  await page.fill('#truss-search', 'post');
+  await expect(canvas(page)).toContainText('posts');
+  await expect.poll(() => new URL(page.url()).searchParams.get('filter')).toBe('post');
+  expect(new URL(page.url()).searchParams.get('focus')).toBeNull();
+});
+
 test('the Laravel-types toggle swaps native types for short labels', async ({ page }) => {
   await expect(canvas(page)).toContainText('bigint_unsigned');
 

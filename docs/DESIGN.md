@@ -118,6 +118,7 @@ The host definition always wins (the package registers its default only if the a
   The rule: permanent exclusions are server-side (never sent), transient interactive selection is client-side (no refetch).
 - **Type label toggle.** Columns show the native full type by default (`varchar(255)`, `bigint unsigned`). A toggle switches to a best-effort Laravel-style short label (`string`, `integer`), computed here in the presentation layer from the native type — clearly lossy, never fed back into the schema output. The default mode is config-driven (`diagram.type_labels`). `enum(...)`/`set(...)` value lists collapse to just the keyword so they don't blow out the column width; the compacted `enum` label becomes a clickable accent that opens a popover of the allowed values (tap-friendly, so it works on touch). Hovering any type cell also shows the full native type as a title.
 - **Large-schema support (50+ tables) from day one.** Focus mode is the primary answer — reducing to a table and its neighbours keeps both layout time and legibility under control. Mermaid's `maxTextSize`/`maxEdges` guards are raised so large schemas render instead of erroring; a soft warning appears above a configurable table threshold.
+- **Deep-linkable views.** The current connection, filter, focus, depth, and type-label mode are reflected in the URL query string (for example `/truss?focus=projects`), updated live via `history.replaceState`. On load the query string seeds the initial view, so a focused or filtered view can be bookmarked, shared, and reopened. The serialize/parse logic is a pure, unit-tested module (`resources/js/url-state.js`).
 - Connection switcher re-fetches from the JSON endpoint and re-renders, no full page reload.
 - When the snapshot was built via the SQLite fallback, a banner states the connection was unavailable and native types may be approximate.
 
@@ -159,7 +160,6 @@ Post-v1 ideas, not yet scheduled:
 
 - **Export the current view** as PDF or PNG — render the on-screen diagram (the current filter/focus selection) to an image/document for sharing or docs.
 - **Export a table's structure** as CSV and/or JSON — a per-table action (with an icon) to dump its columns/keys/indexes in a structured, copy-pasteable format. Structure only, consistent with the no-data guarantee.
-- **Deep-linkable focus/filter** — reflect the focused table (and filter) in the query string (e.g. `/truss?focus=projects`) so a specific view can be bookmarked, shared, and reopened directly.
 - **Semantic relationship labels from Eloquent models** (see *Out of scope for v1* above).
 
 ## Directory structure
