@@ -92,6 +92,8 @@
             </dl>
         </div>
 
+        <div class="truss-popover" id="truss-popover" hidden></div>
+
         <footer class="truss-footer">
             <span id="truss-stat-tables">—</span>
             <span id="truss-stat-conn"></span>

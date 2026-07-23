@@ -11,6 +11,12 @@
         #truss-viewport { position: relative; overflow: hidden; height: 600px; cursor: grab; touch-action: none; }
         #truss-viewport.is-panning { cursor: grabbing; }
         #truss-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+        /* mirror the bits of truss.css the enum interaction depends on */
+        .truss-enum-type { cursor: pointer; pointer-events: auto; text-decoration: underline dotted; }
+        #truss-canvas svg .row-rect-odd path, #truss-canvas svg .row-rect-even path,
+        #truss-canvas svg .outer-path path, #truss-canvas svg .divider path { pointer-events: none; }
+        .truss-popover { position: fixed; z-index: 40; background: #fff; border: 1px solid #ccc; padding: 8px; }
+        .truss-popover[hidden] { display: none; }
     </style>
 </head>
 <body>
@@ -39,6 +45,7 @@
         </div>
         <div id="truss-banners"></div>
         <main id="truss-viewport"><div id="truss-canvas"></div></main>
+        <div class="truss-popover" id="truss-popover" hidden></div>
     </div>
 
     <script type="module" src="/resources/js/truss.js"></script>

@@ -216,6 +216,29 @@ body {
 .truss-legend-list dd { margin: 0; font-size: 12.5px; color: var(--bp-fg); }
 .truss-legend-list svg { color: var(--bp-rel); display: block; }
 
+/* enum/set label turned into a clickable accent (opens the value popover).
+   The high-specificity selectors beat Mermaid's inherited label colour. */
+#truss-canvas svg .nodeLabel.truss-enum-type,
+#truss-canvas svg .nodeLabel.truss-enum-type p {
+  color: var(--bp-cyan) !important;
+  text-decoration: underline dotted; text-underline-offset: 2px;
+  cursor: pointer; pointer-events: auto;
+}
+#truss-canvas svg .nodeLabel.truss-enum-type:hover,
+#truss-canvas svg .nodeLabel.truss-enum-type:hover p { color: var(--bp-ink) !important; }
+
+.truss-popover {
+  position: fixed; z-index: 40; min-width: 120px; max-width: 260px; max-height: 280px; overflow: auto;
+  background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .2); padding: 10px 12px;
+  font-family: var(--bp-mono); font-size: 12px; color: var(--bp-fg);
+}
+.truss-popover[hidden] { display: none; }
+.truss-popover-head { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--bp-muted); margin-bottom: 8px; }
+.truss-popover ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.truss-popover li { white-space: nowrap; }
+.truss-popover li::before { content: "•"; color: var(--bp-cyan); margin-right: 7px; }
+
 /* status footer */
 .truss-footer {
   height: 28px; display: flex; align-items: center; gap: 14px; padding: 0 16px;
@@ -265,6 +288,15 @@ body {
 #truss-canvas svg .row-rect-even path[stroke]:not([stroke="none"]) { stroke: var(--bp-hair) !important; }
 
 #truss-canvas svg .divider path { fill: var(--bp-hair) !important; stroke: var(--bp-hair) !important; }
+
+/* Backgrounds/decorations take no pointer events, so the injected enum eye
+   (an HTML button in a label cell, painted on top) reliably receives clicks
+   instead of the row-rect behind it. Panning still works — events over these
+   fall through to the label cells / viewport, which bubble to the pan handler. */
+#truss-canvas svg .row-rect-odd path,
+#truss-canvas svg .row-rect-even path,
+#truss-canvas svg .outer-path path,
+#truss-canvas svg .divider path { pointer-events: none; }
 
 /* the focused table: accent border, tinted header, bold accent name */
 #truss-canvas svg g.node.truss-focused .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-focus-bg) !important; }

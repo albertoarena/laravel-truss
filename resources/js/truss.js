@@ -53,6 +53,7 @@ const el = {
   statConn: document.getElementById('truss-stat-conn'),
   statFallback: document.getElementById('truss-stat-fallback'),
   statUpdated: document.getElementById('truss-stat-updated'),
+  popover: document.getElementById('truss-popover'),
 };
 
 const mermaid = window.mermaid;
@@ -139,18 +140,37 @@ function findTableNode(name) {
   return null;
 }
 
+/** The values of an enum/set native type, or null. */
+function enumValues(native) {
+  const m = /^\s*(?:enum|set)\s*\((.*)\)\s*$/is.exec(native);
+  if (!m) return null;
+  return m[1].split(',').map((v) => v.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+
 /** A hover tooltip for a native type: the full type, with enum/set values listed. */
 function typeTooltip(native) {
-  const m = /^\s*(enum|set)\s*\((.*)\)\s*$/is.exec(native);
-  if (!m) return native;
-  const values = m[2].split(',').map((v) => v.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
-  return `${m[1].toLowerCase()} (${values.length}):\n` + values.map((v) => `• ${v}`).join('\n');
+  const values = enumValues(native);
+  if (!values) return native;
+  return `${native.trim().slice(0, 4).toLowerCase()} (${values.length}):\n` + values.map((v) => `• ${v}`).join('\n');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 /**
- * Set a hover title on each type cell to the full native type (the diagram
- * shows a compacted label for enum/set and a sanitized token otherwise, so the
- * tooltip is where the real type — and enum values — live).
+ * Drop a small eye button into an enum/set row's type cell (right after the
+ * `enum` label) to reveal its values. The type cell is used rather than the
+ * keys cell because the latter is often empty and too narrow — the button would
+ * overflow it and become unclickable.
+ */
+/**
+ * Per-render annotations on the diagram: a hover title on every type cell (the
+ * full native type — the label is compacted), and, for enum/set columns, the
+ * `enum` label is turned into a clickable accent that opens a popover of the
+ * allowed values (works on touch, unlike the hover title). The label itself is
+ * used as the trigger — it is real, correctly-sized foreignObject content, so
+ * it stays clickable, unlike a button injected into the clipped cell.
  */
 function annotateColumnTypes(tables) {
   const byName = new Map(tables.map((t) => [t.name, t]));
@@ -160,11 +180,43 @@ function annotateColumnTypes(tables) {
     const name = node.querySelector('g.label.name .nodeLabel')?.textContent.trim();
     const table = byName.get(name);
     if (!table) continue;
-    node.querySelectorAll('g.label.attribute-type .nodeLabel').forEach((label, i) => {
-      const col = table.columns[i];
-      if (col) label.setAttribute('title', typeTooltip(col.type));
+    const typeCells = node.querySelectorAll('g.label.attribute-type');
+    table.columns.forEach((col, i) => {
+      const label = typeCells[i]?.querySelector('.nodeLabel');
+      if (!label) return;
+      label.setAttribute('title', typeTooltip(col.type));
+      const values = enumValues(col.type);
+      if (values) {
+        label.classList.add('truss-enum-type');
+        label.dataset.values = JSON.stringify(values);
+        label.setAttribute('role', 'button');
+        label.setAttribute('tabindex', '0');
+      }
     });
   }
+}
+
+let openEye = null;
+
+function showEnumPopover(eye) {
+  const values = JSON.parse(eye.dataset.values || '[]');
+  el.popover.innerHTML = `<div class="truss-popover-head">enum · ${values.length}</div>`
+    + `<ul>${values.map((v) => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
+  el.popover.hidden = false;
+
+  const r = eye.getBoundingClientRect();
+  const w = el.popover.offsetWidth;
+  const h = el.popover.offsetHeight;
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 10));
+  const top = r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6;
+  el.popover.style.left = `${left}px`;
+  el.popover.style.top = `${top}px`;
+  openEye = eye;
+}
+
+function hideEnumPopover() {
+  if (el.popover) el.popover.hidden = true;
+  openEye = null;
 }
 
 /** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
@@ -245,6 +297,7 @@ async function render() {
 
   try {
     const { svg } = await mermaid.render('truss-graph', definition);
+    hideEnumPopover(); // the eye it anchored to is about to be replaced
     el.canvas.innerHTML = svg;
     normalizeSvg();
     markFocusedTable();
@@ -387,9 +440,22 @@ function wireEvents() {
   // Wheel zooms toward the cursor (never scrolls the page).
   el.viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
+    hideEnumPopover();
     const rect = el.viewport.getBoundingClientRect();
     zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1, { x: e.clientX - rect.left, y: e.clientY - rect.top });
   }, { passive: false });
+
+  // Enum label: open/close the value popover. Delegated so it survives re-renders.
+  el.canvas.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.truss-enum-type');
+    if (!trigger) return;
+    e.stopPropagation();
+    if (openEye === trigger) hideEnumPopover();
+    else showEnumPopover(trigger);
+  });
+  document.addEventListener('click', (e) => {
+    if (openEye && !e.target.closest('.truss-popover, .truss-enum-type')) hideEnumPopover();
+  });
 
   // Unified pointer handling: one pointer pans (mouse or touch), two pointers
   // pinch-zoom around their midpoint. Overlay controls are excluded.
@@ -399,7 +465,8 @@ function wireEvents() {
   const mid = (rect) => { const p = [...pointers.values()]; return { x: (p[0].x + p[1].x) / 2 - rect.left, y: (p[0].y + p[1].y) / 2 - rect.top }; };
 
   el.viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest?.('#truss-zoom, .truss-legend')) return;
+    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-popover')) return;
+    hideEnumPopover();
     e.preventDefault();
     el.viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });

@@ -30,7 +30,7 @@ const canvas = (page) => page.locator('#truss-canvas');
 const banners = (page) => page.locator('#truss-banners');
 
 test('renders an ER diagram from the fetched schema', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   await expect(canvas(page)).toContainText('users');
   await expect(canvas(page)).toContainText('posts');
 });
@@ -55,12 +55,12 @@ test('focus mode reduces to a table and its FK neighbours', async ({ page }) => 
 });
 
 test('focus centres the focused table in the viewport', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   await page.selectOption('#truss-focus', 'users');
   await expect(canvas(page)).toContainText('role_user'); // wait for the re-render
 
   const offset = await page.evaluate(() => {
-    const svg = document.querySelector('#truss-canvas svg');
+    const svg = document.querySelector('#truss-canvas > svg');
     let node = null;
     svg.querySelectorAll('g.node').forEach((n) => {
       const l = n.querySelector('g.label.name .nodeLabel');
@@ -80,7 +80,7 @@ test('focus centres the focused table in the viewport', async ({ page }) => {
 });
 
 test('the focused table is flagged for highlighting', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   await page.selectOption('#truss-focus', 'users');
   await expect(canvas(page)).toContainText('role_user');
 
@@ -103,7 +103,7 @@ test('the focused table is flagged for highlighting', async ({ page }) => {
 });
 
 test('enum types compact to the keyword, with values on hover', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   await expect(canvas(page)).toContainText('enum');
   await expect(canvas(page)).not.toContainText('archived'); // an enum value stays out of the label
 
@@ -123,6 +123,23 @@ test('enum types compact to the keyword, with values on hover', async ({ page })
   expect(title).toContain('archived');
 });
 
+test('an enum label is clickable and reveals its values in a popover', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  const trigger = page.locator('#truss-canvas .truss-enum-type').first();
+  await expect(trigger).toBeVisible(); // the compacted `enum` label on posts.status
+  await trigger.click();
+
+  const pop = page.locator('#truss-popover');
+  await expect(pop).toBeVisible();
+  await expect(pop).toContainText('draft');
+  await expect(pop).toContainText('published');
+  await expect(pop).toContainText('archived');
+
+  await trigger.click(); // toggles closed
+  await expect(pop).toBeHidden();
+});
+
 test('the Laravel-types toggle swaps native types for short labels', async ({ page }) => {
   await expect(canvas(page)).toContainText('bigint_unsigned');
 
@@ -139,7 +156,7 @@ const translateOf = (page) => canvas(page).evaluate((el) => {
 });
 
 test('the wheel zooms toward the cursor', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   const before = await scaleOf(page);
 
   const box = await page.locator('#truss-viewport').boundingBox();
@@ -150,7 +167,7 @@ test('the wheel zooms toward the cursor', async ({ page }) => {
 });
 
 test('dragging pans the canvas', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   const before = await translateOf(page);
 
   const box = await page.locator('#truss-viewport').boundingBox();
@@ -165,7 +182,7 @@ test('dragging pans the canvas', async ({ page }) => {
 });
 
 test('the slider sets the zoom level and Fit re-frames', async ({ page }) => {
-  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   const fitted = await scaleOf(page);
 
   await page.locator('#truss-zoom-range').fill('2');

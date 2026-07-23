@@ -35,7 +35,7 @@ test.beforeEach(async ({ page }) => {
 const scaleOf = (page) => page.locator('#truss-canvas').evaluate((el) => Number(/scale\(([-0-9.]+)\)/.exec(el.style.transform)?.[1] ?? 'NaN'));
 
 test('auto-fits a large schema but not below the readable floor', async ({ page }) => {
-  await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible({ timeout: 25_000 });
 
   // True fit of 100 tables is a tiny speck; the auto-fit floors at min_zoom (0.4)
   // so it stays legible and you pan, rather than dumping an unreadable overview.
@@ -43,7 +43,7 @@ test('auto-fits a large schema but not below the readable floor', async ({ page 
 });
 
 test('the Fit button frames the whole large schema, below the floor', async ({ page }) => {
-  await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible({ timeout: 25_000 });
 
   await page.click('[data-fit]');
   expect(await scaleOf(page)).toBeLessThan(0.4); // explicit Fit ignores the floor
@@ -51,7 +51,7 @@ test('the Fit button frames the whole large schema, below the floor', async ({ p
 
 test(`renders a ${TABLE_COUNT}-table schema without hitting Mermaid limits`, async ({ page }) => {
   const started = Date.now();
-  await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible({ timeout: 25_000 });
 
   // The first and last tables of the chain both made it into the diagram.
   await expect(page.locator('#truss-canvas')).toContainText('entity_0');
@@ -63,7 +63,7 @@ test(`renders a ${TABLE_COUNT}-table schema without hitting Mermaid limits`, asy
 });
 
 test('focus mode keeps a large schema legible by reducing to a neighbourhood', async ({ page }) => {
-  await expect(page.locator('#truss-canvas svg')).toBeVisible({ timeout: 25_000 });
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible({ timeout: 25_000 });
 
   await page.selectOption('#truss-focus', 'entity_50');
 
