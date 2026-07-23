@@ -33,16 +33,45 @@ The list is ignored in `local`, and it **fails closed**: an empty list means no 
 
 ## Authorize by role (override the gate)
 
-For anything beyond an email list, define your own `viewTruss` gate in one of your service providers' `boot()` methods. Your definition fully replaces the shipped default:
+For anything beyond an email list, define your own `viewTruss` gate in one of your service providers' `boot()` methods (for example `AppServiceProvider`). Your definition fully replaces the shipped default, and it works with any authorization system, so this is where roles and permissions go:
 
 ```php
-use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
-Gate::define('viewTruss', fn (User $user) => $user->isAdmin());
+Gate::define('viewTruss', fn ($user) => $user->isAdmin());
 ```
 
-The ability name is fixed (`viewTruss`); only the callback varies, and that lives in your app. A guest resolves to a `null` user, so a non-nullable `User $user` type-hint safely denies unauthenticated requests.
+The ability name is fixed (`viewTruss`); only the callback varies, and that lives in your app. Truss registers its default gate only if you have not defined one, and a definition in your app wins regardless of load order.
+
+Once you define your own gate, `TRUSS_ALLOWED_EMAILS` is unused and can be dropped from your environment. Keep `TRUSS_ENABLED`.
+
+### With Spatie roles or permissions
+
+If you use [spatie/laravel-permission](https://spatie.be/docs/laravel-permission), gate by role, or preferably by a dedicated permission:
+
+```php
+// By role
+Gate::define('viewTruss', fn ($user) => $user->hasRole('admin'));
+
+// By permission (survives role renames; grant it to whichever roles should see Truss)
+Gate::define('viewTruss', fn ($user) => $user->can('view-truss'));
+```
+
+Truss stays framework-agnostic on purpose: it does not read roles or permissions itself (no assumption that your users even have them), so a role check lives in your gate, not in Truss's config.
+
+### Gate::before still applies
+
+Any `Gate::before` callback in your app runs ahead of `viewTruss` as well, so an app-wide bypass covers it too. A common pattern is a super-admin bypass:
+
+```php
+Gate::before(fn ($user) => $user->hasRole('super-admin') ? true : null);
+```
+
+With this, super-admins pass `viewTruss` automatically, whatever its callback.
+
+### Guests
+
+An unauthenticated request resolves to a `null` user, so a non-nullable check such as `fn ($user) => $user->hasRole('admin')` safely denies guests (they get 404). If you would rather send guests to the login page than return 404, add `auth` to `truss.middleware`.
 
 ## The auth context (middleware)
 
@@ -54,6 +83,25 @@ The gate can only identify the viewer if the request has already passed through 
 ```
 
 Without it, `$request->user()` would be `null` in production and the gate would deny everyone, including the admins who should have access. If your app authenticates differently (a custom guard, or Sanctum for an SPA), swap the stack here. The `viewTruss` check is always appended after this stack and cannot be configured away.
+
+## Testing your gate
+
+Two things catch people out when writing a test for a custom gate:
+
+1. The test environment is **non-local**, so the gate is consulted (good), but `truss.enabled` defaults to off there. Enable it in the test, or even an authorized user gets 404 from the deploy switch before the gate runs.
+2. A denied user gets **404**, not 403.
+
+```php
+it('admits an admin and hides Truss from other roles', function () {
+    config()->set('truss.enabled', true); // test env is non-local, so enable it
+
+    $this->actingAs(tap(User::factory()->create())->assignRole('admin'))
+        ->get('/truss')->assertOk();
+
+    $this->actingAs(tap(User::factory()->create())->assignRole('operatore'))
+        ->get('/truss')->assertNotFound(); // 404, not 403
+});
+```
 
 ## Summary
 
