@@ -102,6 +102,27 @@ test('the focused table is flagged for highlighting', async ({ page }) => {
   expect(flags.neighbour).toBe(false);
 });
 
+test('enum types compact to the keyword, with values on hover', async ({ page }) => {
+  await expect(canvas(page).locator('svg')).toBeVisible();
+  await expect(canvas(page)).toContainText('enum');
+  await expect(canvas(page)).not.toContainText('archived'); // an enum value stays out of the label
+
+  const title = await page.evaluate(() => {
+    let found = null;
+    document.querySelectorAll('#truss-canvas g.node').forEach((n) => {
+      if (n.querySelector('g.label.name .nodeLabel')?.textContent.trim() !== 'posts') return;
+      n.querySelectorAll('g.label.attribute-type .nodeLabel').forEach((l) => {
+        if (l.getAttribute('title')?.includes('archived')) found = l.getAttribute('title');
+      });
+    });
+    return found;
+  });
+
+  expect(title).toContain('draft');
+  expect(title).toContain('published');
+  expect(title).toContain('archived');
+});
+
 test('the Laravel-types toggle swaps native types for short labels', async ({ page }) => {
   await expect(canvas(page)).toContainText('bigint_unsigned');
 

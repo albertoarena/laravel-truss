@@ -31,6 +31,13 @@ describe('generateErDiagram', () => {
     expect(out).toContain('varchar_255');
   });
 
+  it('compacts enum/set to the keyword so long value lists do not blow out the column', () => {
+    const out = generateErDiagram([posts]);
+    expect(out).toMatch(/enum\s+status/);
+    expect(out).not.toContain('draft'); // enum values never reach the label
+    expect(out).not.toContain('archived');
+  });
+
   it('renders Laravel-style short labels when typeLabels is "laravel"', () => {
     const out = generateErDiagram([posts], { typeLabels: 'laravel' });
     expect(out).toMatch(/string\s+title/);

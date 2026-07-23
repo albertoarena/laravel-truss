@@ -11,9 +11,16 @@ import { toShortLabel } from './type-labels.js';
  * Collapse a native type into a single Mermaid-safe attribute-type token.
  * Mermaid's ER grammar splits attributes on whitespace, so `bigint unsigned`
  * and `varchar(255)` must become one word: `bigint_unsigned`, `varchar_255`.
+ *
+ * `enum(...)`/`set(...)` value lists can be enormous and blow out the column
+ * width, so in native mode they collapse to just the keyword; the full list is
+ * surfaced on hover by the presentation layer (see truss.js). `laravel` mode
+ * already reduces them to `enum` via toShortLabel.
  */
 function mermaidType(nativeType, mode) {
-  const label = mode === 'laravel' ? toShortLabel(nativeType) : nativeType;
+  const label = mode === 'laravel'
+    ? toShortLabel(nativeType)
+    : String(nativeType).replace(/^\s*(enum|set)\b[\s\S]*$/i, '$1');
 
   return String(label)
     .trim()

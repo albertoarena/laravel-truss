@@ -139,6 +139,34 @@ function findTableNode(name) {
   return null;
 }
 
+/** A hover tooltip for a native type: the full type, with enum/set values listed. */
+function typeTooltip(native) {
+  const m = /^\s*(enum|set)\s*\((.*)\)\s*$/is.exec(native);
+  if (!m) return native;
+  const values = m[2].split(',').map((v) => v.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  return `${m[1].toLowerCase()} (${values.length}):\n` + values.map((v) => `• ${v}`).join('\n');
+}
+
+/**
+ * Set a hover title on each type cell to the full native type (the diagram
+ * shows a compacted label for enum/set and a sanitized token otherwise, so the
+ * tooltip is where the real type — and enum values — live).
+ */
+function annotateColumnTypes(tables) {
+  const byName = new Map(tables.map((t) => [t.name, t]));
+  const svg = el.canvas.querySelector('svg');
+  if (!svg) return;
+  for (const node of svg.querySelectorAll('g.node')) {
+    const name = node.querySelector('g.label.name .nodeLabel')?.textContent.trim();
+    const table = byName.get(name);
+    if (!table) continue;
+    node.querySelectorAll('g.label.attribute-type .nodeLabel').forEach((label, i) => {
+      const col = table.columns[i];
+      if (col) label.setAttribute('title', typeTooltip(col.type));
+    });
+  }
+}
+
 /** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
 function markFocusedTable() {
   const svg = el.canvas.querySelector('svg');
@@ -220,6 +248,7 @@ async function render() {
     el.canvas.innerHTML = svg;
     normalizeSvg();
     markFocusedTable();
+    annotateColumnTypes(subset);
 
     // Auto-fit only when the *content* changed (new tables): filtering and
     // focusing frame their result (honouring the readable floor), while a label

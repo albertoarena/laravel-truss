@@ -13,7 +13,7 @@ export const users = {
 
 export const posts = {
   name: 'posts',
-  columns: [col('id', 'bigint unsigned'), col('user_id', 'bigint unsigned'), col('title', 'varchar(255)'), col('published_at', 'timestamp', { nullable: true })],
+  columns: [col('id', 'bigint unsigned'), col('user_id', 'bigint unsigned'), col('title', 'varchar(255)'), col('status', "enum('draft','published','archived')"), col('published_at', 'timestamp', { nullable: true })],
   primary_key: ['id'],
   indexes: [],
   foreign_keys: [
