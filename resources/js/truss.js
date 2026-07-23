@@ -20,6 +20,7 @@ const config = {
 const state = {
   tables: [],
   fallback: false,
+  generatedAt: null,
   connection: config.connections[0] ?? null,
   search: '',
   focusRoot: '',
@@ -39,16 +40,26 @@ const el = {
   banners: document.getElementById('truss-banners'),
   viewport: document.getElementById('truss-viewport'),
   canvas: document.getElementById('truss-canvas'),
+  zoom: document.getElementById('truss-zoom'),
   fit: document.querySelector('[data-fit]'),
   zoomRange: document.getElementById('truss-zoom-range'),
   zoomPct: document.getElementById('truss-zoom-pct'),
+  more: document.getElementById('truss-more'),
+  moreBtn: document.getElementById('truss-more-btn'),
+  legend: document.getElementById('truss-legend'),
+  legendBtn: document.getElementById('truss-legend-btn'),
+  themeBtn: document.getElementById('truss-theme-btn'),
+  statTables: document.getElementById('truss-stat-tables'),
+  statConn: document.getElementById('truss-stat-conn'),
+  statFallback: document.getElementById('truss-stat-fallback'),
+  statUpdated: document.getElementById('truss-stat-updated'),
 };
 
 const mermaid = window.mermaid;
 mermaid.initialize({
   startOnLoad: false,
-  // A neutral base; the actual entity/row/line colours are painted by our CSS
-  // (resources/css/truss.css) so the diagram follows light/dark with no re-render.
+  // Neutral base; the entity/row/line colours are painted by our CSS so the
+  // diagram follows light/dark with no re-render.
   theme: 'base',
   securityLevel: 'strict',
   maxTextSize: 5_000_000, // raise the guards so large schemas render
@@ -161,9 +172,9 @@ async function render() {
     el.canvas.innerHTML = svg;
     normalizeSvg();
 
-    // Auto-fit only when the *content* changed (new tables): so filtering and
-    // focusing always frame their result, but a label toggle keeps your view.
-    // The auto-fit honours the readable floor; the Fit button does not.
+    // Auto-fit only when the *content* changed (new tables): filtering and
+    // focusing frame their result (honouring the readable floor), while a label
+    // toggle keeps your view.
     if (key !== state.lastKey) {
       fitToViewport(config.minZoom);
     } else {
@@ -173,6 +184,27 @@ async function render() {
   } catch (error) {
     el.canvas.replaceChildren(banner('error', `Diagram failed to render: ${error?.message ?? error}`));
   }
+}
+
+/* ---- status footer ---------------------------------------------------- */
+
+function timeAgo(iso) {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return '';
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
+}
+
+function updateFooter() {
+  const n = state.tables.length;
+  if (el.statTables) el.statTables.textContent = `${n} ${n === 1 ? 'table' : 'tables'}`;
+  if (el.statConn) el.statConn.textContent = state.connection ?? '';
+  if (el.statFallback) el.statFallback.toggleAttribute('hidden', !state.fallback);
+  if (el.statUpdated) el.statUpdated.textContent = state.generatedAt ? `updated ${timeAgo(state.generatedAt)}` : '';
 }
 
 /* ---- data ------------------------------------------------------------- */
@@ -206,10 +238,34 @@ async function loadSchema() {
   const payload = await response.json();
   state.tables = payload.tables ?? [];
   state.fallback = Boolean(payload.fallback);
+  state.generatedAt = payload.generated_at ?? null;
   state.focusRoot = '';
   state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
+  updateFooter();
   await render();
+}
+
+/* ---- theme ------------------------------------------------------------ */
+
+// auto (follow OS) → light → dark → auto. Persisted; drives the CSS via
+// data-theme (absent = auto/prefers-color-scheme).
+function applyTheme() {
+  const t = localStorage.getItem('truss-theme');
+  if (t === 'light' || t === 'dark') app.ownerDocument.documentElement.setAttribute('data-theme', t);
+  else app.ownerDocument.documentElement.removeAttribute('data-theme');
+  if (el.themeBtn) {
+    el.themeBtn.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+    el.themeBtn.title = `Theme: ${t || 'auto'}`;
+  }
+}
+
+function cycleTheme() {
+  const cur = localStorage.getItem('truss-theme');
+  const next = cur == null ? 'light' : cur === 'light' ? 'dark' : null;
+  if (next) localStorage.setItem('truss-theme', next);
+  else localStorage.removeItem('truss-theme');
+  applyTheme();
 }
 
 /* ---- events ----------------------------------------------------------- */
@@ -220,11 +276,6 @@ function debounce(fn, ms) {
     clearTimeout(handle);
     handle = setTimeout(() => fn(...args), ms);
   };
-}
-
-function pointerInViewport(event) {
-  const rect = el.viewport.getBoundingClientRect();
-  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 
 function wireEvents() {
@@ -253,28 +304,50 @@ function wireEvents() {
     render();
   });
 
-  // Wheel zooms toward the cursor (natural, Maps-style); never scrolls the page.
+  // Wheel zooms toward the cursor (never scrolls the page).
   el.viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
-    zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1, pointerInViewport(e));
+    const rect = el.viewport.getBoundingClientRect();
+    zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1, { x: e.clientX - rect.left, y: e.clientY - rect.top });
   }, { passive: false });
 
-  // Drag to pan. preventDefault stops the drag from selecting the SVG text.
-  let pan = null;
+  // Unified pointer handling: one pointer pans (mouse or touch), two pointers
+  // pinch-zoom around their midpoint. Overlay controls are excluded.
+  const pointers = new Map();
+  let lastPinch = 0;
+  const dist = () => { const p = [...pointers.values()]; return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y); };
+  const mid = (rect) => { const p = [...pointers.values()]; return { x: (p[0].x + p[1].x) / 2 - rect.left, y: (p[0].y + p[1].y) / 2 - rect.top }; };
+
   el.viewport.addEventListener('pointerdown', (e) => {
+    if (e.target.closest?.('#truss-zoom, .truss-legend')) return;
     e.preventDefault();
-    pan = { x: e.clientX, y: e.clientY, ox: state.view.x, oy: state.view.y };
     el.viewport.setPointerCapture(e.pointerId);
-    el.viewport.classList.add('is-panning');
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) el.viewport.classList.add('is-panning');
+    if (pointers.size === 2) lastPinch = dist();
   });
   el.viewport.addEventListener('pointermove', (e) => {
-    if (!pan) return;
-    state.view = { ...state.view, x: pan.ox + (e.clientX - pan.x), y: pan.oy + (e.clientY - pan.y) };
-    applyTransform();
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    const prev = { x: p.x, y: p.y };
+    p.x = e.clientX; p.y = e.clientY;
+
+    if (pointers.size >= 2) {
+      const d = dist();
+      if (lastPinch) zoomBy(d / lastPinch, mid(el.viewport.getBoundingClientRect()));
+      lastPinch = d;
+    } else {
+      state.view = { ...state.view, x: state.view.x + (e.clientX - prev.x), y: state.view.y + (e.clientY - prev.y) };
+      applyTransform();
+    }
   });
-  const endPan = () => { pan = null; el.viewport.classList.remove('is-panning'); };
-  el.viewport.addEventListener('pointerup', endPan);
-  el.viewport.addEventListener('pointercancel', endPan);
+  const endPointer = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) lastPinch = 0;
+    if (pointers.size === 0) el.viewport.classList.remove('is-panning');
+  };
+  el.viewport.addEventListener('pointerup', endPointer);
+  el.viewport.addEventListener('pointercancel', endPointer);
 
   // Slider zooms around the viewport centre.
   el.zoomRange?.addEventListener('input', (e) => {
@@ -283,8 +356,20 @@ function wireEvents() {
     zoomBy(target / state.view.zoom, { x: width / 2, y: height / 2 });
   });
 
-  // The explicit Fit button frames the whole diagram (no readable floor).
+  // The Fit button frames the whole diagram (ignores the readable floor).
   el.fit?.addEventListener('click', () => fitToViewport(0));
+
+  // Utility cluster.
+  el.moreBtn?.addEventListener('click', () => {
+    const open = el.more?.classList.toggle('is-open');
+    el.moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  el.legendBtn?.addEventListener('click', () => {
+    const shown = el.legend?.hasAttribute('hidden');
+    el.legend?.toggleAttribute('hidden', !shown);
+    el.legendBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
+  });
+  el.themeBtn?.addEventListener('click', cycleTheme);
 
   window.addEventListener('resize', debounce(() => applyTransform(), 200));
 }
@@ -293,6 +378,8 @@ function wireEvents() {
 
 if (el.depth) el.depth.value = String(state.depth);
 if (el.labels) el.labels.checked = state.laravelLabels;
+applyTheme();
 populateConnectionOptions();
+updateFooter();
 wireEvents();
 loadSchema();

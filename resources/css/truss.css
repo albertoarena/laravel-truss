@@ -143,12 +143,17 @@ body {
 }
 .truss-mark { flex: none; display: block; color: var(--bp-ink); }
 
+.truss-secondary { display: inline-flex; align-items: center; gap: 18px; }
+
 .truss-field {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--bp-muted); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
 }
 .truss-field[hidden] { display: none; }
+.truss-field--search input { width: 150px; }
+.truss-field-label {
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--bp-muted);
+}
 
 .truss-toolbar input[type="search"],
 .truss-toolbar select,
@@ -162,18 +167,61 @@ body {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--bp-ink) 22%, transparent);
 }
 
-.truss-zoom { margin-left: auto; display: inline-flex; align-items: center; gap: 12px; }
+/* right-hand utility cluster */
+.truss-utils { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
+.truss-util {
+  width: 32px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 15px; line-height: 1; color: var(--bp-ink);
+  background: var(--bp-field); border: 1px solid var(--bp-field-line); border-radius: 2px; cursor: pointer;
+}
+.truss-util:hover { border-color: var(--bp-ink); }
+.truss-util[aria-expanded="true"] { background: var(--bp-ink); color: var(--bp-panel); border-color: var(--bp-ink); }
+.truss-util--more { display: none; } /* only on phone */
+
+/* zoom control, floated over the canvas (bottom-right) */
+.truss-zoom {
+  position: absolute; right: 16px; bottom: 16px; z-index: 15;
+  display: inline-flex; align-items: center; gap: 11px; padding: 7px 11px;
+  background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
+}
 .truss-zoom button {
   font-family: var(--bp-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
   color: var(--bp-ink); background: var(--bp-field); border: 1.5px solid var(--bp-ink);
-  border-radius: 2px; padding: 6px 13px; cursor: pointer;
+  border-radius: 2px; padding: 5px 11px; cursor: pointer;
 }
 .truss-zoom button:hover { background: var(--bp-ink); color: var(--bp-panel); }
-.truss-zoom input[type="range"] { width: 132px; accent-color: var(--bp-cyan); }
+.truss-zoom input[type="range"] { width: 120px; accent-color: var(--bp-cyan); }
 #truss-zoom-pct {
   font-family: var(--bp-mono); font-size: 12px; color: var(--bp-muted);
   min-width: 40px; text-align: right; font-variant-numeric: tabular-nums;
 }
+
+/* legend popover */
+.truss-legend {
+  position: absolute; top: 62px; right: 14px; z-index: 20; width: 210px;
+  background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18); padding: 12px 14px; color: var(--bp-fg);
+}
+.truss-legend[hidden] { display: none; }
+.truss-legend-head {
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--bp-muted); margin-bottom: 10px;
+}
+.truss-legend-list { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
+.truss-legend-list dt { font-family: var(--bp-mono); font-weight: 600; font-size: 12px; color: var(--bp-ink); }
+.truss-legend-list dd { margin: 0; font-size: 12.5px; color: var(--bp-fg); }
+.truss-legend-list svg { color: var(--bp-rel); display: block; }
+
+/* status footer */
+.truss-footer {
+  height: 28px; display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  background: var(--bp-panel); border-top: 1px solid var(--bp-panel-line);
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .04em; color: var(--bp-muted);
+}
+.truss-footer-spacer { margin-left: auto; }
+.truss-footer .truss-flag { color: var(--bp-warn-fg); }
+#truss-stat-conn:not(:empty)::before { content: "· "; }
 
 /* ---- banners ---------------------------------------------------------- */
 
@@ -191,7 +239,7 @@ body {
 /* ---- diagram viewport (pan/zoom) -------------------------------------- */
 
 #truss-viewport {
-  position: relative; overflow: hidden; height: calc(100vh - 54px);
+  position: relative; overflow: hidden; height: calc(100vh - 54px - 28px);
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 #truss-viewport.is-panning { cursor: grabbing; }
@@ -225,3 +273,44 @@ body {
 #truss-canvas svg .edgeLabel p { color: var(--bp-edge) !important; font-family: var(--bp-mono) !important; font-size: 11px; }
 #truss-canvas svg .edgeLabel .labelBkg,
 #truss-canvas svg .labelBkg { background: var(--bp-edge-bg) !important; opacity: .9; }
+
+/* ---- responsive ------------------------------------------------------- */
+
+/* Tablet: drop the field labels to reclaim horizontal room; inputs stay. */
+@media (max-width: 900px) {
+  .truss-toolbar { gap: 12px; }
+  .truss-secondary { gap: 12px; }
+  .truss-field-label { display: none; }
+  .truss-field--search input { width: 130px; }
+  .truss-legend { top: 58px; }
+}
+
+/* Phone: collapse the secondary controls behind the ⋯ button as a panel;
+   the top bar keeps the mark, filter, and the utility cluster. */
+@media (max-width: 560px) {
+  .truss-toolbar { gap: 10px; padding: 0 12px; }
+  .truss-brand { font-size: 0; gap: 0; } /* mark only, hide the wordmark */
+  .truss-field--search { flex: 1; min-width: 0; }
+  .truss-field--search input { width: 100%; }
+  .truss-util--more { display: inline-flex; }
+
+  .truss-secondary {
+    display: none; position: absolute; top: 100%; right: 8px; margin-top: 6px;
+    flex-direction: column; align-items: flex-start; gap: 14px; padding: 14px 16px;
+    background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .18); z-index: 25;
+  }
+  .truss-secondary.is-open { display: flex; }
+  .truss-secondary .truss-field-label { display: inline; } /* labels back inside the panel */
+
+  /* legend as a bottom sheet */
+  .truss-legend {
+    top: auto; bottom: 0; left: 0; right: 0; width: auto;
+    border-radius: 10px 10px 0 0; border-bottom: none;
+  }
+
+  .truss-footer { gap: 10px; font-size: 10px; }
+  #truss-stat-updated { display: none; }
+  .truss-zoom { right: 10px; bottom: 10px; padding: 6px 8px; gap: 8px; }
+  .truss-zoom input[type="range"] { width: 84px; }
+}
