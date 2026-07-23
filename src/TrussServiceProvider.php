@@ -47,27 +47,33 @@ class TrussServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * The fixed `viewTruss` gate. The package ships a default that allows access
-     * in `local` only; the host app customizes *who* may view by defining its
-     * own `viewTruss` gate (which takes precedence). The ability name is not
-     * configurable — only its callback, and that lives in the app.
+     * The fixed `viewTruss` gate. The shipped default admits the emails listed
+     * in truss.authorization.allowed_emails — the zero-code path for gating a
+     * production install to a set of admins. It is only ever consulted in
+     * non-local environments (the Authorize middleware skips it in local), and a
+     * host app fully replaces it by defining its own `viewTruss` gate (e.g. a
+     * role check), which then takes precedence. The ability name is fixed — only
+     * the callback varies, and that lives in the app.
      */
     private function registerGate(): void
     {
         if (! Gate::has('viewTruss')) {
-            Gate::define('viewTruss', fn ($user = null): bool => app()->environment('local'));
+            Gate::define('viewTruss', fn ($user = null): bool => $user !== null
+                && in_array($user->email ?? null, (array) config('truss.authorization.allowed_emails', []), true));
         }
     }
 
     /**
      * The two routes (index page + JSON schema endpoint) under the configured
-     * prefix, both behind the enabled check and the `viewTruss` gate.
+     * prefix. The configured auth-context middleware runs first so the gate can
+     * see the authenticated user; the `viewTruss` authorization guard is always
+     * appended and cannot be configured away.
      */
     private function registerRoutes(): void
     {
         Route::group([
             'prefix' => config('truss.route_prefix'),
-            'middleware' => [Authorize::class],
+            'middleware' => [...(array) config('truss.middleware', ['web']), Authorize::class],
         ], function (): void {
             Route::get('/', IndexController::class)->name('truss.index');
             Route::get('/api/schema', SchemaApiController::class)->name('truss.api.schema');

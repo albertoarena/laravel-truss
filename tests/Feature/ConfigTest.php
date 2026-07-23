@@ -13,7 +13,9 @@ it('merges the truss config under the "truss" key with expected defaults', funct
         ->and(config('truss.excluded_tables'))->toBeArray()->toContain('sessions')
         ->and(config('truss.diagram.type_labels'))->toBe('native')
         ->and(config('truss.focus.default_depth'))->toBe(1)
-        ->and(config('truss.large_schema.warn_above'))->toBe(60);
+        ->and(config('truss.large_schema.warn_above'))->toBe(60)
+        ->and(config('truss.middleware'))->toBe(['web'])
+        ->and(config('truss.authorization.allowed_emails'))->toBe([]);
 });
 
 it('exposes no configurable gate name (the viewTruss ability is fixed)', function () {

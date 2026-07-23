@@ -76,6 +76,37 @@ Two routes, matching the "index page + JSON endpoint" pattern used by Telescope/
 
 Both routes sit behind a **fixed `viewTruss` gate** (same pattern as Telescope's `viewTelescope`). The package ships a default definition that allows access in `local` only; the host app customizes *who* may view by redefining the `viewTruss` gate in its own service provider. The ability name is not configurable — only its callback is, and that lives in the app, not in config.
 
+#### Authorization model
+
+Truss is designed to be safe to install in **production** and gated there — not merely a local-only tool. Access is guarded by two independent layers, enforced by the `Authorize` middleware, plus the auth-context middleware that runs ahead of it:
+
+1. **`truss.enabled`** — when off, the routes respond **404**, behaving as if they do not exist. Defaults to local-only, so a production deploy is dark until you set `TRUSS_ENABLED=true`. This is the deploy switch: "does the dashboard exist in this environment at all".
+2. **The `viewTruss` gate** — the access control: "who may view". It is consulted **only in non-local** environments (local is unconditionally open, mirroring Telescope). A denial returns **404**, not 403, so the dashboard never confirms it exists to someone who may not see it.
+
+`enabled` alone does not grant access, and the gate alone does not make the routes exist. To expose Truss in a non-local environment (staging or production), a host must **both** set `TRUSS_ENABLED=true` *and* authorize the viewers.
+
+**Establishing the auth context.** The gate can only identify the viewer if the request has already passed through session/auth middleware. The `truss.middleware` config key (default `['web']`) supplies that stack; the fixed `viewTruss` guard is always appended after it and cannot be configured away. Without this, `$request->user()` would be `null` in production and the gate would deny *everyone*, including the admins who should have access — so the middleware stack is load-bearing, not cosmetic. Apps that authenticate differently (a custom guard, Sanctum for an SPA) swap the stack here.
+
+**Authorizing specific users — the zero-code path.** For the common "let these admins in" case, the shipped default `viewTruss` gate admits the emails in `truss.authorization.allowed_emails`, set via `TRUSS_ALLOWED_EMAILS` as a comma-separated list:
+
+```dotenv
+TRUSS_ENABLED=true
+TRUSS_ALLOWED_EMAILS="ada@example.com,grace@example.com"
+```
+
+No gate code is needed. The list is ignored in local (the gate is not consulted there) and **fails closed** — an empty list means no one may view in non-local until emails are added or the gate is overridden. A guest resolves to a `null` user and is denied.
+
+**Authorizing by role — override the gate.** When email lists aren't enough (e.g. a role or permission check), the host defines its own `viewTruss` gate in a service provider, exactly as with Telescope. A host definition fully replaces the default and the allow-list is then unused:
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('viewTruss', fn (User $user) => $user->isAdmin());
+```
+
+The host definition always wins (the package registers its default only if the app has not already defined the gate, and a later app definition overrides it regardless of order). The ability *name* is fixed — only the callback varies, and that lives in the app. See `DECISIONS.md` → *Authorization: production-gated, Telescope-mirroring model*.
+
 ## Frontend
 
 - Mermaid.js renders the ER diagram from the JSON schema, no build step required.

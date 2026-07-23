@@ -30,5 +30,11 @@ abstract class TestCase extends Orchestra
 
         // In-memory cache so snapshot caching tests need no cache table.
         $app['config']->set('cache.default', 'array');
+
+        // The HTTP routes run through the `web` middleware group (session +
+        // encrypted cookies), so the app needs an encryption key and a
+        // driver-less session store under test.
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app['config']->set('session.driver', 'array');
     }
 }

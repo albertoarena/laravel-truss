@@ -58,10 +58,10 @@ it('applies per-connection excluded tables on top of the global list', function 
     expect($names)->toContain('posts')->and($names)->not->toContain('secret_audit');
 });
 
-it('forbids the API when the viewTruss gate denies', function () {
+it('404s the API when the viewTruss gate denies', function () {
     Gate::define('viewTruss', fn ($user = null) => false);
 
-    $this->getJson('/truss/api/schema')->assertForbidden();
+    $this->getJson('/truss/api/schema')->assertNotFound();
 });
 
 it('404s the API when Truss is disabled', function () {

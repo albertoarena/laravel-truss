@@ -35,6 +35,51 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Middleware
+    |--------------------------------------------------------------------------
+    |
+    | The middleware stack applied to both Truss routes. Its job is to establish
+    | the auth context (session, cookies, the authenticated user) so the
+    | `viewTruss` gate can identify who is viewing — without it, the gate sees no
+    | user and denies everyone in non-local environments. The default `web` group
+    | covers session-based auth; swap it for a custom guard/Sanctum stack if your
+    | app authenticates differently.
+    |
+    | The fixed `viewTruss` authorization check is always appended after this and
+    | cannot be configured away — this list controls the auth *context*, not
+    | whether authorization runs.
+    |
+    */
+
+    'middleware' => ['web'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authorization
+    |--------------------------------------------------------------------------
+    |
+    | Truss is gated by the fixed `viewTruss` gate (the ability name is not
+    | configurable). In non-local environments the shipped default gate admits
+    | only the emails listed here — the zero-code path for "let these admins in".
+    | Set them via TRUSS_ALLOWED_EMAILS as a comma-separated list, e.g.
+    | TRUSS_ALLOWED_EMAILS="ada@example.com,grace@example.com".
+    |
+    | The list is ignored in local (the gate is not consulted there) and ignored
+    | entirely if the host app defines its own `viewTruss` gate (e.g. a role
+    | check). An empty list fails closed: no one may view in non-local until you
+    | either add emails here or override the gate.
+    |
+    */
+
+    'authorization' => [
+        'allowed_emails' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TRUSS_ALLOWED_EMAILS', '')),
+        ))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Cache
     |--------------------------------------------------------------------------
     |
