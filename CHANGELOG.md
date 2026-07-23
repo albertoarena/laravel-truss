@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `truss:show` Artisan command: print the database structure as a terminal table (table, column count, foreign-key count), the text counterpart to the visual dashboard. Structure only.
+- `truss:open` Artisan command: open the dashboard in the default browser, honouring the configured route prefix and app URL.
+
 ## [1.0.0] - 2026-07-23
 
 First stable release. The API, config, and authorization model are considered stable and will follow semantic versioning from here.

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss;
 
+use AlbertoArena\Truss\Commands\OpenCommand;
 use AlbertoArena\Truss\Commands\RebuildCommand;
+use AlbertoArena\Truss\Commands\ShowCommand;
 use AlbertoArena\Truss\Http\Controllers\AssetController;
 use AlbertoArena\Truss\Http\Controllers\IndexController;
 use AlbertoArena\Truss\Http\Controllers\SchemaApiController;
@@ -33,7 +35,7 @@ class TrussServiceProvider extends PackageServiceProvider
             ->name('laravel-truss')
             ->hasConfigFile()
             ->hasViews()
-            ->hasCommand(RebuildCommand::class);
+            ->hasCommands([RebuildCommand::class, ShowCommand::class, OpenCommand::class]);
     }
 
     public function packageBooted(): void

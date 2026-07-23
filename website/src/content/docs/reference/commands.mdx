@@ -3,6 +3,26 @@ title: Commands
 description: Artisan commands and asset publishing
 ---
 
+## `truss:show`
+
+Print the database structure as a table in the terminal: one row per table, with its column count and foreign-key count. It is the text counterpart to the visual dashboard, reading the same cached, exclusion-filtered snapshot, and like everything in Truss it shows structure only, never row data.
+
+```bash
+# Show the default connection
+php artisan truss:show
+
+# Show a specific connection
+php artisan truss:show --connection=mysql
+```
+
+## `truss:open`
+
+Open the Truss dashboard in your default browser. The URL honours your configured `route_prefix` and app URL. On a headless host the URL is printed regardless, so you can open it by hand or forward the port.
+
+```bash
+php artisan truss:open
+```
+
 ## `truss:rebuild`
 
 Rebuild the cached schema snapshot. Useful in CI, in seeding workflows, or whenever you want to force a refresh.
