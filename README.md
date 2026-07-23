@@ -34,8 +34,16 @@ Full documentation is at **[albertoarena.github.io/laravel-truss](https://albert
 
 ## Installation
 
+For local use, install Truss as a dev dependency:
+
 ```bash
 composer require albertoarena/laravel-truss --dev
+```
+
+To run Truss gated on staging or production, install it as a **regular dependency** instead. Dev dependencies are excluded from `composer install --no-dev` builds, so a `--dev` install never reaches a production deploy and `/truss` returns 404 there:
+
+```bash
+composer require albertoarena/laravel-truss
 ```
 
 Requires **PHP 8.3+** and **Laravel 12+**. The service provider is auto-discovered, so there is nothing to publish to get started.

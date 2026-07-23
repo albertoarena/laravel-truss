@@ -10,13 +10,23 @@ description: Install Laravel Truss into your application
 
 ## Install via Composer
 
-Truss is a development and inspection tool, so install it as a dev dependency:
+For local use, Truss is a development and inspection tool, so install it as a dev dependency:
 
 ```bash
 composer require albertoarena/laravel-truss --dev
 ```
 
 The service provider is auto-discovered by Laravel. There is nothing to publish to get started.
+
+:::caution[Running on staging or production]
+A `--dev` install is excluded from `composer install --no-dev` builds, which is how most servers deploy. So a dev install never reaches a non-local server, and `/truss` returns 404 there. To run Truss gated on staging or production, install it as a regular dependency instead:
+
+```bash
+composer require albertoarena/laravel-truss
+```
+
+Then enable and authorize it as described in [Authorization](/laravel-truss/guides/authorization/).
+:::
 
 ## Publish the config (optional)
 

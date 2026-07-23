@@ -5,6 +5,10 @@ description: Gate access to Truss so it is safe to run in production
 
 Truss is designed to be safe to install in production and gated there. Access is guarded by two independent layers, and **both** must pass.
 
+:::note
+Running Truss on a non-local server requires it to be installed as a regular dependency, not a dev one. A `--dev` install is stripped from `composer install --no-dev` deploys, so `/truss` would 404. See [Installation](/laravel-truss/getting-started/installation/).
+:::
+
 ## The two layers
 
 1. **`truss.enabled`** is the deploy switch. When it is off, the routes respond **404**, as if they do not exist. It defaults to the `local` environment only, so a production deploy stays dark until you set `TRUSS_ENABLED=true`.
