@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-23
+
+First stable release. The API, config, and authorization model are considered stable and will follow semantic versioning from here.
+
 ### Added
 
 - Diagram image export: an export button saves the whole current diagram (the current filter/focus selection) as a PNG or SVG. Fully client-side and dependency-free (no CDN, CSP-safe): labels are flattened to SVG text and the font is embedded, so the output is theme-matched and correct anywhere. Structure only.
