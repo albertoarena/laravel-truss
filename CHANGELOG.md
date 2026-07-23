@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-23
+
 ### Added
 
-- Per-table export/focus menu: click a table name in the diagram to focus it, copy its structure as JSON, or download its structure as JSON or CSV. Exports are generated in the browser and contain structure only (columns, keys, indexes), never row data.
+- Per-table export/focus menu: click a table name in the diagram to focus (or unfocus) it, copy its structure as JSON, or download its structure as JSON or CSV. Exports are generated in the browser and contain structure only (columns, keys, indexes), never row data.
 
 ## [0.2.0] - 2026-07-23
 
