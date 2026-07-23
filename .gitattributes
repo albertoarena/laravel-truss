@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+# Keep the Composer/dist package lean: exclude development-only files.
+# Runtime assets under resources/ (views, css, js, vendored Mermaid, fonts) ship.
+/.github            export-ignore
+/art                export-ignore
+/docs               export-ignore
+/tests              export-ignore
+/website            export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/CLAUDE.md          export-ignore
+/CONTRIBUTING.md    export-ignore
+/package.json       export-ignore
+/phpunit.xml        export-ignore
+/pint.json          export-ignore
+/playwright.config.js export-ignore
+/vitest.config.js   export-ignore
