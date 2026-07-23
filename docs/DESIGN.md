@@ -120,6 +120,7 @@ The host definition always wins (the package registers its default only if the a
 - **Large-schema support (50+ tables) from day one.** Focus mode is the primary answer — reducing to a table and its neighbours keeps both layout time and legibility under control. Mermaid's `maxTextSize`/`maxEdges` guards are raised so large schemas render instead of erroring; a soft warning appears above a configurable table threshold.
 - **Deep-linkable views.** The current connection, filter, focus, depth, and type-label mode are reflected in the URL query string (for example `/truss?focus=projects`), updated live via `history.replaceState`. On load the query string seeds the initial view, so a focused or filtered view can be bookmarked, shared, and reopened. The serialize/parse logic is a pure, unit-tested module (`resources/js/url-state.js`).
 - **Per-table export/focus menu.** Clicking a table name (a subtle, hover-revealed accent, reusing the same clickable-label trick as the enum popover rather than a fragile injected icon) opens a small menu in the shared popover: *Focus this table* (or *Unfocus this table* when it is already the focus), *Copy JSON*, *Download JSON*, *Download CSV*. Exports are generated client-side from the snapshot already in the browser and are **structure only** (columns, keys, indexes) — consistent with the no-data guarantee. JSON is the full table structure; CSV is a flat column view with a derived `PK`/`FK` key column. The serializers are a pure, unit-tested module (`resources/js/table-export.js`).
+- **Diagram image export (PNG/SVG).** A toolbar button exports the whole current diagram (the current filter/focus selection) as a PNG or SVG. It is fully client-side and dependency-free, in keeping with the no-CDN, CSP-safe stance: the rendered SVG is cloned, its CSS-driven shape colours are inlined, every HTML label (a Mermaid `foreignObject`, which neither rasterises to canvas nor opens in vector tools) is flattened to a positioned SVG `<text>` mapped through the live CTM, the IBM Plex Mono weights are embedded as base64 `@font-face`, and a solid themed background is painted. SVG serialises that directly; PNG draws it to a 2× canvas and `toBlob`s it. Structure only, and theme-matched.
 - Connection switcher re-fetches from the JSON endpoint and re-renders, no full page reload.
 - When the snapshot was built via the SQLite fallback, a banner states the connection was unavailable and native types may be approximate.
 
@@ -159,7 +160,7 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 
 Post-v1 ideas, not yet scheduled:
 
-- **Export the current view** as PDF or PNG — render the on-screen diagram (the current filter/focus selection) to an image/document for sharing or docs.
+- **Export the current view as PDF** — PNG and SVG export shipped (see the frontend section above); a hand-rolled, single-image PDF wrapper is a feasible follow-up (a valid one was prototyped) but was deferred to keep the feature lean.
 - **Semantic relationship labels from Eloquent models** (see *Out of scope for v1* above).
 
 ## Directory structure

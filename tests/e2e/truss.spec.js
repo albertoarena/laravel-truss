@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { users, posts, roles, roleUser } from '../js/fixtures.js';
 
@@ -201,6 +202,42 @@ test('the menu downloads a table structure as JSON and CSV', async ({ page }) =>
   await page.locator('#truss-popover').getByText('Download CSV').click();
   const csv = await csvDownload;
   expect(csv.suggestedFilename()).toBe('posts.csv');
+});
+
+test('the export button offers PNG and SVG', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await page.locator('#truss-export-btn').click();
+  const pop = page.locator('#truss-popover');
+  await expect(pop).toBeVisible();
+  await expect(pop).toContainText('Export PNG');
+  await expect(pop).toContainText('Export SVG');
+});
+
+test('exporting downloads a PNG of the whole diagram', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await page.locator('#truss-export-btn').click();
+  const download = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('Export PNG').click();
+  expect((await download).suggestedFilename()).toBe('truss-schema.png');
+});
+
+test('exporting a focused view names the file after the focus and flattens labels', async ({ page }) => {
+  await page.goto('/tests/e2e/harness.html?focus=users');
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await page.locator('#truss-export-btn').click();
+  const download = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('Export SVG').click();
+  const svg = await download;
+  expect(svg.suggestedFilename()).toBe('truss-users.svg');
+
+  // The export flattens HTML labels to <text> (rasterisable, tool-portable).
+  const contents = readFileSync(await svg.path(), 'utf8');
+  expect(contents).toContain('<text');
+  expect(contents).toContain('users');
+  expect(contents).not.toContain('foreignObject');
 });
 
 test('a focus in the URL is applied on load', async ({ page }) => {

@@ -61,6 +61,11 @@
                     <select id="truss-connection"></select>
                 </label>
                 <button type="button" class="truss-util truss-util--more" id="truss-more-btn" title="More controls" aria-expanded="false">⋯</button>
+                <button type="button" class="truss-util" id="truss-export-btn" title="Export the diagram (PNG or SVG)" aria-expanded="false">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 3 v11"/><path d="M7 9 l5 5 5-5"/><path d="M4 20 h16"/>
+                    </svg>
+                </button>
                 <button type="button" class="truss-util" id="truss-legend-btn" title="Legend" aria-expanded="false">▤</button>
                 <button type="button" class="truss-util" id="truss-theme-btn" title="Theme">◐</button>
             </div>

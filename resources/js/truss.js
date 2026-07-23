@@ -58,6 +58,7 @@ const el = {
   legend: document.getElementById('truss-legend'),
   legendBtn: document.getElementById('truss-legend-btn'),
   themeBtn: document.getElementById('truss-theme-btn'),
+  exportBtn: document.getElementById('truss-export-btn'),
   statTables: document.getElementById('truss-stat-tables'),
   statConn: document.getElementById('truss-stat-conn'),
   statFallback: document.getElementById('truss-stat-fallback'),
@@ -258,10 +259,10 @@ function hidePopover() {
   if (el.popover) el.popover.hidden = true;
   openAnchor = null;
   menuTable = null;
+  el.exportBtn?.setAttribute('aria-expanded', 'false');
 }
 
-function downloadFile(name, content, mime) {
-  const blob = new Blob([content], { type: mime });
+function downloadBlob(name, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -272,9 +273,15 @@ function downloadFile(name, content, mime) {
   URL.revokeObjectURL(url);
 }
 
+function downloadFile(name, content, mime) {
+  downloadBlob(name, new Blob([content], { type: mime }));
+}
+
 function runMenuAction(act) {
   const table = menuTable;
   hidePopover();
+  if (act === 'png') { exportImage('png'); return; }
+  if (act === 'svg') { exportImage('svg'); return; }
   if (!table) return;
   if (act === 'focus' || act === 'unfocus') {
     state.focusRoot = act === 'focus' ? table.name : '';
@@ -287,6 +294,143 @@ function runMenuAction(act) {
   } else if (act === 'csv') {
     downloadFile(`${table.name}.csv`, toCsv(table), 'text/csv');
   }
+}
+
+/* ---- diagram export --------------------------------------------------- */
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// Inline the shipped IBM Plex Mono weights as base64 @font-face rules, so an
+// exported SVG (whose labels are re-rendered as <text>) carries its own font
+// instead of depending on one being installed wherever the file is opened.
+async function embedFontCss() {
+  const href = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .map((l) => l.href).find((h) => /truss\.css(\?|$)/.test(h));
+  if (!href) return '';
+  const faces = await Promise.all(['400', '600'].map(async (weight) => {
+    try {
+      const url = new URL(`ibm-plex-mono-${weight}.woff2`, href).href;
+      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 1) bin += String.fromCharCode(bytes[i]);
+      return `@font-face{font-family:'IBM Plex Mono';font-weight:${weight};font-style:normal;`
+        + `src:url(data:font/woff2;base64,${btoa(bin)}) format('woff2');}`;
+    } catch {
+      return '';
+    }
+  }));
+  return faces.join('');
+}
+
+// Build a standalone, self-contained SVG of the current diagram. The rendered
+// SVG relies on external CSS for colours and uses HTML labels in foreignObjects
+// (which do not rasterise and are unsupported by most vector tools), so we
+// inline the shape colours, flatten every label to a positioned <text> (mapped
+// through the live CTM, so pan/zoom is irrelevant), embed the font, and paint a
+// solid themed background. Returns { markup, width, height } or null.
+async function buildExportSvg() {
+  const live = el.canvas.querySelector('svg');
+  if (!live) return null;
+  const vb = live.viewBox.baseVal;
+  const clone = live.cloneNode(true);
+
+  const liveShapes = live.querySelectorAll('rect, path, line, polygon');
+  const cloneShapes = clone.querySelectorAll('rect, path, line, polygon');
+  liveShapes.forEach((node, i) => {
+    const cs = getComputedStyle(node);
+    const target = cloneShapes[i];
+    target.setAttribute('fill', cs.fill);
+    if (cs.stroke !== 'none') target.setAttribute('stroke', cs.stroke);
+    const strokeWidth = cs.strokeWidth.replace('px', '');
+    if (strokeWidth) target.setAttribute('stroke-width', strokeWidth);
+    if (cs.strokeDasharray !== 'none') target.setAttribute('stroke-dasharray', cs.strokeDasharray);
+  });
+
+  // The foreignObject box is tight to its text, so a start-anchored,
+  // vertically-centred <text> at the box origin lines up with the layout.
+  const toUser = live.getScreenCTM().inverse();
+  const textLayer = document.createElementNS(SVG_NS, 'g');
+  for (const fo of live.querySelectorAll('foreignObject')) {
+    const text = fo.textContent.trim();
+    if (!text) continue;
+    const styled = fo.querySelector('.nodeLabel') || fo.querySelector('.edgeLabel') || fo.lastElementChild || fo;
+    const cs = getComputedStyle(styled);
+    const rect = fo.getBoundingClientRect();
+    const a = new DOMPoint(rect.left, rect.top).matrixTransform(toUser);
+    const b = new DOMPoint(rect.right, rect.bottom).matrixTransform(toUser);
+    const t = document.createElementNS(SVG_NS, 'text');
+    t.setAttribute('x', a.x.toFixed(1));
+    t.setAttribute('y', ((a.y + b.y) / 2).toFixed(1));
+    t.setAttribute('text-anchor', 'start');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('fill', cs.color);
+    t.setAttribute('font-size', cs.fontSize);
+    t.setAttribute('font-weight', cs.fontWeight);
+    t.setAttribute('font-family', "'IBM Plex Mono', ui-monospace, monospace");
+    t.textContent = text;
+    textLayer.appendChild(t);
+  }
+  clone.querySelectorAll('foreignObject').forEach((fo) => fo.remove());
+  clone.appendChild(textLayer);
+
+  const bg = document.createElementNS(SVG_NS, 'rect');
+  bg.setAttribute('x', vb.x);
+  bg.setAttribute('y', vb.y);
+  bg.setAttribute('width', vb.width);
+  bg.setAttribute('height', vb.height);
+  bg.setAttribute('fill', getComputedStyle(el.viewport).backgroundColor);
+  clone.insertBefore(bg, clone.firstChild);
+
+  const style = document.createElementNS(SVG_NS, 'style');
+  style.textContent = await embedFontCss();
+  clone.insertBefore(style, clone.firstChild);
+  clone.setAttribute('xmlns', SVG_NS);
+
+  return { markup: new XMLSerializer().serializeToString(clone), width: vb.width, height: vb.height };
+}
+
+function rasterize({ markup, width, height }, scale = 2) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml' }));
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      resolve(canvas);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('export render failed')); };
+    img.src = url;
+  });
+}
+
+function exportBaseName() {
+  return state.focusRoot ? `truss-${state.focusRoot}` : 'truss-schema';
+}
+
+async function exportImage(format) {
+  const svg = await buildExportSvg();
+  if (!svg) return;
+  if (format === 'svg') {
+    downloadFile(`${exportBaseName()}.svg`, svg.markup, 'image/svg+xml');
+    return;
+  }
+  const canvas = await rasterize(svg, 2);
+  canvas.toBlob((blob) => { if (blob) downloadBlob(`${exportBaseName()}.png`, blob); }, 'image/png');
+}
+
+function showExportMenu(anchor) {
+  menuTable = null;
+  el.popover.innerHTML = '<div class="truss-popover-head">Export view</div>'
+    + '<div class="truss-menu">'
+    + '<button type="button" data-act="png">Export PNG</button>'
+    + '<button type="button" data-act="svg">Export SVG</button>'
+    + '</div>';
+  positionPopover(anchor);
 }
 
 /** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
@@ -554,8 +698,17 @@ function wireEvents() {
     const btn = e.target.closest('button[data-act]');
     if (btn) runMenuAction(btn.dataset.act);
   });
+  el.exportBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (openAnchor === el.exportBtn) {
+      hidePopover();
+    } else {
+      showExportMenu(el.exportBtn);
+      el.exportBtn.setAttribute('aria-expanded', 'true');
+    }
+  });
   document.addEventListener('click', (e) => {
-    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name')) hidePopover();
+    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name, #truss-export-btn')) hidePopover();
   });
 
   // Unified pointer handling: one pointer pans (mouse or touch), two pointers

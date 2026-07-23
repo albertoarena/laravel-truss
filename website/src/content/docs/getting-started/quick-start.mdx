@@ -53,6 +53,15 @@ Click a **table name** in the diagram to open a small menu for that table:
 
 Exports are generated in your browser from the schema Truss already loaded, and contain **structure only, never row data**, consistent with the rest of Truss.
 
+## Exporting the diagram
+
+The **export** button (the download icon in the top-right) saves the whole current diagram, whatever the filter and focus are showing, as an image:
+
+- **Export PNG** downloads a high-resolution raster (`truss-schema.png`, or `truss-<table>.png` when a table is focused), handy for pasting into docs or chat.
+- **Export SVG** downloads a vector version that stays crisp at any size and opens in vector editors.
+
+Both are rendered entirely in your browser, embed the diagram font so the text is correct anywhere, and match your current light or dark theme. As always, structure only.
+
 ## Multiple connections
 
 If you have configured more than one visualizable connection, a connection switcher appears. Switching re-fetches and re-renders without a full page reload.
