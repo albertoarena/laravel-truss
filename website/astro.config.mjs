@@ -41,6 +41,7 @@ export default defineConfig({
           items: [
             { label: 'Installation', link: '/getting-started/installation/' },
             { label: 'Quick start', link: '/getting-started/quick-start/' },
+            { label: 'Live demo', link: '/demo/', attrs: { target: '_blank' }, badge: 'Live' },
           ],
         },
         {

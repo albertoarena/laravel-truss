@@ -1,0 +1,102 @@
+{
+  "connection": "mysql",
+  "fallback": false,
+  "skipped_migrations": [],
+  "generated_at": "2026-07-23T10:00:00Z",
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        { "name": "id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "name", "type": "varchar(255)", "nullable": false, "default": null },
+        { "name": "email", "type": "varchar(255)", "nullable": false, "default": null },
+        { "name": "email_verified_at", "type": "timestamp", "nullable": true, "default": null },
+        { "name": "created_at", "type": "timestamp", "nullable": true, "default": null }
+      ],
+      "primary_key": ["id"], "indexes": [], "foreign_keys": []
+    },
+    {
+      "name": "roles",
+      "columns": [
+        { "name": "id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "name", "type": "varchar(255)", "nullable": false, "default": null }
+      ],
+      "primary_key": ["id"], "indexes": [], "foreign_keys": []
+    },
+    {
+      "name": "role_user",
+      "columns": [
+        { "name": "role_id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "user_id", "type": "bigint unsigned", "nullable": false, "default": null }
+      ],
+      "primary_key": ["role_id", "user_id"], "indexes": [],
+      "foreign_keys": [
+        { "name": "role_user_role_id_foreign", "columns": ["role_id"], "references_table": "roles", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" },
+        { "name": "role_user_user_id_foreign", "columns": ["user_id"], "references_table": "users", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" }
+      ]
+    },
+    {
+      "name": "categories",
+      "columns": [
+        { "name": "id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "parent_id", "type": "bigint unsigned", "nullable": true, "default": null },
+        { "name": "name", "type": "varchar(255)", "nullable": false, "default": null }
+      ],
+      "primary_key": ["id"], "indexes": [],
+      "foreign_keys": [
+        { "name": "categories_parent_id_foreign", "columns": ["parent_id"], "references_table": "categories", "references_columns": ["id"], "on_update": null, "on_delete": "set null" }
+      ]
+    },
+    {
+      "name": "posts",
+      "columns": [
+        { "name": "id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "user_id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "category_id", "type": "bigint unsigned", "nullable": true, "default": null },
+        { "name": "title", "type": "varchar(255)", "nullable": false, "default": null },
+        { "name": "status", "type": "enum('draft','published','archived')", "nullable": false, "default": "draft" },
+        { "name": "published_at", "type": "timestamp", "nullable": true, "default": null }
+      ],
+      "primary_key": ["id"], "indexes": [],
+      "foreign_keys": [
+        { "name": "posts_user_id_foreign", "columns": ["user_id"], "references_table": "users", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" },
+        { "name": "posts_category_id_foreign", "columns": ["category_id"], "references_table": "categories", "references_columns": ["id"], "on_update": null, "on_delete": "set null" }
+      ]
+    },
+    {
+      "name": "comments",
+      "columns": [
+        { "name": "id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "post_id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "user_id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "body", "type": "text", "nullable": false, "default": null },
+        { "name": "created_at", "type": "timestamp", "nullable": true, "default": null }
+      ],
+      "primary_key": ["id"], "indexes": [],
+      "foreign_keys": [
+        { "name": "comments_post_id_foreign", "columns": ["post_id"], "references_table": "posts", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" },
+        { "name": "comments_user_id_foreign", "columns": ["user_id"], "references_table": "users", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" }
+      ]
+    },
+    {
+      "name": "tags",
+      "columns": [
+        { "name": "id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "name", "type": "varchar(255)", "nullable": false, "default": null }
+      ],
+      "primary_key": ["id"], "indexes": [], "foreign_keys": []
+    },
+    {
+      "name": "post_tag",
+      "columns": [
+        { "name": "post_id", "type": "bigint unsigned", "nullable": false, "default": null },
+        { "name": "tag_id", "type": "bigint unsigned", "nullable": false, "default": null }
+      ],
+      "primary_key": ["post_id", "tag_id"], "indexes": [],
+      "foreign_keys": [
+        { "name": "post_tag_post_id_foreign", "columns": ["post_id"], "references_table": "posts", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" },
+        { "name": "post_tag_tag_id_foreign", "columns": ["tag_id"], "references_table": "tags", "references_columns": ["id"], "on_update": null, "on_delete": "cascade" }
+      ]
+    }
+  ]
+}

@@ -23,6 +23,10 @@ composer.lock
 /.vscode/
 *.iml
 
+# Docs live demo: the frontend assets are copied from resources/ at build time
+# (website/scripts/copy-demo-assets.mjs), so they are generated, not committed.
+/website/public/demo/assets/
+
 # Local Claude files
 CLAUDE.local.md
 CLAUDE.*.local.md

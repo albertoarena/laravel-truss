@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - 'website/**'
+      # The live demo bundles the shipped frontend (copied at build time), so a
+      # frontend change must redeploy the docs too.
+      - 'resources/js/**'
+      - 'resources/css/**'
+      - 'resources/fonts/**'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
