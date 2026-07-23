@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-23
+
+### Added
+
+- Deep-linkable views: the current connection, filter, focus, depth, and type-label mode are reflected in the URL query string (for example `/truss?focus=projects`), updated live as you interact. On load the query string seeds the initial view, so a focused or filtered view can be bookmarked, shared, and reopened.
+
 ## [0.1.0] - 2026-07-23
 
 ### Added
