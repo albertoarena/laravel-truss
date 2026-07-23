@@ -169,6 +169,25 @@ test('the menu Focus action focuses the table and updates the URL', async ({ pag
   await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBe('users');
 });
 
+test('the focused table offers Unfocus instead of Focus, and it clears focus', async ({ page }) => {
+  await page.goto('/tests/e2e/harness.html?focus=users');
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await tableName(page, 'users').click();
+  const pop = page.locator('#truss-popover');
+  await expect(pop).toContainText('Unfocus this table');
+  await expect(pop).not.toContainText('Focus this table');
+
+  await pop.getByText('Unfocus this table').click();
+  await expect(canvas(page)).toContainText('roles'); // full schema is back
+  await expect(page.locator('#truss-focus')).toHaveValue('');
+  await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBeNull();
+
+  // A non-focused table still offers Focus.
+  await tableName(page, 'posts').click();
+  await expect(pop).toContainText('Focus this table');
+});
+
 test('the menu downloads a table structure as JSON and CSV', async ({ page }) => {
   await expect(page.locator('#truss-canvas > svg')).toBeVisible();
 

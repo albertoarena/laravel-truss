@@ -239,9 +239,14 @@ function showEnumPopover(anchor) {
 
 function showTableMenu(anchor, table) {
   menuTable = table;
+  // When this table is already the focus, "Focus" would be a no-op, so offer the
+  // inverse instead of a redundant item.
+  const focusItem = state.focusRoot === table.name
+    ? '<button type="button" data-act="unfocus">Unfocus this table</button>'
+    : '<button type="button" data-act="focus">Focus this table</button>';
   el.popover.innerHTML = `<div class="truss-popover-head">${escapeHtml(table.name)}</div>`
     + '<div class="truss-menu">'
-    + '<button type="button" data-act="focus">Focus this table</button>'
+    + focusItem
     + '<button type="button" data-act="copy">Copy JSON</button>'
     + '<button type="button" data-act="json">Download JSON</button>'
     + '<button type="button" data-act="csv">Download CSV</button>'
@@ -271,9 +276,9 @@ function runMenuAction(act) {
   const table = menuTable;
   hidePopover();
   if (!table) return;
-  if (act === 'focus') {
-    state.focusRoot = table.name;
-    if (el.focus) el.focus.value = table.name;
+  if (act === 'focus' || act === 'unfocus') {
+    state.focusRoot = act === 'focus' ? table.name : '';
+    if (el.focus) el.focus.value = state.focusRoot;
     render();
   } else if (act === 'copy') {
     navigator.clipboard?.writeText(toJson(table));
