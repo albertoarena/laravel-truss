@@ -20,15 +20,14 @@
     ],
     "require": {
         "php": "^8.3",
-        "illuminate/contracts": "^12.0",
-        "illuminate/support": "^12.0",
+        "illuminate/contracts": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0",
         "spatie/laravel-package-tools": "^1.16"
     },
     "require-dev": {
         "laravel/pint": "^1.18",
-        "orchestra/testbench": "^10.0",
-        "pestphp/pest": "^3.5",
-        "pestphp/pest-plugin-laravel": "^3.0"
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "pestphp/pest": "^3.5"
     },
     "autoload": {
         "psr-4": {
