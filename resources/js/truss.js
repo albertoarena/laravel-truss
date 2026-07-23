@@ -47,10 +47,17 @@ const el = {
 const mermaid = window.mermaid;
 mermaid.initialize({
   startOnLoad: false,
-  theme: app.dataset.theme || 'default',
+  // A neutral base; the actual entity/row/line colours are painted by our CSS
+  // (resources/css/truss.css) so the diagram follows light/dark with no re-render.
+  theme: 'base',
   securityLevel: 'strict',
   maxTextSize: 5_000_000, // raise the guards so large schemas render
   maxEdges: 10_000,
+  er: { useMaxWidth: false },
+  themeVariables: {
+    fontFamily: '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    fontSize: '13px',
+  },
 });
 
 /* ---- selection -------------------------------------------------------- */

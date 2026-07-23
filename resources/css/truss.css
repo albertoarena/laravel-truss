@@ -1,32 +1,227 @@
-/* Truss dashboard styles. Served same-origin via the asset route (not inlined),
-   so a strict Content-Security-Policy needs only `style-src 'self'` for this
-   sheet. Note: Mermaid injects its own <style> into the rendered SVG at runtime,
-   which still requires `style-src 'unsafe-inline'` — a Mermaid limitation. */
+/* Truss dashboard — "Blueprint" look. Served same-origin via the asset route
+   (not inlined), so a strict CSP needs only style-src 'self' for this sheet.
+   Theme-reactive via prefers-color-scheme; a data-theme="light|dark" on <html>
+   can force a theme. The Mermaid diagram is themed here too (see bottom), so it
+   adapts to light/dark with no re-render — Mermaid's own theme is left neutral.
 
-:root { color-scheme: light dark; --bd: #d8dde3; --bg: #f6f7f9; --fg: #1b1f24; --muted: #5b6570; --accent: #2f6feb; }
+   Fonts are system stacks (no CDN, no bundled font files): a monospace for the
+   technical/blueprint feel, a system sans for longer copy. */
+
+/* IBM Plex Mono, self-hosted (woff2 served by the asset route; the relative
+   URLs resolve against this stylesheet's own {prefix}/assets/ path). No CDN. */
+@font-face {
+  font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("ibm-plex-mono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("ibm-plex-mono-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("ibm-plex-mono-600.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light dark;
+
+  --bp-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --bp-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Light (default) */
+  --bp-bg: #eef1f6;
+  --bp-grid: rgba(18, 53, 107, .07);
+  --bp-grid-strong: rgba(18, 53, 107, .12);
+  --bp-panel: #fbfcfe;
+  --bp-panel-line: #c9d4e6;
+  --bp-ink: #12356b;
+  --bp-cyan: #0e7c9b;
+  --bp-fg: #132741;
+  --bp-muted: #5f7396;
+  --bp-field: #ffffff;
+  --bp-field-line: #c9d4e6;
+
+  --bp-entity-bg: #ffffff;
+  --bp-row-odd: #ffffff;
+  --bp-row-even: #e9f0f9;
+  --bp-entity-border: #12356b;
+  --bp-hair: #c4d5ec;
+  --bp-entity-text: #12263c;
+  --bp-rel: #6f8fbf;
+  --bp-edge: #5f7396;
+  --bp-edge-bg: #eef1f6;
+
+  --bp-info-bg: #e5eefb; --bp-info-fg: #12356b;
+  --bp-warn-bg: #fbeeda; --bp-warn-fg: #8a5a00;
+  --bp-error-bg: #f7dede; --bp-error-fg: #a11;
+}
+
+/* Dark — applied on OS-dark (unless forced light) and on forced dark. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bp-bg: #0b1a2b;
+    --bp-grid: rgba(120, 200, 230, .055);
+    --bp-grid-strong: rgba(120, 200, 230, .11);
+    --bp-panel: #0f2338;
+    --bp-panel-line: #22496b;
+    --bp-ink: #5fd0e6;
+    --bp-cyan: #7fe0f2;
+    --bp-fg: #d7e7f4;
+    --bp-muted: #7fa2c0;
+    --bp-field: #0e2135;
+    --bp-field-line: #22496b;
+
+    --bp-entity-bg: #10273f;
+    --bp-row-odd: #10273f;
+    --bp-row-even: #16324e;
+    --bp-entity-border: #3f7fa0;
+    --bp-hair: #274a6b;
+    --bp-entity-text: #d7e7f4;
+    --bp-rel: #4a7d99;
+    --bp-edge: #9fb8d0;
+    --bp-edge-bg: #0b1a2b;
+
+    --bp-info-bg: #10314a; --bp-info-fg: #8fd4e6;
+    --bp-warn-bg: #3a2f16; --bp-warn-fg: #e6b877;
+    --bp-error-bg: #40201f; --bp-error-fg: #f0a0a0;
+  }
+}
+:root[data-theme="dark"] {
+  --bp-bg: #0b1a2b;
+  --bp-grid: rgba(120, 200, 230, .055);
+  --bp-grid-strong: rgba(120, 200, 230, .11);
+  --bp-panel: #0f2338;
+  --bp-panel-line: #22496b;
+  --bp-ink: #5fd0e6;
+  --bp-cyan: #7fe0f2;
+  --bp-fg: #d7e7f4;
+  --bp-muted: #7fa2c0;
+  --bp-field: #0e2135;
+  --bp-field-line: #22496b;
+
+  --bp-entity-bg: #10273f;
+  --bp-row-odd: #10273f;
+  --bp-row-even: #16324e;
+  --bp-entity-border: #3f7fa0;
+  --bp-hair: #274a6b;
+  --bp-entity-text: #d7e7f4;
+  --bp-rel: #4a7d99;
+  --bp-edge: #9fb8d0;
+  --bp-edge-bg: #0b1a2b;
+
+  --bp-info-bg: #10314a; --bp-info-fg: #8fd4e6;
+  --bp-warn-bg: #3a2f16; --bp-warn-fg: #e6b877;
+  --bp-error-bg: #40201f; --bp-error-fg: #f0a0a0;
+}
+
 * { box-sizing: border-box; }
-body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); }
 
-.truss-toolbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--bd); background: #fff; position: sticky; top: 0; z-index: 5; }
-.truss-brand { font-weight: 700; letter-spacing: .3px; margin-right: 4px; }
-.truss-field { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+body {
+  margin: 0;
+  color: var(--bp-fg);
+  font-family: var(--bp-sans);
+  background:
+    linear-gradient(var(--bp-grid-strong) 1px, transparent 1px) 0 0 / 96px 96px,
+    linear-gradient(90deg, var(--bp-grid-strong) 1px, transparent 1px) 0 0 / 96px 96px,
+    linear-gradient(var(--bp-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--bp-grid) 1px, transparent 1px) 0 0 / 24px 24px,
+    var(--bp-bg);
+}
+
+/* ---- toolbar ---------------------------------------------------------- */
+
+.truss-toolbar {
+  display: flex; align-items: center; gap: 18px; height: 54px; padding: 0 18px;
+  background: var(--bp-panel); border-bottom: 2px solid var(--bp-ink);
+  box-shadow: 0 1px 0 var(--bp-panel-line); position: sticky; top: 0; z-index: 5;
+}
+
+.truss-brand {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--bp-mono); font-weight: 600; font-size: 15px;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--bp-ink);
+}
+.truss-mark { flex: none; display: block; color: var(--bp-ink); }
+
+.truss-field {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--bp-muted); white-space: nowrap;
+}
 .truss-field[hidden] { display: none; }
-.truss-toolbar input, .truss-toolbar select { font: inherit; padding: 4px 8px; border: 1px solid var(--bd); border-radius: 6px; background: #fff; color: var(--fg); }
-.truss-toolbar input[type="number"] { width: 56px; }
 
-.truss-zoom { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
-.truss-zoom button { font: inherit; height: 30px; padding: 0 12px; border: 1px solid var(--bd); border-radius: 6px; background: #fff; cursor: pointer; }
-.truss-zoom input[type="range"] { width: 140px; accent-color: var(--accent); }
-#truss-zoom-pct { min-width: 42px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.truss-toolbar input[type="search"],
+.truss-toolbar select,
+.truss-toolbar input[type="number"] {
+  font-family: var(--bp-mono); font-size: 12.5px; letter-spacing: 0; color: var(--bp-fg);
+  background: var(--bp-field); border: 1px solid var(--bp-field-line); border-radius: 2px; padding: 6px 9px;
+}
+.truss-toolbar input[type="number"] { width: 52px; }
+.truss-toolbar input:focus, .truss-toolbar select:focus {
+  outline: none; border-color: var(--bp-ink);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bp-ink) 22%, transparent);
+}
 
-#truss-banners { display: flex; flex-direction: column; gap: 1px; }
-.truss-banner { padding: 8px 16px; font-size: 13px; }
-.truss-banner--info { background: #eef3ff; color: #294b9c; }
-.truss-banner--warn { background: #fff6e6; color: #8a5a00; }
-.truss-banner--error { background: #fdecec; color: #a11; }
+.truss-zoom { margin-left: auto; display: inline-flex; align-items: center; gap: 12px; }
+.truss-zoom button {
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--bp-ink); background: var(--bp-field); border: 1.5px solid var(--bp-ink);
+  border-radius: 2px; padding: 6px 13px; cursor: pointer;
+}
+.truss-zoom button:hover { background: var(--bp-ink); color: var(--bp-panel); }
+.truss-zoom input[type="range"] { width: 132px; accent-color: var(--bp-cyan); }
+#truss-zoom-pct {
+  font-family: var(--bp-mono); font-size: 12px; color: var(--bp-muted);
+  min-width: 40px; text-align: right; font-variant-numeric: tabular-nums;
+}
 
-/* The viewport clips; the canvas is panned/zoomed via a CSS transform (never a
-   re-layout), so scroll/zoom stay smooth on large diagrams. */
-#truss-viewport { position: relative; overflow: hidden; height: calc(100vh - 52px); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* ---- banners ---------------------------------------------------------- */
+
+#truss-banners { display: flex; flex-direction: column; }
+.truss-banner {
+  font-family: var(--bp-mono); font-size: 11.5px; letter-spacing: .03em;
+  padding: 8px 18px; border-bottom: 1px solid var(--bp-panel-line);
+  display: flex; align-items: center; gap: 9px;
+}
+.truss-banner::before { content: "◧"; opacity: .8; }
+.truss-banner--info { background: var(--bp-info-bg); color: var(--bp-info-fg); }
+.truss-banner--warn { background: var(--bp-warn-bg); color: var(--bp-warn-fg); }
+.truss-banner--error { background: var(--bp-error-bg); color: var(--bp-error-fg); }
+
+/* ---- diagram viewport (pan/zoom) -------------------------------------- */
+
+#truss-viewport {
+  position: relative; overflow: hidden; height: calc(100vh - 54px);
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
 #truss-viewport.is-panning { cursor: grabbing; }
 #truss-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+
+/* ---- Mermaid ER theming ----------------------------------------------- */
+/* Mermaid draws entity/row fills as SVG presentation attributes, which any CSS
+   rule overrides. Repainting them here (rather than via Mermaid's theme) makes
+   the diagram follow light/dark with no re-render, and fixes the pale odd-rows
+   Mermaid's v11 renderer produces in dark mode. */
+
+#truss-canvas svg { color: var(--bp-entity-text); }
+
+#truss-canvas svg .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-entity-bg) !important; }
+#truss-canvas svg .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-entity-border) !important; stroke-width: 1.3px !important; }
+
+#truss-canvas svg .row-rect-odd path[fill]:not([fill="none"]) { fill: var(--bp-row-odd) !important; }
+#truss-canvas svg .row-rect-even path[fill]:not([fill="none"]) { fill: var(--bp-row-even) !important; }
+#truss-canvas svg .row-rect-odd path[stroke]:not([stroke="none"]),
+#truss-canvas svg .row-rect-even path[stroke]:not([stroke="none"]) { stroke: var(--bp-hair) !important; }
+
+#truss-canvas svg .divider path { fill: var(--bp-hair) !important; stroke: var(--bp-hair) !important; }
+
+#truss-canvas svg .nodeLabel,
+#truss-canvas svg .nodeLabel p { color: var(--bp-entity-text) !important; font-family: var(--bp-mono) !important; }
+
+#truss-canvas svg .relationshipLine { stroke: var(--bp-rel) !important; }
+#truss-canvas svg marker path { stroke: var(--bp-rel) !important; }
+
+#truss-canvas svg .edgeLabel,
+#truss-canvas svg .edgeLabel p { color: var(--bp-edge) !important; font-family: var(--bp-mono) !important; font-size: 11px; }
+#truss-canvas svg .edgeLabel .labelBkg,
+#truss-canvas svg .labelBkg { background: var(--bp-edge-bg) !important; opacity: .9; }

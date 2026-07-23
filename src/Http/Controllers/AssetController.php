@@ -30,6 +30,9 @@ class AssetController
         'viewport.js' => 'js/viewport.js',
         'mermaid.min.js' => 'js/vendor/mermaid.min.js',
         'truss.css' => 'css/truss.css',
+        'ibm-plex-mono-400.woff2' => 'fonts/ibm-plex-mono-400.woff2',
+        'ibm-plex-mono-500.woff2' => 'fonts/ibm-plex-mono-500.woff2',
+        'ibm-plex-mono-600.woff2' => 'fonts/ibm-plex-mono-600.woff2',
     ];
 
     public function __invoke(string $file): BinaryFileResponse
@@ -50,6 +53,10 @@ class AssetController
 
     private function contentType(string $file): string
     {
-        return str_ends_with($file, '.css') ? 'text/css' : 'text/javascript';
+        return match (true) {
+            str_ends_with($file, '.css') => 'text/css',
+            str_ends_with($file, '.woff2') => 'font/woff2',
+            default => 'text/javascript',
+        };
     }
 }

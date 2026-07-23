@@ -157,7 +157,7 @@ return [
         // Lower bound for the automatic fit-to-screen: a large schema is never
         // auto-zoomed below this (it stays legible and you pan). The "Fit" button
         // ignores this and frames the whole diagram. 1.0 = 100%.
-        'min_zoom' => (float) env('TRUSS_MIN_ZOOM', 0.6),
+        'min_zoom' => (float) env('TRUSS_MIN_ZOOM', 0.7),
     ],
 
     /*

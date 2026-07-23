@@ -110,7 +110,7 @@ The host definition always wins (the package registers its default only if the a
 ## Frontend
 
 - Mermaid.js renders the ER diagram from the JSON schema, no build step required.
-- **Pan/zoom.** The viewport clips; the rendered SVG sits on a canvas transformed by `translate(x, y) scale(zoom)` (never a re-layout). The diagram **auto-fits** the viewport whenever the content changes (load, filter, focus, connection switch) so it is never stranded tiny or at a stale zoom — but a label toggle keeps your current view. The auto-fit honours a **readable floor** (`diagram.min_zoom`, default `0.6`): a large schema is framed at a legible zoom that you pan around rather than an unreadable speck. The explicit **Fit** button ignores the floor and frames the whole diagram at once, so the full overview is one click away. Manual control is Google-Maps-style: wheel zooms toward the cursor, drag pans (text selection is suppressed on the canvas), plus a zoom slider. The fit/zoom math is a pure, unit-tested module (`resources/js/viewport.js`).
+- **Pan/zoom.** The viewport clips; the rendered SVG sits on a canvas transformed by `translate(x, y) scale(zoom)` (never a re-layout). The diagram **auto-fits** the viewport whenever the content changes (load, filter, focus, connection switch) so it is never stranded tiny or at a stale zoom — but a label toggle keeps your current view. The auto-fit honours a **readable floor** (`diagram.min_zoom`, default `0.7`): a large schema is framed at a legible zoom that you pan around rather than an unreadable speck. The explicit **Fit** button ignores the floor and frames the whole diagram at once, so the full overview is one click away. Manual control is Google-Maps-style: wheel zooms toward the cursor, drag pans (text selection is suppressed on the canvas), plus a zoom slider. The fit/zoom math is a pure, unit-tested module (`resources/js/viewport.js`).
 - **Selection pipeline.** Table selection happens in two places, split by nature:
   - *Config `excluded_tables`* — applied **server-side**: removed from the API response entirely, so their structure never reaches the browser (kept out of the payload, not hidden via CSS). The cached snapshot stays the full schema; exclusions are applied when serving, so toggling `excluded_tables` needs no rebuild.
   - *Filter and focus* — applied **client-side** on the received JSON, both feeding the same `MermaidDefinitionGenerator`. Filter (text search / table multiselect) and focus mode (a table plus its foreign-key neighbours, depth 1, configurable) are the same operation with different predicates, and they compose: focus operates on whatever the filter left in.
@@ -125,7 +125,7 @@ The host definition always wins (the package registers its default only if the a
 
 The frontend ships as native ES modules plus a stylesheet, served from the package by a **gated asset route** (`GET {route_prefix}/assets/{file}`, Telescope-style) — no `vendor:publish` step and nothing on `public/`. The `{file}` param is allow-listed by basename, which both maps names to paths and makes traversal impossible. The route sits inside the same gated group as the page, so unauthorized users get 404 on the assets too — they never confirm Truss is installed (consistent with the 404-on-denial decision).
 
-Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served from the same route, so there is no CDN dependency by default and a strict CSP needs only `script-src 'self'`. A host that prefers a CDN or its own copy sets `diagram.mermaid_url` (`TRUSS_MERMAID_URL`); when null (default) Mermaid is self-hosted.
+Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served from the same route, so there is no CDN dependency by default and a strict CSP needs only `script-src 'self'`. A host that prefers a CDN or its own copy sets `diagram.mermaid_url` (`TRUSS_MERMAID_URL`); when null (default) Mermaid is self-hosted. The **IBM Plex Mono** font (the Blueprint UI face, used for the chrome and the diagram type labels) is likewise vendored as `woff2` in `resources/fonts/` and served from the route via `@font-face` — no font CDN, so `font-src 'self'` suffices.
 
 **CSP note.** With self-hosting, our own script and stylesheet need only `'self'` (the CSS is a served file, not inlined). Mermaid, however, injects a `<style>` element into the rendered SVG at runtime, so a strict policy still needs `style-src 'self' 'unsafe-inline'`. That is a Mermaid limitation, not something Truss can remove without patching it; it is documented rather than worked around.
 
@@ -141,7 +141,7 @@ Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served f
 | `diagram` | Styling options passed through to the Mermaid theme (colors, font, spacing) |
 | `diagram.type_labels` | Default column-type label mode: `native` (full DB type, default) or `laravel` (best-effort short label); user-toggleable in the UI |
 | `diagram.mermaid_url` | Where the browser loads Mermaid from. Null (default) self-hosts it from the package's asset route (no CDN); set a URL to opt into a CDN or a custom copy |
-| `diagram.min_zoom` | readable floor for the automatic fit-to-screen (default `0.6`): a large schema is never auto-zoomed below this. The Fit button ignores it |
+| `diagram.min_zoom` | readable floor for the automatic fit-to-screen (default `0.7`): a large schema is never auto-zoomed below this. The Fit button ignores it |
 | `middleware` | Middleware stack wrapping the routes, establishing the auth context so the gate sees the user (default `['web']`); the fixed `viewTruss` guard is always appended |
 | `authorization.allowed_emails` | Emails admitted by the default `viewTruss` gate in non-local environments (`TRUSS_ALLOWED_EMAILS`); ignored in local and when the host overrides the gate |
 | `focus.default_depth` | Foreign-key neighbour depth shown when focusing a table (default `1`) |
@@ -182,7 +182,7 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 │   │   ├── Controllers/
 │   │   │   ├── IndexController.php
 │   │   │   ├── SchemaApiController.php
-│   │   │   └── AssetController.php   # serves JS/CSS + vendored Mermaid (gated, no publish)
+│   │   │   └── AssetController.php   # serves JS/CSS/fonts + vendored Mermaid (gated, no publish)
 │   │   └── Middleware/
 │   │       └── Authorize.php
 │   └── Listeners/
@@ -191,7 +191,8 @@ _Focus mode was originally deferred to v2 but is now v1: it is the primary large
 │   ├── views/
 │   │   └── index.blade.php          # Blade shell (toolbar, banners, viewport)
 │   ├── css/
-│   │   └── truss.css                # served, not inlined (CSP-friendly)
+│   │   └── truss.css                # Blueprint theme (light+dark), incl. Mermaid SVG theming
+│   ├── fonts/                       # vendored IBM Plex Mono woff2 (OFL), self-hosted, no CDN
 │   └── js/                          # client-side, no build step; served by AssetController
 │       ├── truss.js                 # browser entry: fetch → select → Mermaid render
 │       ├── mermaid-definition.js    # schema subset → erDiagram string (the generator)

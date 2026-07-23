@@ -27,6 +27,12 @@ it('serves the vendored Mermaid library locally (no CDN needed)', function () {
     expect($response->headers->get('content-type'))->toContain('javascript');
 });
 
+it('serves the self-hosted IBM Plex Mono woff2 fonts (no CDN)', function () {
+    $response = $this->get('/truss/assets/ibm-plex-mono-400.woff2')->assertOk();
+
+    expect($response->headers->get('content-type'))->toContain('font/woff2');
+});
+
 it('serves every shipped JS module (guards against an allow-list omission)', function () {
     // Every top-level module the browser might import via a relative path must
     // be reachable through the asset route — a missing entry 404s at runtime and
