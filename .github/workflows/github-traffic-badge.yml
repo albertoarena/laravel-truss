@@ -1,0 +1,21 @@
+name: GitHub Traffic Badge
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: albertoarena/github-traffic-badge@v1
+        with:
+          token: ${{ secrets.TRAFFIC_TOKEN }}
+          metric: views
+          color: blue
+          label: 'Repo views'
+          lowercase: true
