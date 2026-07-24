@@ -16,3 +16,8 @@
 /pint.json          export-ignore
 /playwright.config.js export-ignore
 /vitest.config.js   export-ignore
+
+# Exclude the Astro docs/demo site from GitHub's language stats so the repo is
+# labelled PHP (the package) rather than JavaScript (the docs site outweighs it
+# in raw bytes). Packagist reads this "Language" field from GitHub.
+website/**          linguist-documentation
