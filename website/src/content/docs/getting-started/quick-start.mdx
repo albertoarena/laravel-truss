@@ -39,6 +39,7 @@ Your current view is reflected in the URL (for example `/truss?focus=projects`),
 
 - **Type labels** show the native database type (for example `varchar(255)`) by default. Toggle **Laravel types** to see best-effort short labels (for example `string`).
 - **`enum` / `set` columns** are compacted to the keyword so a long value list does not blow out the column. Click the `enum` label to see the full list of allowed values.
+- **Self-referential foreign keys** (a column pointing back at its own table, such as `parent_id` on `categories`) are marked with a `self-ref` note on the column rather than a looping line, which keeps the diagram tidy.
 - The **legend** (in the top-right) explains the `PK` / `FK` badges and the crow's-foot cardinality.
 - A **theme toggle** cycles automatic, light, and dark. Automatic follows your operating system.
 

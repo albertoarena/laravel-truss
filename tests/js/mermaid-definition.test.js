@@ -58,8 +58,11 @@ describe('generateErDiagram', () => {
     expect(out).not.toContain('users {');
   });
 
-  it('renders a self-referential relationship', () => {
+  it('shows a self-referential foreign key as a column note, not a self-loop edge', () => {
+    // Mermaid draws self-loops as a large sweeping curve, so we drop the edge
+    // and mark the referencing column with a "self-ref" note instead.
     const out = generateErDiagram([categories]);
-    expect(out).toContain('categories ||--o{ categories');
+    expect(out).not.toContain('categories ||--o{ categories');
+    expect(out).toMatch(/parent_id\s+FK\s+"self-ref"/);
   });
 });

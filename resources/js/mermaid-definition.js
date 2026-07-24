@@ -45,13 +45,21 @@ function keyBadge(columnName, primaryKey, foreignKeyColumns) {
 
 function entityBlock(table, mode) {
   const primaryKey = table.primary_key ?? [];
-  const fkColumns = new Set((table.foreign_keys ?? []).flatMap((fk) => fk.columns));
+  const foreignKeys = table.foreign_keys ?? [];
+  const fkColumns = new Set(foreignKeys.flatMap((fk) => fk.columns));
+  // Columns whose FK points back at this same table. Mermaid renders self-loops
+  // as a large sweeping curve, so instead of an edge we flag the column with a
+  // "self-ref" note (see generateErDiagram, where the self-loop edge is skipped).
+  const selfRefColumns = new Set(
+    foreignKeys.filter((fk) => fk.references_table === table.name).flatMap((fk) => fk.columns),
+  );
 
   const lines = table.columns.map((column) => {
     const type = mermaidType(column.type, mode);
     const badge = keyBadge(column.name, primaryKey, fkColumns);
+    const note = selfRefColumns.has(column.name) ? ' "self-ref"' : '';
 
-    return `    ${type} ${column.name}${badge ? ` ${badge}` : ''}`.trimEnd();
+    return `    ${type} ${column.name}${badge ? ` ${badge}` : ''}${note}`.trimEnd();
   });
 
   return [`  ${table.name} {`, ...lines, '  }'].join('\n');
@@ -74,6 +82,11 @@ export function generateErDiagram(tables, options = {}) {
   for (const table of tables) {
     for (const fk of table.foreign_keys ?? []) {
       if (!present.has(fk.references_table)) {
+        continue;
+      }
+      if (fk.references_table === table.name) {
+        // Self-reference: shown as a "self-ref" column note (see entityBlock),
+        // not a self-loop edge, which Mermaid draws as a large sweeping curve.
         continue;
       }
       const label = fk.name || fk.columns.join('_');
