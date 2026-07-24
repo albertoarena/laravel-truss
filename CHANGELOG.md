@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-24
+
+### Changed
+
+- Self-referential foreign keys (a column pointing back at its own table, such as `parent_id` on `categories`) are now marked with a `self-ref` note on the column instead of a looping relationship line, which Mermaid drew as a large sweeping curve. Keeps the diagram tidy while the hierarchy stays visible on the row. Ordinary relationships are unaffected.
+
 ## [1.1.0] - 2026-07-23
 
 ### Added
