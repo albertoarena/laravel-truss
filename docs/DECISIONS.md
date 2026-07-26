@@ -112,4 +112,10 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 
 **Context:** diagrams must stay usable at 50+ tables from v1. Rendering every table at once is both slow (dagre layout is superlinear in nodes/edges) and illegible.
 **Decision:** insert a single table-selection step between the cached JSON and the Mermaid definition. Config exclusions, interactive filtering, and focus mode are all reducers over the same set, feeding the same `MermaidDefinitionGenerator`. Focus mode (a table + its FK neighbours, depth-1 default) is promoted from v2 to v1 as the primary large-schema mechanism, implemented as reduce-and-re-render (regenerate the definition over the subset) rather than dim-in-place, so dagre lays out only the neighbourhood.
-**Trade-off:** focus/filter add interactive UI and state up front, but because they are one shared operation with different predicates, the marginal cost over building either alone is small — and it is what makes the tool usable on real (non-toy) schemas. Mermaid's `maxTextSize`/`maxEdges` guards are raised so large schemas render rather than error.
+**Trade-off:** focus/filter add interactive UI and state up front, but because they are one shared operation with different predicates, the marginal cost over building either alone is small, and it is what makes the tool usable on real (non-toy) schemas. Mermaid's `maxTextSize`/`maxEdges` guards are raised so large schemas render rather than error.
+
+## Canvas zoom: no `will-change: transform`
+
+**Context:** the canvas holding the rendered SVG is pan/zoomed with a CSS `translate(x, y) scale(zoom)`. The intuitive "make transforms smooth" hint, `will-change: transform`, was on the `#truss-canvas` rule.
+**Decision:** drop `will-change: transform`. That hint pins the canvas to a GPU layer rasterised once at promotion scale and then bitmap-upscaled, so text visibly blurs past ~1x (most obvious near the 800% ceiling). Without it the browser re-rasterises the vector SVG on each scale change, keeping deep zoom crisp.
+**Trade-off:** a re-raster now happens per zoom step, but panning only changes `translate` (the raster stays valid), so pan stays cheap and the cost lands exactly where a fresh crisp raster is wanted. Guarded by a source-contract test (`tests/js/canvas-css.test.js`) so the hint is not re-added as an "optimisation".

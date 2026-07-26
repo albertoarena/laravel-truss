@@ -287,7 +287,11 @@ body {
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 #truss-viewport.is-panning { cursor: grabbing; }
-#truss-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+/* No `will-change: transform`: it would pin the canvas to a GPU layer rasterised
+   once at promotion scale and bitmap-upscaled, blurring text past ~1x. Without
+   it the browser re-rasterises the vector SVG on each scale change (crisp deep
+   zoom); panning only changes `translate`, which keeps the raster valid. */
+#truss-canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
 
 /* ---- Mermaid ER theming ----------------------------------------------- */
 /* Mermaid draws entity/row fills as SVG presentation attributes, which any CSS
