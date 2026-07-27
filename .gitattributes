@@ -21,3 +21,14 @@
 # labelled PHP (the package) rather than JavaScript (the docs site outweighs it
 # in raw bytes). Packagist reads this "Language" field from GitHub.
 website/**          linguist-documentation
+
+# The vendored Mermaid bundle is 3.5 MB of minified third-party JavaScript and
+# is not auto-detected as vendored under resources/js/vendor/. Left in, it alone
+# labels the whole repo JavaScript. Mark it vendored so it is excluded.
+resources/js/vendor/**   linguist-vendored
+
+# Exclude the JavaScript test suites (Playwright e2e + Vitest) from language
+# stats too. The shipped PHP and the frontend modules under resources/js are
+# what represent the package; without this the JS tests tip the balance off PHP.
+tests/e2e/**        linguist-vendored
+tests/js/**         linguist-vendored
