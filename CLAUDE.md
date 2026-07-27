@@ -35,17 +35,18 @@ Frontend assets (JS/CSS + a vendored Mermaid) are served from the package via a 
 
 - **TDD is mandatory.** Write a failing test first, then implement. Never commit implementation code without a corresponding test. Applies to every change: features, fixes, refactors. PHP uses Pest; client-side code under `resources/js` uses Vitest for pure logic and Playwright for rendering/interaction.
 - **No data exposed, ever.** Only table, column, index, and foreign key structure. Never row contents. This is the package's core promise, treat it as a hard constraint, not a config default. The boundary is the `CREATE TABLE` definition vs. table rows: column defaults count as structure and are in scope (see `docs/DECISIONS.md`).
-- **Introspection stays pure.** Code under `src/Introspection/` must have zero knowledge of HTTP, Blade, or Mermaid. It only builds and returns a schema representation. See `src/Introspection/CLAUDE.md` for the rules that apply there.
+- **Introspection stays pure.** Code under `src/Introspection/` must have zero knowledge of HTTP, Blade, or Mermaid. It only builds and returns a schema representation. The detailed layer rules live in `.claude/rules/introspection.md`, which loads automatically when you touch that layer or its tests.
 - **Config is the single source of truth** for excluded tables, route path, cache TTL, per-connection settings, diagram styling, focus depth, the large-schema warning threshold, the route middleware stack, and the default viewer allow-list (`authorization.allowed_emails`). Don't hardcode any of these. Authorization is a fixed `viewTruss` gate — the ability *name* is not configurable, and the gate callback is always the app's to override. The allow-list only feeds the *default* gate; it is not a renamable ability. The gate is consulted only in non-local environments (local is open), and a denial returns 404. See `docs/DECISIONS.md` → *Authorization: production-gated model*.
 - **Git commits:** `type: short subject` (max 50 chars), then a body paragraph explaining what and why, not how. Never include "Generated with Claude Code" or "Co-Authored-By: Claude". Use a heredoc for multi-line commit messages.
 - **Docs stay in sync.** Any change to commands, config, or user-facing behavior must be reflected in `README.md`, `docs/`, and `website/src/content/docs/` in the same change.
-- **Keep the live demo aligned.** The docs live demo (`/laravel-truss/demo/`) runs the shipped frontend, copied from `resources/` at build time by `website/scripts/copy-demo-assets.mjs`. Whenever you change the front-end (the `resources/js` modules, `resources/css/truss.css`, or the dashboard markup), verify the demo still works and update its standalone page or sample schema (`website/public/demo/`) if the change needs it.
+
+Frontend-specific conventions (keeping the live demo aligned, the no-build/no-CDN asset rule, and where the Mermaid generator lives) are in `.claude/rules/frontend.md`, which loads automatically when you touch `resources/`.
 
 ## Pointers
 
 - Architecture and domain model: `docs/DESIGN.md`
 - Phased build plan: `docs/INSTRUCTIONS.md`
 - Decision log: `docs/DECISIONS.md`
-- Introspection-layer rules: `src/Introspection/CLAUDE.md`
+- Path-scoped rules (auto-load when matching files are touched): `.claude/rules/` (`introspection.md`, `frontend.md`)
 
 This file should stay short enough to read in under a minute. If you're about to add detail, it probably belongs in `docs/` instead, with a pointer added here.

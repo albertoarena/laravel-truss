@@ -21,7 +21,7 @@ Follow this order. Each phase should be finishable and independently verifiable 
 9. Build `SnapshotBuilder`: resolve the target connection (default unless specified) and introspect its live schema; implement the in-memory SQLite migration-replay path as the no-connection fallback, flagged as degraded — replay *all* migrator-resolved paths (app + package), skipping and recording any migration that fails on SQLite rather than aborting
 10. Build `SchemaSerializer`: introspects the connection, maps to the value objects, serializes to array/JSON
 11. Test against real fixtures: a live connection (simple table, single + composite FKs, single + composite indexes, composite PK pivot, PK-less table, self-referential FK, nullable/default columns), plus the fallback case (no connection → SQLite replay of all migrator paths produces a snapshot flagged degraded; a migration that fails on SQLite is skipped and recorded, not fatal)
-12. Confirm this layer has zero dependencies on HTTP, Blade, or caching (see `src/Introspection/CLAUDE.md`)
+12. Confirm this layer has zero dependencies on HTTP, Blade, or caching (see `.claude/rules/introspection.md`)
 
 ## Phase 4 — Caching & rebuild trigger
 

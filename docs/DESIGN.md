@@ -58,7 +58,7 @@ Keys are modelled composite-first. `primary_key`, each index's `columns`, and a 
 
 `type` is the **native full type** exactly as the database reports it (`varchar(255)`, `bigint unsigned`, `timestamp`) — the source of truth, never a reverse-mapped Laravel migration verb. Mapping a native type back to a Laravel-style name (`string`, `integer`) is inference, is lossy, and is therefore *not* done here; it is an optional presentation-layer label (see Frontend).
 
-This layer has no knowledge of HTTP, Blade, caching, or Mermaid. It is a pure function: connection in, schema representation out. See `src/Introspection/CLAUDE.md` for the rules that keep it that way.
+This layer has no knowledge of HTTP, Blade, caching, or Mermaid. It is a pure function: connection in, schema representation out. See `.claude/rules/introspection.md` for the rules that keep it that way.
 
 ### 2. Cache & rebuild trigger (`src/Cache/`, service provider)
 

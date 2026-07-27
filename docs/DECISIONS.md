@@ -66,7 +66,9 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 ## CLAUDE.md structure
 
 **Context:** avoiding the common failure mode of a CLAUDE.md that grows until it degrades Claude's own performance.
-**Decision:** root `CLAUDE.md` stays lean (overview, pinned stack versions, exact commands, always-true conventions, pointers out). Heavy material lives in `docs/DESIGN.md`, `docs/INSTRUCTIONS.md`, `docs/DECISIONS.md`. A nested `src/Introspection/CLAUDE.md` holds rules specific to the introspection layer, loaded only when Claude is actually working in that folder.
+**Decision:** root `CLAUDE.md` stays lean (overview, pinned stack versions, exact commands, always-true invariants that apply everywhere, pointers out). Heavy prose lives in `docs/DESIGN.md`, `docs/INSTRUCTIONS.md`, `docs/DECISIONS.md`. Layer-specific rules live in path-scoped rules under `.claude/rules/` (`introspection.md`, `frontend.md`) with a `paths:` glob, so they auto-load only when a matching file is in play.
+**Change:** this replaced an earlier nested `src/Introspection/CLAUDE.md`. A path-scoped rule is centralized and discoverable, and its glob can span non-adjacent paths (the layer plus its tests), which a nested file cannot. The model behind this split: root `CLAUDE.md` is loaded every turn, path rules are guaranteed for matched files, skills would be probabilistic, and `docs/` is optional prose.
+**Note:** these tiers are context, not enforcement. For an invariant that must never slip (the no-data guarantee, introspection purity), a hook is the only true guarantee; the text tiers state the rule but do not enforce it.
 
 ## Table selection: server-side exclusions, client-side interaction
 
