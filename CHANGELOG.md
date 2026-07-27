@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-27
+
+### Added
+
+- Data dictionary and DBML exports. The diagram export button now also saves the current selection as a Markdown data dictionary (one section per table, with columns, keys, indexes, and foreign keys, ready to paste into a README or wiki) or as a DBML file that opens in [dbdiagram.io](https://dbdiagram.io) and other DBML tools. The per-table menu gains a Download Markdown option. Both are generated in the browser and contain structure only, never row data. DBML relationships are included only when both tables are in the current view, and the native type mapping is best-effort (types are passed through, quoted when needed).
+
 ## [1.2.0] - 2026-07-24
 
 ### Changed
