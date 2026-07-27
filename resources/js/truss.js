@@ -7,6 +7,8 @@ import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 import { buildQuery, parseQuery } from './url-state.js';
 import { toJson, toCsv } from './table-export.js';
+import { schemaToMarkdown, tableToMarkdown } from './markdown-export.js';
+import { schemaToDbml } from './dbml-export.js';
 
 const app = document.getElementById('truss-app');
 
@@ -251,6 +253,7 @@ function showTableMenu(anchor, table) {
     + '<button type="button" data-act="copy">Copy JSON</button>'
     + '<button type="button" data-act="json">Download JSON</button>'
     + '<button type="button" data-act="csv">Download CSV</button>'
+    + '<button type="button" data-act="table-md">Download Markdown</button>'
     + '</div>';
   positionPopover(anchor);
 }
@@ -282,6 +285,8 @@ function runMenuAction(act) {
   hidePopover();
   if (act === 'png') { exportImage('png'); return; }
   if (act === 'svg') { exportImage('svg'); return; }
+  if (act === 'md') { downloadFile(`${exportBaseName()}.md`, schemaToMarkdown(currentSubset(), { connection: state.connection }), 'text/markdown'); return; }
+  if (act === 'dbml') { downloadFile(`${exportBaseName()}.dbml`, schemaToDbml(currentSubset()), 'text/plain'); return; }
   if (!table) return;
   if (act === 'focus' || act === 'unfocus') {
     state.focusRoot = act === 'focus' ? table.name : '';
@@ -293,6 +298,8 @@ function runMenuAction(act) {
     downloadFile(`${table.name}.json`, toJson(table), 'application/json');
   } else if (act === 'csv') {
     downloadFile(`${table.name}.csv`, toCsv(table), 'text/csv');
+  } else if (act === 'table-md') {
+    downloadFile(`${table.name}.md`, tableToMarkdown(table), 'text/markdown');
   }
 }
 
@@ -429,6 +436,8 @@ function showExportMenu(anchor) {
     + '<div class="truss-menu">'
     + '<button type="button" data-act="png">Export PNG</button>'
     + '<button type="button" data-act="svg">Export SVG</button>'
+    + '<button type="button" data-act="md">Data dictionary (Markdown)</button>'
+    + '<button type="button" data-act="dbml">DBML</button>'
     + '</div>';
   positionPopover(anchor);
 }

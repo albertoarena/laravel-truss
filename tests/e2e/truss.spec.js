@@ -151,10 +151,11 @@ test('clicking a table name opens the export/focus menu', async ({ page }) => {
 
   const pop = page.locator('#truss-popover');
   await expect(pop).toBeVisible();
-  await expect(pop.locator('.truss-menu button')).toHaveCount(4);
+  await expect(pop.locator('.truss-menu button')).toHaveCount(5);
   await expect(pop).toContainText('Focus this table');
   await expect(pop).toContainText('Download JSON');
   await expect(pop).toContainText('Download CSV');
+  await expect(pop).toContainText('Download Markdown');
 });
 
 test('the menu Focus action focuses the table and updates the URL', async ({ page }) => {
@@ -202,9 +203,14 @@ test('the menu downloads a table structure as JSON and CSV', async ({ page }) =>
   await page.locator('#truss-popover').getByText('Download CSV').click();
   const csv = await csvDownload;
   expect(csv.suggestedFilename()).toBe('posts.csv');
+
+  await tableName(page, 'posts').click();
+  const mdDownload = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('Download Markdown').click();
+  expect((await mdDownload).suggestedFilename()).toBe('posts.md');
 });
 
-test('the export button offers PNG and SVG', async ({ page }) => {
+test('the export button offers image and text exports', async ({ page }) => {
   await expect(page.locator('#truss-canvas > svg')).toBeVisible();
 
   await page.locator('#truss-export-btn').click();
@@ -212,6 +218,8 @@ test('the export button offers PNG and SVG', async ({ page }) => {
   await expect(pop).toBeVisible();
   await expect(pop).toContainText('Export PNG');
   await expect(pop).toContainText('Export SVG');
+  await expect(pop).toContainText('Data dictionary (Markdown)');
+  await expect(pop).toContainText('DBML');
 });
 
 test('exporting downloads a PNG of the whole diagram', async ({ page }) => {
@@ -221,6 +229,28 @@ test('exporting downloads a PNG of the whole diagram', async ({ page }) => {
   const download = page.waitForEvent('download');
   await page.locator('#truss-popover').getByText('Export PNG').click();
   expect((await download).suggestedFilename()).toBe('truss-schema.png');
+});
+
+test('exporting downloads a Markdown data dictionary and a DBML of the selection', async ({ page }) => {
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await page.locator('#truss-export-btn').click();
+  const mdDownload = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('Data dictionary (Markdown)').click();
+  const md = await mdDownload;
+  expect(md.suggestedFilename()).toBe('truss-schema.md');
+  const mdText = readFileSync(await md.path(), 'utf8');
+  expect(mdText).toContain('# Data dictionary');
+  expect(mdText).toContain('## users');
+
+  await page.locator('#truss-export-btn').click();
+  const dbmlDownload = page.waitForEvent('download');
+  await page.locator('#truss-popover').getByText('DBML', { exact: true }).click();
+  const dbml = await dbmlDownload;
+  expect(dbml.suggestedFilename()).toBe('truss-schema.dbml');
+  const dbmlText = readFileSync(await dbml.path(), 'utf8');
+  expect(dbmlText).toContain('Table users {');
+  expect(dbmlText).toContain('Ref: posts.user_id > users.id');
 });
 
 test('exporting a focused view names the file after the focus and flattens labels', async ({ page }) => {
