@@ -69,6 +69,14 @@ Truss exposes structure only and never queries row data. Access is protected by 
 
 Contributions are welcome. Feel free to fork, improve, and open a pull request.
 
+## Support
+
+Laravel Truss is free and open source. If it has saved you time, you can support its ongoing maintenance and new features with a coffee:
+
+**[ko-fi.com/albertoarena](https://ko-fi.com/albertoarena)**
+
+Starring the repo and sharing it help just as much.
+
 ## License
 
 The MIT License (MIT). See [LICENSE](LICENSE).
