@@ -18,7 +18,7 @@
     "support": {
         "issues": "https://github.com/albertoarena/laravel-truss/issues",
         "source": "https://github.com/albertoarena/laravel-truss",
-        "docs": "https://albertoarena.github.io/laravel-truss"
+        "docs": "https://trussphp.com"
     },
     "license": "MIT",
     "authors": [

@@ -1,4 +1,4 @@
-name: Deploy to Netsons
+name: Deploy Documentation
 
 # Builds the Astro docs site for the root domain and deploys it to Netsons over
 # SSH. Netsons has no rsync, so the runner ships dist/ as a single tarball via
