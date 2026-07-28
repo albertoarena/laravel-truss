@@ -1,12 +1,11 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
-// Build target is env-driven so the same source builds for two hosts:
-//   - GitHub Pages (default): albertoarena.github.io/laravel-truss
-//   - Netsons root domain:    trussphp.com (SITE_URL set, SITE_BASE empty)
-// SITE_BASE uses ?? so an explicit empty string ('') means "root, no subpath".
-const SITE = process.env.SITE_URL || 'https://albertoarena.github.io'
-const BASE = process.env.SITE_BASE ?? '/laravel-truss'
+// Build target is env-driven. The default is the production root domain
+// (trussphp.com); SITE_URL / SITE_BASE let CI or a preview build target
+// elsewhere. SITE_BASE uses ?? so an explicit '' still means "root, no subpath".
+const SITE = process.env.SITE_URL || 'https://trussphp.com'
+const BASE = process.env.SITE_BASE ?? ''
 const COVER = `${SITE}${BASE}/cover-light.png`
 
 export default defineConfig({

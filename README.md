@@ -5,7 +5,7 @@
   <img src="art/cover-light.png" alt="Laravel Truss — see your database structure as a live, zoomable ER diagram">
 </picture>
 
-[![Documentation](https://img.shields.io/badge/docs-website-2f6feb?style=flat-square)](https://albertoarena.github.io/laravel-truss)
+[![Documentation](https://img.shields.io/badge/docs-website-2f6feb?style=flat-square)](https://trussphp.com)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/albertoarena/laravel-truss.svg?style=flat-square)](https://packagist.org/packages/albertoarena/laravel-truss)
 [![Total Downloads](https://img.shields.io/packagist/dt/albertoarena/laravel-truss.svg?style=flat-square)](https://packagist.org/packages/albertoarena/laravel-truss)
 [![Tests](https://img.shields.io/github/actions/workflow/status/albertoarena/laravel-truss/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/albertoarena/laravel-truss/actions/workflows/run-tests.yml)
@@ -14,7 +14,7 @@
 
 Laravel Truss is a live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app, so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
 
-**[Try the live demo](https://albertoarena.github.io/laravel-truss/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed.
+**[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed.
 
 ## Features
 
@@ -29,12 +29,12 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 
 ## Documentation
 
-Full documentation is at **[albertoarena.github.io/laravel-truss](https://albertoarena.github.io/laravel-truss)**.
+Full documentation is at **[trussphp.com](https://trussphp.com)**.
 
-- [Installation](https://albertoarena.github.io/laravel-truss/getting-started/installation/)
-- [Quick start](https://albertoarena.github.io/laravel-truss/getting-started/quick-start/)
-- [Authorization](https://albertoarena.github.io/laravel-truss/guides/authorization/)
-- [Configuration reference](https://albertoarena.github.io/laravel-truss/reference/configuration/)
+- [Installation](https://trussphp.com/getting-started/installation/)
+- [Quick start](https://trussphp.com/getting-started/quick-start/)
+- [Authorization](https://trussphp.com/guides/authorization/)
+- [Configuration reference](https://trussphp.com/reference/configuration/)
 
 ## Installation
 
@@ -60,7 +60,7 @@ By default Truss is enabled in the `local` environment only. Start your app and 
 /truss
 ```
 
-To use Truss in a non-local environment you must both enable it and authorize the viewers. See [Authorization](https://albertoarena.github.io/laravel-truss/guides/authorization/).
+To use Truss in a non-local environment you must both enable it and authorize the viewers. See [Authorization](https://trussphp.com/guides/authorization/).
 
 ## Security
 
