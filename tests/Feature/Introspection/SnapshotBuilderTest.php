@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AlbertoArena\Truss\Introspection\Data\Table;
 use AlbertoArena\Truss\Introspection\SnapshotBuilder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @return array<string, Table>
@@ -22,6 +23,21 @@ beforeEach(function () {
 it('introspects every fixture table from the live connection', function () {
     expect(array_keys(introspectFixtures()))
         ->toContain('users', 'posts', 'tags', 'post_tag', 'categories', 'regions', 'region_stats', 'logs');
+});
+
+it('scopes introspection to the connection schema and ignores other databases on the server', function () {
+    // Reproduces issue #3: on a server hosting several databases (a shared local
+    // MySQL, or here a second attached SQLite schema), an unscoped getTables() lists
+    // every schema's tables, so foreign tables leak into the snapshot. Truss must
+    // only introspect the tables that belong to the target connection's own schema.
+    $connection = DB::connection('testing');
+    $connection->statement("ATTACH DATABASE ':memory:' AS other_app");
+    $connection->statement('CREATE TABLE other_app.ghost (id integer primary key)');
+
+    $names = array_keys(introspectFixtures());
+
+    expect($names)->toContain('users')      // our own schema is still fully introspected
+        ->and($names)->not->toContain('ghost'); // a table from another database must not leak in
 });
 
 it('reports the primary key, hoisted out of the index list', function () {

@@ -169,7 +169,12 @@ class SnapshotBuilder
                 indexes: $this->indexes($builder, $table['name']),
                 foreignKeys: $this->foreignKeys($builder, $table['name']),
             ),
-            $builder->getTables($builder->getConnection()->getDatabaseName()),
+            // Scope to the connection's own schema. Since Laravel 12, a bare
+            // getTables() lists every schema on the server (issue #3), so on a
+            // shared host it would leak unrelated databases into the snapshot.
+            // getCurrentSchemaName() resolves per driver: the database name on
+            // MySQL, the search-path schema on PostgreSQL, 'main' on SQLite.
+            $builder->getTables($builder->getCurrentSchemaName()),
         );
     }
 
