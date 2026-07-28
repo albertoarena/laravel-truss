@@ -61,7 +61,8 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 
 ## Documentation approach
 
-**Decision:** three doc surfaces kept in sync: `README.md`, `docs/` (markdown), `website/src/content/docs/` (Astro Starlight, deployed to GitHub Pages). Follows the same pattern as `filament-event-sourcing` and `laravel-netsons-deploy`.
+**Decision:** two in-repo doc surfaces kept in sync, `README.md` and `docs/` (markdown), plus a separate public docs site.
+**Change (2026-07):** the docs site was originally an in-repo `website/` (Astro Starlight, deployed to GitHub Pages). It now lives in its own repo, `albertoarena/laravel-truss-docs`, published at trussphp.com and hosted on Netsons via a server-pull deploy. Its live demo fetches this package's shipped frontend from the latest release tag at build time, so it is release-gated: a frontend or docs change here reaches the site only after a release and a docs rebuild. Keeping the docs out of the package repo keeps the package labelled PHP and lets the site ship on its own cadence.
 
 ## CLAUDE.md structure
 

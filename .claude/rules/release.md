@@ -9,9 +9,9 @@ Loaded when `CHANGELOG.md` is touched, which is the anchor of cutting a release.
 Follow these steps in order. Never skip the CI gate.
 
 1. **CI and tests must pass first.** Run the full local suite and confirm green:
-   `composer test`, `composer lint`, `npm test`, `npx playwright test`, and build
-   the docs site (`npm --prefix website run build`). Then confirm the GitHub CI
-   checks are green on the commit being released: `gh run list` or
+   `composer test`, `composer lint`, `npm test`, `npx playwright test`. Then
+   confirm the GitHub CI checks are green on the commit being released:
+   `gh run list` or
    `gh api repos/albertoarena/laravel-truss/commits/<sha>/check-runs`. Do not
    release on a red or still-running pipeline.
 
@@ -37,10 +37,13 @@ Follow these steps in order. Never skip the CI gate.
    The notes mirror the changelog entry. Not a draft, not a prerelease unless
    asked. Verify with `gh release view vX.Y.Z`.
 
-7. **Post-release (automatic, just verify).** Packagist picks up the new tag on
-   its webhook sync (its "Update" button forces it); the docs site redeploys via
-   GitHub Pages. No manual version bump exists in `composer.json`; the git tag is
-   the source of truth.
+7. **Post-release.** Packagist picks up the new tag on its webhook sync (its
+   "Update" button forces it); this is automatic, just verify. No manual version
+   bump exists in `composer.json`; the git tag is the source of truth. The docs
+   site is a separate repo (`albertoarena/laravel-truss-docs`) and does NOT
+   redeploy on a package release: its live demo is pinned to the latest release
+   tag, so trigger a docs rebuild there (push or dispatch its Publish workflow)
+   to pull the newly released frontend into the demo.
 
 Conventions that always apply: commit subjects `type: short subject` (max 50
 chars) with a why-not-how body; no "Generated with Claude Code" or

@@ -176,7 +176,6 @@ Post-v1 ideas, not yet scheduled:
 │   ├── DESIGN.md
 │   ├── INSTRUCTIONS.md
 │   └── DECISIONS.md
-├── website/                        # Astro + Starlight docs site
 ├── src/
 │   ├── TrussServiceProvider.php
 │   ├── Introspection/               # pure schema-building logic

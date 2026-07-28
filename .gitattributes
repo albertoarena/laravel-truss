@@ -6,7 +6,6 @@
 /art                export-ignore
 /docs               export-ignore
 /tests              export-ignore
-/website            export-ignore
 /.gitattributes     export-ignore
 /.gitignore         export-ignore
 /CLAUDE.md          export-ignore
@@ -16,11 +15,6 @@
 /pint.json          export-ignore
 /playwright.config.js export-ignore
 /vitest.config.js   export-ignore
-
-# Exclude the Astro docs/demo site from GitHub's language stats so the repo is
-# labelled PHP (the package) rather than JavaScript (the docs site outweighs it
-# in raw bytes). Packagist reads this "Language" field from GitHub.
-website/**          linguist-documentation
 
 # The vendored Mermaid bundle is 3.5 MB of minified third-party JavaScript and
 # is not auto-detected as vendored under resources/js/vendor/. Left in, it alone

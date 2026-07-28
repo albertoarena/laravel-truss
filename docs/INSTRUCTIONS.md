@@ -49,9 +49,13 @@ Follow this order. Each phase should be finishable and independently verifiable 
 
 26. Write `README.md` (installation, quick start, config reference, screenshot)
 27. Write `docs/` markdown files (mirrors what's user-facing in the README, expanded)
-28. Scaffold `website/` with Astro + Starlight, following the structure used in `filament-event-sourcing` and `laravel-netsons-deploy`
-29. Add `.github/workflows/deploy-docs.yml`, triggered on `website/**` changes, deploying to GitHub Pages
-30. Confirm all three doc surfaces (`README.md`, `docs/`, `website/src/content/docs/`) agree with each other
+28. Scaffold an Astro + Starlight docs site, following the structure used in the author's other published Astro sites
+29. Wire up the docs deploy to publish the site
+30. Confirm the doc surfaces (`README.md`, `docs/`, and the docs site) agree with each other
+
+> Superseded (2026-07): the docs site was extracted from this repo into its own
+> repo, `albertoarena/laravel-truss-docs` (published at trussphp.com). See
+> `docs/DECISIONS.md` → *Documentation approach*.
 
 ## Phase 8 — Release
 

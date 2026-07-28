@@ -7,7 +7,7 @@ Thanks for considering a contribution.
 1. Fork the repository and create a branch from `main`.
 2. Write a failing test first, then make it pass. Every change is test driven.
 3. Keep the public API stable. Anything in `src/` that is not marked `@internal` is a published contract.
-4. Keep the three documentation surfaces in sync (`README.md`, `docs/`, and `website/`) whenever you change commands, config, or user-facing behaviour.
+4. Keep the in-repo docs (`README.md` and `docs/`) in sync whenever you change commands, config, or user-facing behaviour. The public docs site lives in a separate repo (`albertoarena/laravel-truss-docs`, published at trussphp.com) and should be updated there in step.
 5. Run the checks below before opening a pull request.
 
 ## Checks
