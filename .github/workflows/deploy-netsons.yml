@@ -2,14 +2,15 @@ name: Deploy to Netsons
 
 # Builds the Astro docs site for the root domain and deploys it to Netsons over
 # SSH. Netsons has no rsync, so the runner ships dist/ as a single tarball via
-# SCP, extracts it server-side with tar into a timestamped release directory,
-# and flips a `current` symlink atomically. SSH from CI is flaky (not blocked),
-# so every SSH/SCP call is retried on connection errors; a stubborn timeout just
-# needs a re-run. Manual-only (workflow_dispatch) until cutover.
+# SCP, then runs one server-side script (base64-encoded to avoid quoting) that
+# unpacks it into a timestamped release directory and flips a `current` symlink
+# atomically. The whole deploy is two SSH connections (one scp, one ssh) to
+# minimise Netsons' flaky-from-CI SSH; both are retried on connection errors and
+# a stubborn timeout just needs a re-run. Manual-only (workflow_dispatch).
 #
 # Docroot wiring: Phase 1. The addon-domain docroot stays ~/${DEPLOY_PATH}; an
-# .htaccess there (written idempotently below) rewrites all traffic to current/
-# and blocks /releases/.
+# .htaccess there (written idempotently by the server-side script) rewrites all
+# traffic to current/ and blocks /releases/.
 #
 # Required repo Secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS,
 # SSH_KEY_PASSPHRASE (the deploy key is passphrase-protected), and optional
@@ -128,10 +129,11 @@ jobs:
         env:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
         run: |
-          # Retry SSH/SCP on connection errors only (exit 255). Messages go to
-          # stderr so they never pollute captured command output.
+          # Retry SSH/SCP on connection errors only (exit 255). Netsons SSH is
+          # flaky from CI, so allow several attempts. Messages go to stderr so
+          # they never pollute captured command output.
           ssh_retry() {
-            local max=3 delay=10 attempt=0 code
+            local max=5 delay=15 attempt=0 code
             until ssh "$@"; do
               code=$?
               attempt=$((attempt + 1))
@@ -142,7 +144,7 @@ jobs:
             done
           }
           scp_retry() {
-            local max=3 delay=10 attempt=0 code
+            local max=5 delay=15 attempt=0 code
             until scp "$@"; do
               code=$?
               attempt=$((attempt + 1))
@@ -163,28 +165,45 @@ jobs:
           TS="$(date -u +%Y%m%d%H%M%S)"
           echo "Release timestamp: ${TS}"
 
-          # Ensure the Phase 1 .htaccess exists (idempotent, never overwrites).
-          cat > /tmp/truss.htaccess <<'HTA'
+          # Build one server-side script (base64-encoded to avoid quoting). It
+          # ensures the .htaccess, unpacks the uploaded tarball into a new
+          # release, flips the current symlink, and prunes old releases. Running
+          # it in a single SSH session keeps the deploy to two connections.
+          {
+            printf 'set -e\n'
+            printf 'DP=%q\n' "${DP}"
+            printf 'TS=%q\n' "${TS}"
+            cat <<'REMOTE'
+          cd "$HOME/$DP"
+          if [ ! -f .htaccess ]; then
+          cat > .htaccess <<'HTA'
           Options +FollowSymLinks -Indexes
           RewriteEngine On
           RewriteRule ^releases(/.*)?$ - [F,L]
           RewriteCond %{REQUEST_URI} !^/current/
           RewriteRule ^(.*)$ current/$1 [L]
           HTA
-          ssh_retry netsons "mkdir -p ~/${DP}/releases"
-          scp_retry /tmp/truss.htaccess "netsons:~/${DP}/.htaccess.new"
-          ssh_retry netsons "if [ ! -f ~/${DP}/.htaccess ]; then mv ~/${DP}/.htaccess.new ~/${DP}/.htaccess; else rm -f ~/${DP}/.htaccess.new; fi"
+          fi
+          mkdir -p "releases/$TS"
+          tar -xzf incoming.tar.gz -C "releases/$TS"
+          rm -f incoming.tar.gz
+          PREVIOUS="$(readlink current 2>/dev/null || true)"
+          ln -sfn "releases/$TS" current
+          ( cd releases && ls -1t | tail -n +4 | xargs -r rm -rf ) || true
+          printf 'PREVIOUS=%s\n' "$PREVIOUS"
+          REMOTE
+          } > /tmp/remote_deploy.sh
 
-          # Create the release directory and upload dist/ as one tarball.
-          ssh_retry netsons "mkdir -p ~/${DP}/releases/${TS}"
+          # Connection 1: upload the built site as one tarball.
           tar -czf /tmp/dist.tar.gz -C dist .
-          scp_retry /tmp/dist.tar.gz "netsons:~/${DP}/releases/${TS}/dist.tar.gz"
-          ssh_retry netsons "cd ~/${DP}/releases/${TS} && tar -xzf dist.tar.gz && rm -f dist.tar.gz"
+          scp_retry /tmp/dist.tar.gz "netsons:${DP}/incoming.tar.gz"
 
-          # Capture the current target for rollback, then flip the symlink.
-          PREVIOUS="$(ssh_retry netsons "readlink ~/${DP}/current 2>/dev/null || echo ''")"
+          # Connection 2: run the server-side script in one SSH session.
+          B64="$(base64 -w0 < /tmp/remote_deploy.sh)"
+          OUT="$(ssh_retry netsons "echo ${B64} | base64 -d | bash")"
+          printf '%s\n' "${OUT}"
+          PREVIOUS="$(printf '%s\n' "${OUT}" | sed -n 's/^PREVIOUS=//p')"
           echo "Previous release: ${PREVIOUS:-<none>}"
-          ssh_retry netsons "ln -sfn releases/${TS} ~/${DP}/current"
 
           # Verify the live site; roll back on failure.
           echo "Verifying https://trussphp.com/ ..."
@@ -200,9 +219,6 @@ jobs:
             fi
             exit 1
           fi
-
-          # Keep the 3 newest releases, remove older ones.
-          ssh_retry netsons "cd ~/${DP}/releases && ls -1t | tail -n +4 | xargs -r rm -rf"
           echo "Deploy complete: release ${TS} is live."
 
       - name: Remove SSH key
