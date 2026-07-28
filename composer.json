@@ -6,10 +6,20 @@
         "database",
         "schema",
         "er-diagram",
+        "erd",
+        "database-diagram",
+        "dbml",
+        "data-dictionary",
+        "migrations",
         "mermaid",
         "introspection"
     ],
     "homepage": "https://github.com/albertoarena/laravel-truss",
+    "support": {
+        "issues": "https://github.com/albertoarena/laravel-truss/issues",
+        "source": "https://github.com/albertoarena/laravel-truss",
+        "docs": "https://albertoarena.github.io/laravel-truss"
+    },
     "license": "MIT",
     "authors": [
         {
