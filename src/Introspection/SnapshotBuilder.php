@@ -169,7 +169,7 @@ class SnapshotBuilder
                 indexes: $this->indexes($builder, $table['name']),
                 foreignKeys: $this->foreignKeys($builder, $table['name']),
             ),
-            $builder->getTables(),
+            $builder->getTables($builder->getConnection()->getDatabaseName()),
         );
     }
 
