@@ -1,9 +1,17 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
+// Build target is env-driven so the same source builds for two hosts:
+//   - GitHub Pages (default): albertoarena.github.io/laravel-truss
+//   - Netsons root domain:    trussphp.com (SITE_URL set, SITE_BASE empty)
+// SITE_BASE uses ?? so an explicit empty string ('') means "root, no subpath".
+const SITE = process.env.SITE_URL || 'https://albertoarena.github.io'
+const BASE = process.env.SITE_BASE ?? '/laravel-truss'
+const COVER = `${SITE}${BASE}/cover-light.png`
+
 export default defineConfig({
-  site: 'https://albertoarena.github.io',
-  base: '/laravel-truss',
+  site: SITE,
+  base: BASE || undefined,
   integrations: [
     starlight({
       title: 'Laravel Truss',
@@ -14,11 +22,11 @@ export default defineConfig({
       },
       favicon: '/favicon.svg',
       head: [
-        { tag: 'meta', attrs: { property: 'og:image', content: 'https://albertoarena.github.io/laravel-truss/cover-light.png' } },
+        { tag: 'meta', attrs: { property: 'og:image', content: COVER } },
         { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
         { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
-        { tag: 'meta', attrs: { name: 'twitter:image', content: 'https://albertoarena.github.io/laravel-truss/cover-light.png' } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: COVER } },
       ],
       social: {
         github: 'https://github.com/albertoarena/laravel-truss',

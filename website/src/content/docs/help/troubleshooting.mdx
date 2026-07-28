@@ -8,12 +8,12 @@ description: Common issues and how to resolve them
 Two things can cause this, and both return 404 on purpose:
 
 1. **Truss is disabled.** It is enabled in `local` only by default. In any other environment, set `TRUSS_ENABLED=true`.
-2. **The `viewTruss` gate denied you.** In non-local environments the gate is consulted. Make sure your user is allowed, either via `TRUSS_ALLOWED_EMAILS` or your own gate definition, and that you are logged in. See the [Authorization guide](/laravel-truss/guides/authorization/).
+2. **The `viewTruss` gate denied you.** In non-local environments the gate is consulted. Make sure your user is allowed, either via `TRUSS_ALLOWED_EMAILS` or your own gate definition, and that you are logged in. See the [Authorization guide](/guides/authorization/).
 
 ## The page loads but the diagram is blank
 
 - Check the browser console and network tab. If an asset request (for example `truss.js`) failed, ensure requests can reach `/{prefix}/assets/...`.
-- Under a strict Content-Security-Policy, allow `script-src 'self'`, `style-src 'self' 'unsafe-inline'`, and `font-src 'self'`. Mermaid needs `'unsafe-inline'` in `style-src`. See [Configuration](/laravel-truss/reference/configuration/#content-security-policy).
+- Under a strict Content-Security-Policy, allow `script-src 'self'`, `style-src 'self' 'unsafe-inline'`, and `font-src 'self'`. Mermaid needs `'unsafe-inline'` in `style-src`. See [Configuration](/reference/configuration/#content-security-policy).
 - If you set `TRUSS_MERMAID_URL` to a CDN, make sure your CSP allows that host in `script-src`.
 
 ## A banner says the SQLite fallback was used

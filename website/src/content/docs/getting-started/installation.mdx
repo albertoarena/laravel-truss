@@ -25,7 +25,7 @@ A `--dev` install is excluded from `composer install --no-dev` builds, which is 
 composer require albertoarena/laravel-truss
 ```
 
-Then enable and authorize it as described in [Authorization](/laravel-truss/guides/authorization/).
+Then enable and authorize it as described in [Authorization](/guides/authorization/).
 :::
 
 ## Publish the config (optional)
@@ -36,7 +36,7 @@ To customise Truss, publish its configuration file to `config/truss.php`:
 php artisan vendor:publish --tag=truss-config
 ```
 
-Every option is documented inline and has a sensible default. See the [Configuration reference](/laravel-truss/reference/configuration/).
+Every option is documented inline and has a sensible default. See the [Configuration reference](/reference/configuration/).
 
 ## That is it
 
@@ -46,7 +46,7 @@ By default Truss is enabled in the `local` environment only. Start your app and 
 /truss
 ```
 
-You should see your schema as an ER diagram. Head to the [Quick start](/laravel-truss/getting-started/quick-start/) for a tour of the interface, or [Authorization](/laravel-truss/guides/authorization/) to run it safely in a non-local environment.
+You should see your schema as an ER diagram. Head to the [Quick start](/getting-started/quick-start/) for a tour of the interface, or [Authorization](/guides/authorization/) to run it safely in a non-local environment.
 
 :::note
 Truss reads the **live** database connection, so make sure your app's database is migrated and there is a schema to draw. If no connection is reachable, Truss falls back to replaying your migrations on an in-memory SQLite database and shows a banner saying so.
