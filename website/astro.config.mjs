@@ -27,6 +27,17 @@ export default defineConfig({
         { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
         { tag: 'meta', attrs: { name: 'twitter:image', content: COVER } },
+        // Cloudflare Web Analytics beacon (cookieless, no consent banner). The
+        // token is public, not a secret. Manual install because the domain is
+        // grey-cloud (DNS-only), so Cloudflare cannot auto-inject it.
+        {
+          tag: 'script',
+          attrs: {
+            defer: true,
+            src: 'https://static.cloudflareinsights.com/beacon.min.js',
+            'data-cf-beacon': '{"token": "7f6eaa0832eb43cc838db8d337590f11"}',
+          },
+        },
       ],
       social: {
         github: 'https://github.com/albertoarena/laravel-truss',
