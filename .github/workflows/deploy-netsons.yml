@@ -1,0 +1,129 @@
+name: Deploy to Netsons
+
+# Builds the Astro docs site for the root domain and deploys it to Netsons over
+# SSH with rsync. Manual-only for now (workflow_dispatch) so it runs alongside
+# the GitHub Pages deploy without cutting over. A push trigger is added later,
+# once trussphp.com is verified.
+#
+# Required repo Secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS,
+# and optionally SSH_PORT (defaults to 65100) and SSH_KEY_PASSPHRASE.
+# Required repo Variable: DEPLOY_PATH (docroot relative to the SSH home, e.g.
+# "trussphp.com"). Kept as a variable so the server path is not committed.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: netsons-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'website/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build website for the root domain
+        working-directory: website
+        env:
+          SITE_URL: 'https://trussphp.com'
+          SITE_BASE: ''
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-dist
+          path: website/dist
+          retention-days: 7
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${SSH_KNOWN_HOSTS}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          if [ -n "${SSH_KEY_PASSPHRASE}" ]; then
+            cat > /tmp/askpass.sh <<'SCRIPT'
+          #!/bin/bash
+          echo "$SSH_KEY_PASSPHRASE"
+          SCRIPT
+            chmod +x /tmp/askpass.sh
+            SSH_ASKPASS=/tmp/askpass.sh SSH_ASKPASS_REQUIRE=force ssh-add ~/.ssh/deploy_key
+          else
+            ssh-add ~/.ssh/deploy_key
+          fi
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+
+      - name: Diagnose SSH connectivity
+        continue-on-error: true
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '65100' }}
+        run: |
+          echo "== DNS resolution =="
+          getent hosts "${SSH_HOST}" || true
+          echo "== TCP probe ${SSH_PORT} =="
+          if timeout 30 bash -c "exec 3<>/dev/tcp/${SSH_HOST}/${SSH_PORT}" 2>/dev/null; then
+            echo "TCP connect OK, port is open from this runner"
+          else
+            echo "TCP connect FAILED, port filtered/closed or host unreachable"
+          fi
+
+      - name: Deploy via rsync
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '65100' }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          if [ -z "${DEPLOY_PATH}" ]; then
+            echo "::error::DEPLOY_PATH repo variable is not set"
+            exit 1
+          fi
+          # Mirror dist/ into the docroot. Exclude cPanel-managed paths so a
+          # --delete never wipes them:
+          #   .well-known -> AutoSSL HTTP validation (breaking it stops renewals)
+          #   cgi-bin, .htaccess -> cPanel defaults for the addon domain
+          rsync -az --delete \
+            --exclude '.well-known/' \
+            --exclude 'cgi-bin/' \
+            --exclude '.htaccess' \
+            -e "ssh -p ${SSH_PORT} -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
+            dist/ "${SSH_USER}@${SSH_HOST}:~/${DEPLOY_PATH}/"
+
+      - name: Verify site responds
+        continue-on-error: true
+        run: |
+          echo "== HTTPS check for trussphp.com =="
+          curl -sSI -m 20 https://trussphp.com | head -8 || true

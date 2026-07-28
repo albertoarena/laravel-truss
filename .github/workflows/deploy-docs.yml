@@ -1,17 +1,13 @@
 name: Deploy Documentation
 
+# Auto-deploy is frozen during the trussphp.com cutover. The push trigger is
+# intentionally removed so merging the Netsons deploy work does not rebuild
+# Pages with root-absolute content links (correct for trussphp.com, wrong for
+# the /laravel-truss Pages subpath). GitHub Pages keeps serving the last
+# published build, so github.io stays live and working until trussphp.com is
+# verified. At cutover, replace this with a redirect to trussphp.com or remove
+# it. Manual runs remain possible via workflow_dispatch.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'website/**'
-      # The live demo bundles the shipped frontend (copied at build time), so a
-      # frontend change must redeploy the docs too.
-      - 'resources/js/**'
-      - 'resources/css/**'
-      - 'resources/fonts/**'
-      - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
 permissions:
