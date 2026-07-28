@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-28
+
+### Fixed
+
+- Schema introspection is now scoped to the connection's own database. On a server that hosts more than one database (a shared local MySQL, a PostgreSQL cluster), `truss:show`, `truss:rebuild`, and the diagram listed the tables of every database the connection could reach rather than just the application's own, which also made the snapshot build far slower and could collapse same-named tables from different databases into each other. The listing now resolves the current schema per driver: the database name on MySQL, the search-path schema on PostgreSQL, and `main` on SQLite. Structure only, as always. Thanks to @santos-sabanari for the thorough diagnosis and @m0shiurX for the fix.
+
 ## [1.3.0] - 2026-07-27
 
 ### Added
