@@ -88,6 +88,41 @@ final class TableDraft
         return $this;
     }
 
+    /** @param  list<string>|string  $columns */
+    public function index(array|string $columns, ?string $name = null): self
+    {
+        return $this->addIndex($columns, false, $name);
+    }
+
+    /** @param  list<string>|string  $columns */
+    public function unique(array|string $columns, ?string $name = null): self
+    {
+        return $this->addIndex($columns, true, $name);
+    }
+
+    /** The two columns and composite index that Laravel's morphs() creates. */
+    public function morphs(string $name): self
+    {
+        $this->string("{$name}_type");
+        $this->column("{$name}_id", 'bigint unsigned');
+
+        return $this->index(["{$name}_type", "{$name}_id"], "{$name}_index");
+    }
+
+    /** @param  list<string>|string  $columns */
+    private function addIndex(array|string $columns, bool $unique, ?string $name): self
+    {
+        $columns = array_values((array) $columns);
+
+        $this->indexes[] = [
+            'name' => $name ?? implode('_', $columns).($unique ? '_unique' : '_index'),
+            'columns' => $columns,
+            'unique' => $unique,
+        ];
+
+        return $this;
+    }
+
     /** @return array<string, mixed> */
     public function toArray(string $name): array
     {
