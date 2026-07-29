@@ -160,8 +160,8 @@ body {
 .truss-field[hidden] { display: none; }
 .truss-field--search input { width: 150px; }
 .truss-field-label {
-  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--bp-muted);
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .01em;
+  color: var(--bp-muted);
 }
 
 .truss-toolbar input[type="search"],
@@ -195,7 +195,7 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, .14);
 }
 .truss-zoom button {
-  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .01em;
   color: var(--bp-ink); background: var(--bp-field); border: 1.5px solid var(--bp-ink);
   border-radius: 2px; padding: 5px 11px; cursor: pointer;
 }
@@ -214,7 +214,7 @@ body {
 }
 .truss-legend[hidden] { display: none; }
 .truss-legend-head {
-  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .01em;
   color: var(--bp-muted); margin-bottom: 10px;
 }
 .truss-legend-list { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
@@ -231,14 +231,14 @@ body {
 .truss-diff-panel[hidden] { display: none; }
 #truss-diff-btn[hidden] { display: none; }
 .truss-diff-head {
-  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .01em;
   color: var(--bp-muted); margin-bottom: 10px;
 }
 .truss-diff-empty { margin: 0; font-size: 12.5px; color: var(--bp-muted); }
 .truss-diff-item { font-size: 12.5px; margin-bottom: 8px; color: var(--bp-fg); }
 .truss-diff-item:last-child { margin-bottom: 0; }
 .truss-diff-badge {
-  font-family: var(--bp-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  font-family: var(--bp-mono); font-size: 10px; letter-spacing: .02em; text-transform: capitalize;
   padding: 1px 5px; border-radius: 3px; border: 1px solid currentColor;
 }
 .truss-diff-item--added .truss-diff-badge { color: var(--bp-diff-added-border); }
@@ -270,7 +270,7 @@ body {
   font-family: var(--bp-mono); font-size: 12px; color: var(--bp-fg);
 }
 .truss-popover[hidden] { display: none; }
-.truss-popover-head { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--bp-muted); margin-bottom: 8px; }
+.truss-popover-head { font-size: 10px; letter-spacing: .01em; color: var(--bp-muted); margin-bottom: 8px; }
 .truss-popover ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
 .truss-popover li { white-space: nowrap; }
 .truss-popover li::before { content: "•"; color: var(--bp-cyan); margin-right: 7px; }
