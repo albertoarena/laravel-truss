@@ -38,4 +38,22 @@ final readonly class Finding
             $this->column ?? '',
         ]));
     }
+
+    /**
+     * A copy at a different severity, for the runner's per-rule overrides. Every
+     * other field, and therefore the fingerprint, is unchanged.
+     */
+    public function withSeverity(Severity $severity): self
+    {
+        return new self(
+            code: $this->code,
+            severity: $severity,
+            connection: $this->connection,
+            table: $this->table,
+            column: $this->column,
+            message: $this->message,
+            hint: $this->hint,
+            suggestion: $this->suggestion,
+        );
+    }
 }

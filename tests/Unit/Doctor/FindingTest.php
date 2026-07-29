@@ -50,3 +50,16 @@ it('is stable across calls', function () {
     $f = doctorFinding();
     expect($f->fingerprint())->toBe($f->fingerprint());
 });
+
+it('copies itself with a new severity, every other field intact', function () {
+    $original = doctorFinding();
+    $changed = $original->withSeverity(Severity::Warning);
+
+    expect($changed->severity)->toBe(Severity::Warning)
+        ->and($changed->code)->toBe($original->code)
+        ->and($changed->table)->toBe($original->table)
+        ->and($changed->column)->toBe($original->column)
+        ->and($changed->message)->toBe($original->message)
+        // Identity is unchanged, so an override does not move a suppression.
+        ->and($changed->fingerprint())->toBe($original->fingerprint());
+});
