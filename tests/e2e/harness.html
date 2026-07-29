@@ -18,6 +18,9 @@
         #truss-canvas svg .outer-path path, #truss-canvas svg .divider path { pointer-events: none; }
         .truss-popover { position: fixed; z-index: 40; background: #fff; border: 1px solid #ccc; padding: 8px; }
         .truss-popover[hidden] { display: none; }
+        #truss-diff-btn[hidden] { display: none; }
+        .truss-diff-panel { position: absolute; top: 40px; right: 14px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }
+        .truss-diff-panel[hidden] { display: none; }
         .truss-menu { display: flex; flex-direction: column; }
         .truss-menu button { cursor: pointer; padding: 4px 8px; text-align: left; }
     </style>
@@ -41,6 +44,7 @@
             <label class="truss-field">depth <input id="truss-depth" type="number" min="0"></label>
             <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
             <button type="button" id="truss-export-btn" title="Export">Export</button>
+            <button type="button" id="truss-diff-btn" title="Changes" aria-expanded="false" hidden>Changes</button>
             <span class="truss-zoom">
                 <button type="button" data-fit>Fit</button>
                 <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1">
@@ -49,6 +53,10 @@
         </div>
         <div id="truss-banners"></div>
         <main id="truss-viewport"><div id="truss-canvas"></div></main>
+        <div class="truss-diff-panel" id="truss-diff-panel" hidden>
+            <div class="truss-diff-head">Changes since last migration</div>
+            <div class="truss-diff-body"></div>
+        </div>
         <div class="truss-popover" id="truss-popover" hidden></div>
     </div>
 

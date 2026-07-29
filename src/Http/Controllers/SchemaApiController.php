@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Http\Controllers;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Diff\BaselineStore;
+use AlbertoArena\Truss\Diff\SchemaDiffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,11 +19,19 @@ use Illuminate\Http\Request;
  *     server-side, at serve time, from the full cached snapshot — so excluded
  *     structure never reaches the client, and toggling exclusions needs no
  *     rebuild. This is the server-side half of the "no data exposed" promise.
+ *
+ * When the schema-diff feature is enabled and a baseline exists, the response
+ * also carries a `diff` describing what changed since the last migration. The
+ * baseline is filtered through the same exclusion list before comparison, so an
+ * excluded table can never surface via the diff either. `diff` is null when the
+ * feature is off or no baseline has been recorded yet.
  */
 class SchemaApiController
 {
     public function __construct(
         private readonly SchemaCacheRepository $cache,
+        private readonly BaselineStore $baselines = new BaselineStore,
+        private readonly SchemaDiffer $differ = new SchemaDiffer,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -35,8 +45,34 @@ class SchemaApiController
 
         $snapshot = $this->cache->get($connection);
         $snapshot['tables'] = $this->withoutExcludedTables($snapshot['tables'], $connection);
+        $snapshot['diff'] = $this->diffFor($connection, $snapshot);
 
         return response()->json($snapshot);
+    }
+
+    /**
+     * The structural diff against the recorded baseline, or null when the feature
+     * is disabled or no baseline exists. The baseline is exclusion-filtered to
+     * match the snapshot, keeping excluded tables out of the diff.
+     *
+     * @param  array<string, mixed>  $snapshot  the already exclusion-filtered current snapshot
+     * @return array<string, mixed>|null
+     */
+    private function diffFor(string $connection, array $snapshot): ?array
+    {
+        if (! config('truss.diff.enabled', true)) {
+            return null;
+        }
+
+        $baseline = $this->baselines->get($connection);
+
+        if ($baseline === null) {
+            return null;
+        }
+
+        $baseline['tables'] = $this->withoutExcludedTables($baseline['tables'] ?? [], $connection);
+
+        return $this->differ->diff($baseline, $snapshot);
     }
 
     /**

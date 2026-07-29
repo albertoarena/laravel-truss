@@ -23,6 +23,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
 - Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, or DBML, all generated in the browser and structure-only.
+- Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
 - Light and dark "blueprint" theme.
 - Self-contained: Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
 - Cached snapshot, rebuilt automatically after migrations.
@@ -62,6 +63,10 @@ By default Truss is enabled in the `local` environment only. Start your app and 
 ```
 
 To use Truss in a non-local environment you must both enable it and authorize the viewers. See [Authorization](https://trussphp.com/guides/authorization/).
+
+## Storage
+
+Truss keeps its schema snapshot in the cache, which is derived and disposable. The one thing it writes to disk is the **schema-diff baseline**: a structure-only JSON file (never row data) recorded after each migration so the diff can show what changed. It lives at `truss/baselines/{connection}.json` on the disk set by `truss.diff.disk` (the default disk otherwise), is safe to delete, and is worth gitignoring alongside `storage/`. To turn the feature off entirely so nothing is written to disk, set `TRUSS_DIFF_ENABLED=false` (or `truss.diff.enabled` to `false`).
 
 ## Security
 

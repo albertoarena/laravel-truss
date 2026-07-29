@@ -62,3 +62,15 @@ it('forgets a cached snapshot', function () {
 
     expect($repo->has('testing'))->toBeFalse();
 });
+
+it('peeks the cached snapshot without building on a miss', function () {
+    $repo = new SchemaCacheRepository;
+
+    // Peeking a cold cache returns null and must not populate it.
+    expect($repo->peek('testing'))->toBeNull()
+        ->and($repo->has('testing'))->toBeFalse();
+
+    $built = $repo->get('testing');
+
+    expect($repo->peek('testing'))->toBe($built);
+});

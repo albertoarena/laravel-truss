@@ -2,13 +2,25 @@
 
 declare(strict_types=1);
 
+use AlbertoArena\Truss\Diff\BaselineStore;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     config()->set('truss.enabled', true);
+    config()->set('truss.diff.enabled', true);
     Gate::define('viewTruss', fn ($user = null) => true);
 });
+
+function apiBaseline(array $tables): void
+{
+    app(BaselineStore::class)->save('testing', [
+        'connection' => 'testing',
+        'generated_at' => '2026-07-01T00:00:00+00:00',
+        'tables' => $tables,
+    ]);
+}
 
 it('returns the cached schema JSON envelope for the default connection', function () {
     Schema::create('posts', function ($table) {
@@ -75,4 +87,59 @@ it('does not visualize a connection that is not managed by config', function () 
 
     // 'testing' (the default connection) is not among the configured managed ones.
     $this->getJson('/truss/api/schema?connection=testing')->assertNotFound();
+});
+
+it('embeds a null diff when no baseline has been recorded', function () {
+    Storage::fake('local');
+    Schema::create('posts', fn ($table) => $table->id());
+
+    $this->getJson('/truss/api/schema')
+        ->assertOk()
+        ->assertJsonPath('diff', null);
+});
+
+it('embeds the structural diff when a baseline exists', function () {
+    Storage::fake('local');
+    Schema::create('posts', function ($table) {
+        $table->id();
+        $table->string('title');
+    });
+
+    // Baseline: posts without `title`, plus a `legacy` table now gone.
+    apiBaseline([
+        ['name' => 'posts', 'columns' => [
+            ['name' => 'id', 'type' => 'bigint unsigned', 'nullable' => false, 'default' => null],
+        ], 'primary_key' => ['id'], 'indexes' => [], 'foreign_keys' => []],
+        ['name' => 'legacy', 'columns' => [], 'primary_key' => [], 'indexes' => [], 'foreign_keys' => []],
+    ]);
+
+    $diff = $this->getJson('/truss/api/schema')->assertOk()->json('diff');
+
+    expect($diff['has_changes'])->toBeTrue()
+        ->and($diff['tables_removed'])->toBe([['name' => 'legacy']]);
+
+    $posts = collect($diff['tables_changed'])->firstWhere('name', 'posts');
+    expect($posts['columns_added'][0]['name'])->toBe('title');
+});
+
+it('embeds a null diff when the feature is disabled even if a baseline exists', function () {
+    config()->set('truss.diff.enabled', false);
+    Storage::fake('local');
+    Schema::create('posts', fn ($table) => $table->id());
+    apiBaseline([['name' => 'legacy', 'columns' => [], 'primary_key' => [], 'indexes' => [], 'foreign_keys' => []]]);
+
+    $this->getJson('/truss/api/schema')->assertOk()->assertJsonPath('diff', null);
+});
+
+it('keeps excluded tables out of the embedded diff', function () {
+    config()->set('truss.excluded_tables', ['sessions']);
+    Storage::fake('local');
+    Schema::create('posts', fn ($table) => $table->id());
+
+    // Baseline held a now-excluded `sessions` table: it must not surface as a diff.
+    apiBaseline([['name' => 'sessions', 'columns' => [], 'primary_key' => [], 'indexes' => [], 'foreign_keys' => []]]);
+
+    $response = $this->getJson('/truss/api/schema')->assertOk();
+
+    expect($response->getContent())->not->toContain('sessions');
 });
