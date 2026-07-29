@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The dashboard toolbar and overlay labels (Filter, Focus, Legend, Export view, and the rest) now read in sentence case instead of all caps, matching the documentation site. Diff badges read "Added" / "Removed" / "Changed". Visual only, no behaviour change.
+
 ## [1.4.0] - 2026-07-29
 
 ### Added
