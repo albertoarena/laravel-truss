@@ -141,8 +141,8 @@ body {
 
 .truss-brand {
   display: inline-flex; align-items: center; gap: 9px;
-  font-family: var(--bp-mono); font-weight: 600; font-size: 15px;
-  letter-spacing: .22em; text-transform: uppercase; color: var(--bp-ink);
+  font-family: var(--bp-mono); font-weight: 600; font-size: 16px;
+  letter-spacing: -.05em; text-transform: none; color: var(--bp-ink);
 }
 .truss-mark { flex: none; display: block; color: var(--bp-ink); }
 

@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="art/cover-dark.png">
-  <img src="art/cover-light.png" alt="Laravel Truss — see your database structure as a live, zoomable ER diagram">
+  <img src="art/cover-light.png" alt="Laravel Truss: see your database structure as a live, zoomable ER diagram">
 </picture>
 
 [![Documentation](https://img.shields.io/badge/docs-website-2f6feb?style=flat-square)](https://trussphp.com)
