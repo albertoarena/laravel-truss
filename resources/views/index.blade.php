@@ -57,7 +57,7 @@
 
             <div class="truss-utils">
                 <label class="truss-field truss-field--conn" hidden>
-                    <span class="truss-field-label">Conn</span>
+                    <span class="truss-field-label">Connections</span>
                     <select id="truss-connection"></select>
                 </label>
                 <button type="button" class="truss-util truss-util--more" id="truss-more-btn" title="More controls" aria-expanded="false">⋯</button>

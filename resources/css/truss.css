@@ -137,6 +137,12 @@ body {
     var(--bp-bg);
 }
 
+/* The app is the positioning context for its absolutely-positioned overlays
+   (the legend). Without this they anchor to the viewport and land over the
+   toolbar when the dashboard is embedded below other chrome (an iframe, or the
+   docs demo's site bar). */
+#truss-app { position: relative; }
+
 /* ---- toolbar ---------------------------------------------------------- */
 
 .truss-toolbar {
