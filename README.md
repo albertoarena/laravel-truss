@@ -16,6 +16,8 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 
 **[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed. See what has shipped and what is next on the **[roadmap](https://trussphp.com/roadmap/)**.
 
+> **Stay updated:** click **Watch > Custom > Releases** to hear about new features, or follow along in [Discussions](https://github.com/albertoarena/laravel-truss/discussions).
+
 ## Features
 
 - Live ER diagram of your database, rendered with Mermaid.
@@ -87,7 +89,7 @@ Truss keeps its schema snapshot in the cache, which is derived and disposable. T
 
 ## Security
 
-Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email arena.alberto@gmail.com rather than opening a public issue.
+Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email me@albertoarena.it rather than opening a public issue.
 
 ## Contributing
 
