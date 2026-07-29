@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The dashboard connection switcher label now reads "Connections" instead of "Conn".
+- The legend overlay anchors to the dashboard container rather than the viewport, so it stays correctly placed when the dashboard is embedded below other page chrome (an iframe, or an embed).
+
 ## [1.4.1] - 2026-07-29
 
 ### Changed

@@ -24,6 +24,16 @@ it('renders the toolbar brand as the lowercase truss wordmark', function () {
     expect($html)->toMatch('/<span class="truss-brand">[\s\S]*?<\/svg>\s*truss\s*<\/span>/');
 });
 
+it('labels the connection switcher "Connections"', function () {
+    config()->set('truss.enabled', true);
+    Gate::define('viewTruss', fn ($user = null) => true);
+
+    $html = $this->get('/truss')->assertOk()->getContent();
+
+    // The switcher label reads the full word, matching the docs site, not "Conn".
+    expect($html)->toContain('<span class="truss-field-label">Connections</span>');
+});
+
 it('hides the index page entirely when Truss is disabled', function () {
     config()->set('truss.enabled', false);
     Gate::define('viewTruss', fn ($user = null) => true);
