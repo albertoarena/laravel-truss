@@ -67,6 +67,19 @@ class SchemaCacheRepository
     }
 
     /**
+     * Read the currently cached snapshot without building on a miss, returning
+     * null when nothing is cached. Used to capture the pre-migration snapshot as
+     * a diff baseline: unlike get(), it never reaches the live database, so it
+     * cannot accidentally record the post-migration state.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function peek(?string $connection = null): ?array
+    {
+        return Cache::get($this->key($this->resolve($connection)));
+    }
+
+    /**
      * The connections Truss manages: those configured under truss.connections,
      * or the application's default connection when none are configured.
      *

@@ -9,6 +9,7 @@ import { buildQuery, parseQuery } from './url-state.js';
 import { toJson, toCsv } from './table-export.js';
 import { schemaToMarkdown, tableToMarkdown } from './markdown-export.js';
 import { schemaToDbml } from './dbml-export.js';
+import { hasDiff, changeList, tableStatuses } from './diff-view.js';
 
 const app = document.getElementById('truss-app');
 
@@ -40,6 +41,8 @@ const state = {
   view: { zoom: 1, x: 0, y: 0 }, // translate(x,y) scale(zoom)
   content: { width: 0, height: 0 }, // natural SVG size
   lastKey: null, // subset signature; drives auto-fit only on content change
+  diff: null, // the schema diff from the API (null when disabled or no baseline)
+  diffMode: false, // "Changes" view: tint changed tables and show the panel
 };
 
 const el = {
@@ -59,6 +62,8 @@ const el = {
   moreBtn: document.getElementById('truss-more-btn'),
   legend: document.getElementById('truss-legend'),
   legendBtn: document.getElementById('truss-legend-btn'),
+  diffBtn: document.getElementById('truss-diff-btn'),
+  diffPanel: document.getElementById('truss-diff-panel'),
   themeBtn: document.getElementById('truss-theme-btn'),
   exportBtn: document.getElementById('truss-export-btn'),
   statTables: document.getElementById('truss-stat-tables'),
@@ -479,6 +484,113 @@ function centerOnFocusedTable() {
   applyTransform();
 }
 
+/* ---- schema diff ("Changes" view) ------------------------------------- */
+
+// Show the Changes button only when the response carried a diff (the feature is
+// on and a baseline exists). When it did not, make sure the view is off.
+function updateDiffAvailability() {
+  const available = state.diff != null;
+  el.diffBtn?.toggleAttribute('hidden', !available);
+  if (!available && state.diffMode) closeDiff();
+}
+
+function toggleDiff() {
+  if (state.diff == null) return;
+  state.diffMode ? closeDiff() : openDiff();
+}
+
+function openDiff() {
+  state.diffMode = true;
+  el.diffBtn?.setAttribute('aria-expanded', 'true');
+  renderDiffPanel();
+  el.diffPanel?.removeAttribute('hidden');
+  markDiffTables();
+}
+
+function closeDiff() {
+  state.diffMode = false;
+  el.diffBtn?.setAttribute('aria-expanded', 'false');
+  el.diffPanel?.setAttribute('hidden', '');
+  clearDiffTables();
+}
+
+// Tint the added and changed table nodes. Removed tables are not rendered (they
+// are gone from the current schema), so the panel lists them instead.
+function clearDiffTables() {
+  el.canvas.querySelector('svg')
+    ?.querySelectorAll('g.node.truss-diff-added, g.node.truss-diff-changed')
+    .forEach((n) => n.classList.remove('truss-diff-added', 'truss-diff-changed'));
+}
+
+function markDiffTables() {
+  clearDiffTables();
+  if (!state.diffMode || !hasDiff(state.diff)) return;
+  for (const [name, status] of tableStatuses(state.diff)) {
+    if (status === 'removed') continue;
+    findTableNode(name)?.classList.add(`truss-diff-${status}`);
+  }
+}
+
+function renderDiffPanel() {
+  const body = el.diffPanel?.querySelector('.truss-diff-body');
+  if (!body) return;
+
+  if (!hasDiff(state.diff)) {
+    body.innerHTML = '<p class="truss-diff-empty">No structural changes since the last migration.</p>';
+    return;
+  }
+
+  body.innerHTML = changeList(state.diff).map((item) => {
+    // Added and changed tables still exist in the diagram, so their names are
+    // focus links; removed tables are gone, so they stay plain text.
+    if (item.kind === 'table-added') return diffRow('added', item.table, '', true);
+    if (item.kind === 'table-removed') return diffRow('removed', item.table, '', false);
+    const details = item.details.map((d) => `<li>${escapeHtml(describeDetail(d))}</li>`).join('');
+    return diffRow('changed', item.table, details, true);
+  }).join('');
+}
+
+function diffRow(status, table, details = '', focusable = false) {
+  const label = focusable
+    ? `<button type="button" class="truss-diff-focus" data-diff-focus="${escapeHtml(table)}">${escapeHtml(table)}</button>`
+    : escapeHtml(table);
+  const list = details ? `<ul class="truss-diff-details">${details}</ul>` : '';
+  return `<div class="truss-diff-item truss-diff-item--${status}">`
+    + `<span class="truss-diff-badge">${status}</span> ${label}${list}</div>`;
+}
+
+// Focus a table straight from the Changes panel, reusing the focus pipeline.
+function focusTableFromDiff(name) {
+  if (!state.tables.some((t) => t.name === name)) return;
+  state.focusRoot = name;
+  if (el.focus) el.focus.value = name;
+  render();
+}
+
+function describeDetail(d) {
+  switch (d.kind) {
+    case 'column-added': return `+ column ${d.name} (${d.type})`;
+    case 'column-removed': return `- column ${d.name}`;
+    case 'column-changed': return `~ column ${d.name} (${Object.entries(d.changes)
+      .map(([field, c]) => `${field}: ${diffValue(c.before)} → ${diffValue(c.after)}`).join(', ')})`;
+    case 'index-added': return `+ index ${d.name}`;
+    case 'index-removed': return `- index ${d.name}`;
+    case 'index-changed': return `~ index ${d.name}`;
+    case 'fk-added': return `+ foreign key ${d.name}`;
+    case 'fk-removed': return `- foreign key ${d.name}`;
+    case 'fk-changed': return `~ foreign key ${d.name}`;
+    case 'primary-key-changed': return `~ primary key [${d.before.join(', ')}] → [${d.after.join(', ')}]`;
+    default: return '';
+  }
+}
+
+function diffValue(value) {
+  if (value === null) return 'null';
+  if (value === true) return 'true';
+  if (value === false) return 'false';
+  return Array.isArray(value) ? `[${value.join(', ')}]` : String(value);
+}
+
 /* ---- rendering -------------------------------------------------------- */
 
 function banner(kind, text) {
@@ -537,6 +649,7 @@ async function render() {
     el.canvas.innerHTML = svg;
     normalizeSvg();
     markFocusedTable();
+    markDiffTables(); // re-tint after a re-render when the Changes view is on
     annotateColumnTypes(subset);
 
     // Auto-fit only when the *content* changed (new tables): filtering and
@@ -608,6 +721,7 @@ async function loadSchema() {
   state.tables = payload.tables ?? [];
   state.fallback = Boolean(payload.fallback);
   state.generatedAt = payload.generated_at ?? null;
+  state.diff = payload.diff ?? null;
   // Apply a focus requested via the URL, once we can confirm the table exists.
   state.focusRoot = (state.pendingFocus && state.tables.some((t) => t.name === state.pendingFocus))
     ? state.pendingFocus
@@ -616,6 +730,7 @@ async function loadSchema() {
   state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
   updateFooter();
+  updateDiffAvailability();
   await render();
 }
 
@@ -778,6 +893,11 @@ function wireEvents() {
     const shown = el.legend?.hasAttribute('hidden');
     el.legend?.toggleAttribute('hidden', !shown);
     el.legendBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
+  });
+  el.diffBtn?.addEventListener('click', toggleDiff);
+  el.diffPanel?.addEventListener('click', (e) => {
+    const focus = e.target.closest('[data-diff-focus]');
+    if (focus) focusTableFromDiff(focus.dataset.diffFocus);
   });
   el.themeBtn?.addEventListener('click', cycleTheme);
 

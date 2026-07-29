@@ -187,4 +187,33 @@ return [
         'warn_above' => (int) env('TRUSS_LARGE_SCHEMA_WARN_ABOVE', 60),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Schema diff
+    |--------------------------------------------------------------------------
+    |
+    | "What changed since the last migration". After each migration Truss keeps
+    | the previous schema snapshot as a baseline and compares it against the
+    | current one, surfacing added, removed, and changed tables, columns, indexes,
+    | and foreign keys in the dashboard "Changes" panel and via `truss:diff`.
+    |
+    | This is the only feature that writes to the filesystem: the baseline is a
+    | structure-only JSON file (never row data), stored on disk rather than in the
+    | cache because it cannot be rebuilt from the live database once a migration
+    | has run.
+    |
+    | `enabled`: master switch. When false, no baseline is captured, nothing is
+    | written to disk, the "Changes" toggle is hidden, and `truss:diff` reports the
+    | feature is off. Set it false if you do not want Truss touching your disk.
+    |
+    | `disk`: the filesystem disk the baseline is written to. Null uses the
+    | application's default disk. The path is always `truss/baselines/{connection}`.
+    |
+    */
+
+    'diff' => [
+        'enabled' => (bool) env('TRUSS_DIFF_ENABLED', true),
+        'disk' => env('TRUSS_DIFF_DISK'),
+    ],
+
 ];

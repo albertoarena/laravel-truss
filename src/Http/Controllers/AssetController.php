@@ -29,6 +29,7 @@ class AssetController
         'table-export.js' => 'js/table-export.js',
         'markdown-export.js' => 'js/markdown-export.js',
         'dbml-export.js' => 'js/dbml-export.js',
+        'diff-view.js' => 'js/diff-view.js',
         'type-labels.js' => 'js/type-labels.js',
         'viewport.js' => 'js/viewport.js',
         'url-state.js' => 'js/url-state.js',

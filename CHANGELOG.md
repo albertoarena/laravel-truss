@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Schema diff: see what changed since your last migration. After each migration Truss records the previous schema as a baseline and compares it against the current one. The dashboard gains a "Changes" panel that tints added and changed tables and lists every added, removed, or changed table, column, index, and foreign key, and a new `php artisan truss:diff` command prints the same diff in the terminal (handy in CI). Structure only, never row data. The baseline is a structure-only JSON file, the only thing Truss writes to disk, stored at `truss/baselines/{connection}.json` on the disk set by `truss.diff.disk`. Set `TRUSS_DIFF_ENABLED=false` to turn the feature off entirely so nothing is written to disk.
+
 ## [1.3.2] - 2026-07-29
 
 ### Changed

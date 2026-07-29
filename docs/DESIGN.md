@@ -66,13 +66,14 @@ This layer has no knowledge of HTTP, Blade, caching, or Mermaid. It is a pure fu
 - Rebuilds are triggered automatically by listening to `Illuminate\Database\Events\MigrationsEnded`, fired after `migrate`, `migrate:rollback`, and `migrate:fresh`.
 - A manual `php artisan truss:rebuild` command is available for CI, seeding workflows, or forcing a refresh.
 - No database table is used for storage. This is disposable, derived data.
+- On each `MigrationsEnded`, before the cache is overwritten, the snapshot that is currently cached (the pre-migration schema) is captured as the **schema-diff baseline** (see section 4). This is the one place that knows a migration just ran, and the cache is the only remaining source of the previous schema once the migration has completed.
 
 ### 3. HTTP layer (`src/Http/`)
 
 Two routes, matching the "index page + JSON endpoint" pattern used by in-app admin dashboards:
 
 - `GET {route_prefix}` — renders the Blade shell (layout, connection switcher, container for the diagram).
-- `GET {route_prefix}/api/schema?connection=...` — returns the cached schema JSON for the requested connection, with config `excluded_tables` filtered out **server-side** so they never reach the client. The frontend fetches from this endpoint and builds the Mermaid `erDiagram` definition client-side, applying interactive filter/focus to what it received.
+- `GET {route_prefix}/api/schema?connection=...` — returns the cached schema JSON for the requested connection, with config `excluded_tables` filtered out **server-side** so they never reach the client. The response also carries a `diff` field (the structural diff against the recorded baseline, or `null` when the feature is off or no baseline exists yet); the baseline is filtered through the same exclusion list, so an excluded table never surfaces via the diff either. The frontend fetches from this endpoint and builds the Mermaid `erDiagram` definition client-side, applying interactive filter/focus to what it received.
 
 Both routes sit behind a **fixed `viewTruss` gate** (a fixed ability name). The package ships a default definition that allows access in `local` only; the host app customizes *who* may view by redefining the `viewTruss` gate in its own service provider. The ability name is not configurable — only its callback is, and that lives in the app, not in config.
 
@@ -106,6 +107,17 @@ Gate::define('viewTruss', fn (User $user) => $user->isAdmin());
 ```
 
 The host definition always wins (the package registers its default only if the app has not already defined the gate, and a later app definition overrides it regardless of order). The ability *name* is fixed — only the callback varies, and that lives in the app. See `DECISIONS.md` → *Authorization: production-gated model*.
+
+### 4. Schema diff (`src/Diff/`)
+
+"What changed since the last migration", built from two pieces:
+
+- **`SchemaDiffer`** is a pure function over two serialized snapshots (baseline, current). It returns a plain diff array: tables added / removed / changed, and within a changed table, columns / indexes / foreign keys added / removed / changed plus a primary-key change. Matching is by name, so a rename reads as a remove plus an add (a documented limitation). It touches no framework, no I/O, and no database, so it is unit-tested with plain array fixtures, and it cannot expose row data because both inputs are already structure-only.
+- **`BaselineStore`** persists the baseline as a structure-only JSON file on a configurable Laravel disk (`truss.diff.disk`, default disk otherwise), at `truss/baselines/{connection}.json`. It is the **only** thing Truss writes to the filesystem. The baseline lives on disk rather than in the cache because it is the one piece of state Truss cannot rebuild from the live database: once the migration has run, the previous schema exists nowhere else.
+
+Both surfaces read the same engine: the dashboard "Changes" panel (fed by the `diff` API field, tinting added and changed tables and listing every change, with removed tables list-only; each added or changed table name in the panel is a focus link that jumps the diagram to that table) and the `php artisan truss:diff` command (the terminal counterpart, structure-only, safe in CI).
+
+The whole feature is gated by `truss.diff.enabled` (default true). When false, no baseline is captured, nothing is written to disk, the API returns `diff: null`, the dashboard button is hidden, and `truss:diff` reports the feature is off. The check runs before any filesystem touch, so a host that disables it can be certain Truss leaves the disk untouched. See `DECISIONS.md` → *Schema diff: durable baseline on disk*.
 
 ## Frontend
 
@@ -150,6 +162,8 @@ Mermaid is **vendored** (a copy of `mermaid.min.js` in the package) and served f
 | `authorization.allowed_emails` | Emails admitted by the default `viewTruss` gate in non-local environments (`TRUSS_ALLOWED_EMAILS`); ignored in local and when the host overrides the gate |
 | `focus.default_depth` | Foreign-key neighbour depth shown when focusing a table (default `1`) |
 | `large_schema.warn_above` | Table count above which the UI shows a "large schema — use focus/filter" warning |
+| `diff.enabled` | Master switch for schema diff (default `true`, `TRUSS_DIFF_ENABLED`). When false, no baseline is captured, nothing is written to disk, the "Changes" panel is hidden, and `truss:diff` reports the feature is off |
+| `diff.disk` | Filesystem disk the diff baseline is written to (`TRUSS_DIFF_DISK`); null uses the app's default disk. The path is always `truss/baselines/{connection}.json` |
 
 ## Out of scope for v1
 
@@ -185,8 +199,12 @@ Post-v1 ideas, not yet scheduled:
 │   │   └── Data/                    # value objects: Table, Column, ForeignKey, Index
 │   ├── Cache/
 │   │   └── SchemaCacheRepository.php
+│   ├── Diff/                        # pure schema diff + baseline persistence
+│   │   ├── SchemaDiffer.php         # pure: two snapshots → structural diff
+│   │   └── BaselineStore.php        # structure-only baseline file on a disk
 │   ├── Commands/
-│   │   └── RebuildCommand.php       # truss:rebuild
+│   │   ├── RebuildCommand.php       # truss:rebuild
+│   │   └── DiffCommand.php          # truss:diff
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── IndexController.php
@@ -206,6 +224,7 @@ Post-v1 ideas, not yet scheduled:
 │       ├── truss.js                 # browser entry: fetch → select → Mermaid render
 │       ├── mermaid-definition.js    # schema subset → erDiagram string (the generator)
 │       ├── selection.js             # filter + focus reducers
+│       ├── diff-view.js             # schema-diff render model (statuses, panel list)
 │       ├── type-labels.js           # native → Laravel-style short label
 │       └── vendor/
 │           └── mermaid.min.js       # vendored Mermaid (MIT), self-hosted, no CDN

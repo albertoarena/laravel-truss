@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss;
 
+use AlbertoArena\Truss\Commands\DiffCommand;
 use AlbertoArena\Truss\Commands\OpenCommand;
 use AlbertoArena\Truss\Commands\RebuildCommand;
 use AlbertoArena\Truss\Commands\ShowCommand;
@@ -35,7 +36,7 @@ class TrussServiceProvider extends PackageServiceProvider
             ->name('laravel-truss')
             ->hasConfigFile()
             ->hasViews()
-            ->hasCommands([RebuildCommand::class, ShowCommand::class, OpenCommand::class]);
+            ->hasCommands([RebuildCommand::class, ShowCommand::class, OpenCommand::class, DiffCommand::class]);
     }
 
     public function packageBooted(): void

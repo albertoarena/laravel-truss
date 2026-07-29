@@ -51,6 +51,8 @@
   --bp-edge: #5f7396;
   --bp-edge-bg: #eef1f6;
   --bp-focus-border: #0e7c9b; --bp-focus-bg: #e6f7fc;
+  --bp-diff-added-border: #1f9d55; --bp-diff-added-bg: #e3f7ea;
+  --bp-diff-changed-border: #b5791f; --bp-diff-changed-bg: #fbeeda;
 
   --bp-info-bg: #e5eefb; --bp-info-fg: #12356b;
   --bp-warn-bg: #fbeeda; --bp-warn-fg: #8a5a00;
@@ -82,6 +84,8 @@
     --bp-edge: #9fb8d0;
     --bp-edge-bg: #0b1a2b;
     --bp-focus-border: #7fe0f2; --bp-focus-bg: #103a4a;
+    --bp-diff-added-border: #6fd08a; --bp-diff-added-bg: #16351f;
+    --bp-diff-changed-border: #e6b877; --bp-diff-changed-bg: #3a2f16;
 
     --bp-info-bg: #10314a; --bp-info-fg: #8fd4e6;
     --bp-warn-bg: #3a2f16; --bp-warn-fg: #e6b877;
@@ -111,6 +115,8 @@
   --bp-edge: #9fb8d0;
   --bp-edge-bg: #0b1a2b;
   --bp-focus-border: #7fe0f2; --bp-focus-bg: #103a4a;
+  --bp-diff-added-border: #6fd08a; --bp-diff-added-bg: #16351f;
+  --bp-diff-changed-border: #e6b877; --bp-diff-changed-bg: #3a2f16;
 
   --bp-info-bg: #10314a; --bp-info-fg: #8fd4e6;
   --bp-warn-bg: #3a2f16; --bp-warn-fg: #e6b877;
@@ -215,6 +221,36 @@ body {
 .truss-legend-list dt { font-family: var(--bp-mono); font-weight: 600; font-size: 12px; color: var(--bp-ink); }
 .truss-legend-list dd { margin: 0; font-size: 12.5px; color: var(--bp-fg); }
 .truss-legend-list svg { color: var(--bp-rel); display: block; }
+
+/* schema diff ("Changes") panel: mirrors the legend popover */
+.truss-diff-panel {
+  position: absolute; top: 62px; right: 14px; z-index: 20; width: 280px; max-height: 60vh; overflow-y: auto;
+  background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18); padding: 12px 14px; color: var(--bp-fg);
+}
+.truss-diff-panel[hidden] { display: none; }
+#truss-diff-btn[hidden] { display: none; }
+.truss-diff-head {
+  font-family: var(--bp-mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--bp-muted); margin-bottom: 10px;
+}
+.truss-diff-empty { margin: 0; font-size: 12.5px; color: var(--bp-muted); }
+.truss-diff-item { font-size: 12.5px; margin-bottom: 8px; color: var(--bp-fg); }
+.truss-diff-item:last-child { margin-bottom: 0; }
+.truss-diff-badge {
+  font-family: var(--bp-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 3px; border: 1px solid currentColor;
+}
+.truss-diff-item--added .truss-diff-badge { color: var(--bp-diff-added-border); }
+.truss-diff-item--removed .truss-diff-badge { color: var(--bp-error-fg); }
+.truss-diff-item--changed .truss-diff-badge { color: var(--bp-diff-changed-border); }
+.truss-diff-details { margin: 4px 0 0; padding-left: 18px; }
+.truss-diff-details li { font-family: var(--bp-mono); font-size: 11.5px; color: var(--bp-muted); }
+.truss-diff-focus {
+  font: inherit; color: var(--bp-cyan); background: none; border: 0; padding: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.truss-diff-focus:hover, .truss-diff-focus:focus-visible { color: var(--bp-focus-border); }
 
 /* enum/set label turned into a clickable accent (opens the value popover).
    The high-specificity selectors beat Mermaid's inherited label colour. */
@@ -324,6 +360,14 @@ body {
 #truss-canvas svg g.node.truss-focused .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-focus-bg) !important; }
 #truss-canvas svg g.node.truss-focused .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-focus-border) !important; stroke-width: 2.4px !important; }
 #truss-canvas svg g.node.truss-focused g.label.name .nodeLabel { color: var(--bp-focus-border) !important; font-weight: 600; }
+
+/* schema diff tints: added and changed tables (removed tables are list-only) */
+#truss-canvas svg g.node.truss-diff-added .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-diff-added-bg) !important; }
+#truss-canvas svg g.node.truss-diff-added .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-diff-added-border) !important; stroke-width: 2.4px !important; }
+#truss-canvas svg g.node.truss-diff-added g.label.name .nodeLabel { color: var(--bp-diff-added-border) !important; font-weight: 600; }
+#truss-canvas svg g.node.truss-diff-changed .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-diff-changed-bg) !important; }
+#truss-canvas svg g.node.truss-diff-changed .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-diff-changed-border) !important; stroke-width: 2.4px !important; }
+#truss-canvas svg g.node.truss-diff-changed g.label.name .nodeLabel { color: var(--bp-diff-changed-border) !important; font-weight: 600; }
 
 #truss-canvas svg .nodeLabel,
 #truss-canvas svg .nodeLabel p { color: var(--bp-entity-text) !important; font-family: var(--bp-mono) !important; }
