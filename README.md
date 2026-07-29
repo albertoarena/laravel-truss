@@ -24,6 +24,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Map-style pan and zoom, with auto-fit and a Fit button.
 - Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, or DBML, all generated in the browser and structure-only.
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
+- Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
 - Light and dark "blueprint" theme.
 - Self-contained: Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
 - Cached snapshot, rebuilt automatically after migrations.
@@ -63,6 +64,22 @@ By default Truss is enabled in the `local` environment only. Start your app and 
 ```
 
 To use Truss in a non-local environment you must both enable it and authorize the viewers. See [Authorization](https://trussphp.com/guides/authorization/).
+
+## Multiple connections
+
+Out of the box Truss visualizes your application's default database connection. If your app spans more than one connection, for example a main database alongside a separate module database, list the connections you want to visualize under `truss.connections`:
+
+```php
+// config/truss.php
+'connections' => [
+    'mysql' => [],
+    'modules' => ['excluded_tables' => ['module_jobs']],
+],
+```
+
+When two or more connections are configured, a connection picker appears in the dashboard toolbar. Switching it re-renders that connection's schema, and the selection is kept in the URL so a given view can be shared or bookmarked. Each connection is introspected against its own database only, so a shared server never shows tables that belong to another database.
+
+The keys are Laravel connection names from `config/database.php`. Per-connection options mirror the global ones (such as `excluded_tables`), so you can hide different tables on each connection.
 
 ## Storage
 
