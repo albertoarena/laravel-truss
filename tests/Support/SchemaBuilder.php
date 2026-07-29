@@ -15,11 +15,14 @@ final class SchemaBuilder
     /** @var list<array<string, mixed>> */
     private array $tables = [];
 
-    public function __construct(private readonly string $connection = 'testing') {}
+    public function __construct(
+        private readonly string $connection = 'testing',
+        private readonly string $driver = 'mysql',
+    ) {}
 
-    public static function make(string $connection = 'testing'): self
+    public static function make(string $connection = 'testing', string $driver = 'mysql'): self
     {
-        return new self($connection);
+        return new self($connection, $driver);
     }
 
     /**
@@ -43,6 +46,7 @@ final class SchemaBuilder
     {
         return [
             'connection' => $this->connection,
+            'driver' => $this->driver,
             'fallback' => false,
             'skipped_migrations' => [],
             'tables' => $this->tables,
