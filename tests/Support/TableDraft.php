@@ -45,6 +45,12 @@ final class TableDraft
         return $this->column($name, 'int');
     }
 
+    /** A nullable deleted_at timestamp, as softDeletes() adds. */
+    public function softDeletes(string $name = 'deleted_at'): self
+    {
+        return $this->column($name, 'timestamp', nullable: true);
+    }
+
     /** A bigint unsigned foreign-key column. Call on() to add the constraint. */
     public function foreignId(string $name): self
     {
