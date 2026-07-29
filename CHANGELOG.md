@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-07-29
+
 ### Changed
 
 - The dashboard connection switcher label now reads "Connections" instead of "Conn".
