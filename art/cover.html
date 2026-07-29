@@ -1,0 +1,155 @@
+<!-- Laravel Truss social cover / README hero (1200x630 @2x = 2400x1260).
+     Edit this file, then regenerate the PNGs with: node art/render-cover.mjs
+     Fonts are the package's own IBM Plex Mono (resources/fonts). -->
+<meta charset="utf-8">
+<style>
+  @font-face{font-family:"Plex Mono";font-weight:400;font-style:normal;src:url("../resources/fonts/ibm-plex-mono-400.woff2") format("woff2");}
+  @font-face{font-family:"Plex Mono";font-weight:600;font-style:normal;src:url("../resources/fonts/ibm-plex-mono-600.woff2") format("woff2");}
+
+  :root{
+    --bg:#eef1f6; --panel:#fbfcfe; --line:#c9d4e6; --ink:#12356b; --cyan:#0e7c9b;
+    --fg:#132741; --muted:#5f7396; --field:#ffffff; --hair:#c4d5ec;
+    --even:#e9f0f9; --eborder:#12356b; --onink:#eef1f6;
+    --grid:rgba(18,53,107,.06); --gridB:rgba(18,53,107,.11);
+    --shadow:rgba(18,53,107,.16);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1a2b; --panel:#0f2338; --line:#22496b; --ink:#5fd0e6; --cyan:#7fe0f2;
+    --fg:#d7e7f4; --muted:#7fa2c0; --field:#0e2135; --hair:#274a6b;
+    --even:#16324e; --eborder:#3f7fa0; --onink:#0b1a2b;
+    --grid:rgba(120,200,230,.05); --gridB:rgba(120,200,230,.10);
+    --shadow:rgba(0,0,0,.45);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:1200px;height:630px;overflow:hidden;}
+  body{
+    background:var(--bg);
+    background-image:
+      linear-gradient(var(--gridB) 1px,transparent 1px) 0 0/96px 96px,
+      linear-gradient(90deg,var(--gridB) 1px,transparent 1px) 0 0/96px 96px,
+      linear-gradient(var(--grid) 1px,transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/24px 24px;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg);
+  }
+  .mono{font-family:"Plex Mono",monospace;}
+  .cover{display:flex;height:100%;align-items:center;gap:36px;padding:72px 68px;}
+
+  /* Left */
+  .left{width:512px;flex:none;}
+  .lockup{display:inline-flex;align-items:center;gap:11px;color:var(--ink);}
+  .wm{position:relative;font-family:"Plex Mono",monospace;font-weight:600;font-size:34px;letter-spacing:-.05em;line-height:1;color:var(--ink);padding-bottom:9px;display:inline-block;}
+  .wm .chord{position:absolute;left:0;right:0;bottom:2px;border-top:2px solid var(--cyan);}
+  .wm .n{position:absolute;bottom:2px;width:7px;height:7px;border-radius:50%;background:var(--cyan);transform:translateY(50%);}
+  .wm .n.l{left:-1px;} .wm .n.c{left:50%;margin-left:-3.5px;} .wm .n.r{right:-1px;}
+
+  .eyebrow{margin-top:26px;font-family:"Plex Mono",monospace;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:11px;}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--cyan);}
+
+  h1{margin-top:18px;font-family:"Plex Mono",monospace;font-weight:600;font-size:52px;line-height:1.04;letter-spacing:-.03em;color:var(--fg);}
+  h1 .a{color:var(--ink);}
+  .sub{margin-top:20px;font-size:19px;line-height:1.5;color:var(--muted);max-width:20em;}
+  .pills{margin-top:30px;display:flex;gap:12px;}
+  .pill{font-family:"Plex Mono",monospace;font-size:14px;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:8px 16px;display:inline-flex;align-items:center;gap:7px;background:var(--field);}
+  .pill::before{content:"›";color:var(--cyan);font-weight:600;}
+
+  /* Right: browser window mockup */
+  .win{flex:1;align-self:stretch;margin:8px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 30px 60px -20px var(--shadow);overflow:hidden;display:flex;flex-direction:column;}
+  .bar{height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:2px solid var(--ink);background:var(--panel);}
+  .dot{width:12px;height:12px;border-radius:50%;}
+  .dot.r{background:#e0645c;} .dot.y{background:#e6b34d;} .dot.g{background:#5fb87a;}
+  .bar .brand{margin-left:10px;display:inline-flex;align-items:center;gap:8px;color:var(--ink);}
+  .bar .brand .bw{font-family:"Plex Mono",monospace;font-weight:600;font-size:17px;letter-spacing:-.05em;}
+  .canvas{flex:1;position:relative;background:
+      linear-gradient(var(--gridB) 1px,transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg,var(--gridB) 1px,transparent 1px) 0 0/24px 24px, var(--field);}
+  .canvas svg{position:absolute;inset:0;width:100%;height:100%;}
+  .e-bg{fill:var(--field);stroke:var(--eborder);stroke-width:1.4;}
+  .e-hd{fill:var(--ink);}
+  .e-ht{fill:var(--onink);font:600 13px "Plex Mono",monospace;}
+  .col{font:400 12.5px "Plex Mono",monospace;fill:var(--fg);}
+  .typ{font:400 12.5px "Plex Mono",monospace;fill:var(--muted);}
+  .key{font:600 12.5px "Plex Mono",monospace;fill:var(--cyan);}
+  .hair{stroke:var(--hair);stroke-width:1;}
+  .even{fill:var(--even);}
+  .rel{stroke:var(--cyan);stroke-width:1.8;fill:none;}
+  .node{fill:var(--cyan);}
+</style>
+
+<div class="cover">
+  <div class="left">
+    <div class="lockup">
+      <svg width="40" height="40" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+        <path d="M16 5 L27 26 H5 Z"/><path d="M16 5 V17"/><path d="M5 26 L16 17"/><path d="M27 26 L16 17"/>
+        <g fill="currentColor" stroke="none"><circle cx="16" cy="5" r="2.3"/><circle cx="5" cy="26" r="2.3"/><circle cx="27" cy="26" r="2.3"/><circle cx="16" cy="17" r="2.3"/></g>
+      </svg>
+      <span class="wm">truss<span class="chord"></span><span class="n l"></span><span class="n c"></span><span class="n r"></span></span>
+    </div>
+
+    <div class="eyebrow">Laravel &middot; live schema viewer</div>
+
+    <h1>See your database<br><span class="a">structure</span>, live.</h1>
+    <p class="sub">A scrollable, zoomable ER diagram, right inside your Laravel app. Structure only, never data.</p>
+
+    <div class="pills">
+      <span class="pill mono">Focus mode</span>
+      <span class="pill mono">Pan &amp; zoom</span>
+      <span class="pill mono">No CDN</span>
+    </div>
+  </div>
+
+  <div class="win">
+    <div class="bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="brand">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+          <path d="M16 5 L27 26 H5 Z"/><path d="M16 5 V17"/><path d="M5 26 L16 17"/><path d="M27 26 L16 17"/>
+          <g fill="currentColor" stroke="none"><circle cx="16" cy="5" r="2.3"/><circle cx="5" cy="26" r="2.3"/><circle cx="27" cy="26" r="2.3"/><circle cx="16" cy="17" r="2.3"/></g>
+        </svg>
+        <span class="bw">truss</span>
+      </span>
+    </div>
+    <div class="canvas">
+      <svg viewBox="0 0 580 400" preserveAspectRatio="xMidYMid meet">
+        <!-- relationships: FK row to the referenced PK row.
+             users.company_id -> companies.id ; posts.user_id -> users.id -->
+        <path class="rel" d="M232 86 C 294 86, 294 228, 348 228"/>
+        <path class="rel" d="M348 196 C 300 196, 300 334, 250 334"/>
+        <circle class="node" cx="232" cy="86" r="3.6"/><circle class="node" cx="348" cy="228" r="3.6"/>
+        <circle class="node" cx="348" cy="196" r="3.6"/><circle class="node" cx="250" cy="334" r="3.6"/>
+
+        <!-- companies -->
+        <g transform="translate(32,40)">
+          <rect class="e-bg" x="0" y="0" width="200" height="94" rx="6"/>
+          <path class="e-hd" d="M6 0 h188 a6 6 0 0 1 6 6 v22 h-200 v-22 a6 6 0 0 1 6 -6 z"/>
+          <text class="e-ht" x="100" y="19" text-anchor="middle">companies</text>
+          <text class="col" x="14" y="50">bigint</text><text class="col" x="96" y="50">id</text><text class="key" x="186" y="50" text-anchor="end">PK</text>
+          <rect class="even" x="1" y="62" width="198" height="30"/>
+          <text class="col" x="14" y="82">varchar</text><text class="col" x="96" y="82">name</text>
+        </g>
+
+        <!-- users (same width and paddings as companies) -->
+        <g transform="translate(348,150)">
+          <rect class="e-bg" x="0" y="0" width="200" height="124" rx="6"/>
+          <path class="e-hd" d="M6 0 h188 a6 6 0 0 1 6 6 v22 h-200 v-22 a6 6 0 0 1 6 -6 z"/>
+          <text class="e-ht" x="100" y="19" text-anchor="middle">users</text>
+          <text class="col" x="14" y="50">bigint</text><text class="col" x="88" y="50">id</text><text class="key" x="186" y="50" text-anchor="end">PK</text>
+          <rect class="even" x="1" y="62" width="198" height="30"/>
+          <text class="col" x="14" y="82">char_36</text><text class="col" x="88" y="82">company_id</text><text class="key" x="186" y="82" text-anchor="end">FK</text>
+          <text class="col" x="14" y="112">varchar</text><text class="col" x="88" y="112">email</text>
+        </g>
+
+        <!-- posts -->
+        <g transform="translate(50,256)">
+          <rect class="e-bg" x="0" y="0" width="200" height="94" rx="6"/>
+          <path class="e-hd" d="M6 0 h188 a6 6 0 0 1 6 6 v22 h-200 v-22 a6 6 0 0 1 6 -6 z"/>
+          <text class="e-ht" x="100" y="19" text-anchor="middle">posts</text>
+          <text class="col" x="14" y="50">bigint</text><text class="col" x="96" y="50">id</text><text class="key" x="186" y="50" text-anchor="end">PK</text>
+          <rect class="even" x="1" y="62" width="198" height="30"/>
+          <text class="col" x="14" y="82">bigint</text><text class="col" x="96" y="82">user_id</text><text class="key" x="186" y="82" text-anchor="end">FK</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
