@@ -14,7 +14,7 @@
 
 Laravel Truss is a live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app, so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
 
-**[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed.
+**[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed. See what has shipped and what is next on the **[roadmap](https://trussphp.com/roadmap/)**.
 
 ## Features
 
@@ -35,6 +35,7 @@ Full documentation is at **[trussphp.com](https://trussphp.com)**.
 - [Quick start](https://trussphp.com/getting-started/quick-start/)
 - [Authorization](https://trussphp.com/guides/authorization/)
 - [Configuration reference](https://trussphp.com/reference/configuration/)
+- [Roadmap](https://trussphp.com/roadmap/)
 
 ## Installation
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-29
+
+### Changed
+
+- The dashboard toolbar now shows the lowercase `truss` wordmark in IBM Plex Mono, matching the documentation site and the refreshed brand. Visual only, no behaviour change.
+
 ## [1.3.1] - 2026-07-28
 
 ### Fixed
