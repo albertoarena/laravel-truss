@@ -10,6 +10,7 @@ import { toJson, toCsv } from './table-export.js';
 import { schemaToMarkdown, tableToMarkdown } from './markdown-export.js';
 import { schemaToDbml } from './dbml-export.js';
 import { hasDiff, changeList, tableStatuses } from './diff-view.js';
+import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups } from './doctor-view.js';
 
 const app = document.getElementById('truss-app');
 
@@ -43,6 +44,8 @@ const state = {
   lastKey: null, // subset signature; drives auto-fit only on content change
   diff: null, // the schema diff from the API (null when disabled or no baseline)
   diffMode: false, // "Changes" view: tint changed tables and show the panel
+  doctor: null, // the doctor report from the API (null when the panel is disabled)
+  doctorMode: false, // "Health" view: badge tables with findings and show the panel
 };
 
 const el = {
@@ -64,6 +67,9 @@ const el = {
   legendBtn: document.getElementById('truss-legend-btn'),
   diffBtn: document.getElementById('truss-diff-btn'),
   diffPanel: document.getElementById('truss-diff-panel'),
+  healthBtn: document.getElementById('truss-health-btn'),
+  healthPanel: document.getElementById('truss-health-panel'),
+  healthCount: document.getElementById('truss-health-count'),
   themeBtn: document.getElementById('truss-theme-btn'),
   exportBtn: document.getElementById('truss-export-btn'),
   statTables: document.getElementById('truss-stat-tables'),
@@ -591,6 +597,115 @@ function diffValue(value) {
   return Array.isArray(value) ? `[${value.join(', ')}]` : String(value);
 }
 
+/* ---- structure health ("Health" view) --------------------------------- */
+
+// Show the Health button only when the response carried a doctor payload (the
+// panel is enabled). The count bubble reflects the total, coloured by the worst
+// severity present; when there are no findings the button reads as a clean pass.
+function updateDoctorAvailability() {
+  const available = state.doctor != null;
+  el.healthBtn?.toggleAttribute('hidden', !available);
+  if (!available) {
+    if (state.doctorMode) closeHealth();
+    return;
+  }
+
+  const { total } = doctorSummary(state.doctor);
+  const worst = worstSeverity(state.doctor) ?? 'clean';
+  el.healthBtn?.setAttribute('data-severity', worst);
+  el.healthBtn?.setAttribute('title', total > 0
+    ? `Structure health: ${total} finding${total === 1 ? '' : 's'} (truss:doctor)`
+    : 'Structure health: no problems found (truss:doctor)');
+  if (el.healthCount) {
+    el.healthCount.textContent = total > 0 ? String(total) : '';
+    el.healthCount.toggleAttribute('hidden', total === 0);
+  }
+}
+
+function toggleHealth() {
+  if (state.doctor == null) return;
+  state.doctorMode ? closeHealth() : openHealth();
+}
+
+function openHealth() {
+  state.doctorMode = true;
+  el.healthBtn?.setAttribute('aria-expanded', 'true');
+  renderHealthPanel();
+  el.healthPanel?.removeAttribute('hidden');
+  markDoctorBadges();
+}
+
+function closeHealth() {
+  state.doctorMode = false;
+  el.healthBtn?.setAttribute('aria-expanded', 'false');
+  el.healthPanel?.setAttribute('hidden', '');
+  clearDoctorBadges();
+}
+
+// Badge the diagram nodes for tables that have findings, coloured by their worst
+// severity. Only active while the Health panel is open, so the canvas stays clean
+// otherwise.
+function clearDoctorBadges() {
+  el.canvas.querySelector('svg')
+    ?.querySelectorAll('g.node.truss-health-error, g.node.truss-health-warning, g.node.truss-health-info')
+    .forEach((n) => n.classList.remove('truss-health-error', 'truss-health-warning', 'truss-health-info'));
+}
+
+function markDoctorBadges() {
+  clearDoctorBadges();
+  if (!state.doctorMode || !hasDoctor(state.doctor)) return;
+  for (const [name, { severity }] of tableBadges(state.doctor)) {
+    findTableNode(name)?.classList.add(`truss-health-${severity}`);
+  }
+}
+
+function renderHealthPanel() {
+  const body = el.healthPanel?.querySelector('.truss-health-body');
+  if (!body) return;
+
+  const groups = findingGroups(state.doctor);
+  if (groups.length === 0) {
+    body.innerHTML = '<p class="truss-health-empty">No structural problems found.</p>';
+    return;
+  }
+
+  // On a large schema the groups start collapsed so the panel stays scannable.
+  const open = state.tables.length <= config.warnAbove;
+  body.innerHTML = groups.map((group) => healthGroup(group, open)).join('');
+}
+
+function healthGroup(group, open) {
+  const items = group.findings.map((f) => healthItem(f)).join('');
+  return `<details class="truss-health-group truss-health-group--${group.severity}"${open ? ' open' : ''}>`
+    + '<summary class="truss-health-group-head">'
+    + `<span class="truss-health-dot truss-health-dot--${group.severity}"></span>`
+    + `<span class="truss-health-table">${escapeHtml(group.table)}</span>`
+    + `<span class="truss-health-count-inline">${group.findings.length}</span></summary>`
+    + '<div class="truss-health-group-body">'
+    + `<button type="button" class="truss-health-focus" data-health-focus="${escapeHtml(group.table)}">Focus this table</button>`
+    + `<ul class="truss-health-items">${items}</ul></div></details>`;
+}
+
+function healthItem(finding) {
+  const location = finding.column ?? '(table)';
+  const heuristic = finding.confidence === 'heuristic'
+    ? ' <span class="truss-health-heuristic" title="Heuristic: a lower-confidence signal">heuristic</span>'
+    : '';
+  return `<li class="truss-health-item truss-health-item--${finding.severity}">`
+    + `<div class="truss-health-item-head"><span class="truss-health-badge">${escapeHtml(finding.severity)}</span> `
+    + `<code class="truss-health-code">${escapeHtml(finding.code)}</code> `
+    + `<span class="truss-health-loc">${escapeHtml(location)}</span>${heuristic}</div>`
+    + `<div class="truss-health-msg">${escapeHtml(finding.message)}</div></li>`;
+}
+
+// Focus a table straight from the Health panel, reusing the focus pipeline.
+function focusTableFromDoctor(name) {
+  if (!state.tables.some((t) => t.name === name)) return;
+  state.focusRoot = name;
+  if (el.focus) el.focus.value = name;
+  render();
+}
+
 /* ---- rendering -------------------------------------------------------- */
 
 function banner(kind, text) {
@@ -650,6 +765,7 @@ async function render() {
     normalizeSvg();
     markFocusedTable();
     markDiffTables(); // re-tint after a re-render when the Changes view is on
+    markDoctorBadges(); // re-badge after a re-render when the Health view is on
     annotateColumnTypes(subset);
 
     // Auto-fit only when the *content* changed (new tables): filtering and
@@ -722,6 +838,7 @@ async function loadSchema() {
   state.fallback = Boolean(payload.fallback);
   state.generatedAt = payload.generated_at ?? null;
   state.diff = payload.diff ?? null;
+  state.doctor = payload.doctor ?? null;
   // Apply a focus requested via the URL, once we can confirm the table exists.
   state.focusRoot = (state.pendingFocus && state.tables.some((t) => t.name === state.pendingFocus))
     ? state.pendingFocus
@@ -731,6 +848,7 @@ async function loadSchema() {
   populateFocusOptions();
   updateFooter();
   updateDiffAvailability();
+  updateDoctorAvailability();
   await render();
 }
 
@@ -898,6 +1016,11 @@ function wireEvents() {
   el.diffPanel?.addEventListener('click', (e) => {
     const focus = e.target.closest('[data-diff-focus]');
     if (focus) focusTableFromDiff(focus.dataset.diffFocus);
+  });
+  el.healthBtn?.addEventListener('click', toggleHealth);
+  el.healthPanel?.addEventListener('click', (e) => {
+    const focus = e.target.closest('[data-health-focus]');
+    if (focus) focusTableFromDoctor(focus.dataset.healthFocus);
   });
   el.themeBtn?.addEventListener('click', cycleTheme);
 

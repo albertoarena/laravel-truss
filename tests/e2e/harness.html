@@ -21,6 +21,11 @@
         #truss-diff-btn[hidden] { display: none; }
         .truss-diff-panel { position: absolute; top: 40px; right: 14px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }
         .truss-diff-panel[hidden] { display: none; }
+        #truss-health-btn[hidden] { display: none; }
+        .truss-health-count[hidden] { display: none; }
+        .truss-health-panel { position: absolute; top: 40px; right: 320px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }
+        .truss-health-panel[hidden] { display: none; }
+        .truss-health-group-head { cursor: pointer; }
         .truss-menu { display: flex; flex-direction: column; }
         .truss-menu button { cursor: pointer; padding: 4px 8px; text-align: left; }
     </style>
@@ -45,6 +50,7 @@
             <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
             <button type="button" id="truss-export-btn" title="Export">Export</button>
             <button type="button" id="truss-diff-btn" title="Changes" aria-expanded="false" hidden>Changes</button>
+            <button type="button" id="truss-health-btn" title="Health" aria-expanded="false" hidden>Health<span class="truss-health-count" id="truss-health-count" hidden></span></button>
             <span class="truss-zoom">
                 <button type="button" data-fit>Fit</button>
                 <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1">
@@ -56,6 +62,10 @@
         <div class="truss-diff-panel" id="truss-diff-panel" hidden>
             <div class="truss-diff-head">Changes since last migration</div>
             <div class="truss-diff-body"></div>
+        </div>
+        <div class="truss-health-panel" id="truss-health-panel" hidden>
+            <div class="truss-health-head">Structure health</div>
+            <div class="truss-health-body"></div>
         </div>
         <div class="truss-popover" id="truss-popover" hidden></div>
     </div>

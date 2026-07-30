@@ -71,6 +71,12 @@
                         <path d="M5 8 h8 M9 4 v8"/><path d="M11 17 h8"/>
                     </svg>
                 </button>
+                <button type="button" class="truss-util" id="truss-health-btn" title="Structure health (truss:doctor findings)" aria-expanded="false" hidden>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12 h4 l2 -6 4 12 2 -6 h6"/>
+                    </svg>
+                    <span class="truss-health-count" id="truss-health-count" aria-hidden="true" hidden></span>
+                </button>
                 <button type="button" class="truss-util" id="truss-legend-btn" title="Legend" aria-expanded="false">▤</button>
                 <button type="button" class="truss-util" id="truss-theme-btn" title="Theme">◐</button>
             </div>
@@ -105,6 +111,11 @@
         <div class="truss-diff-panel" id="truss-diff-panel" hidden>
             <div class="truss-diff-head">Changes since last migration</div>
             <div class="truss-diff-body"></div>
+        </div>
+
+        <div class="truss-health-panel" id="truss-health-panel" hidden>
+            <div class="truss-health-head">Structure health</div>
+            <div class="truss-health-body"></div>
         </div>
 
         <div class="truss-popover" id="truss-popover" hidden></div>

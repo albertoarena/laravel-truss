@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Schema doctor: `php artisan truss:doctor` (aliased `truss:check`) reviews the database structure for problems visible from structure alone, a table with no primary key, an unindexed foreign key, duplicate or redundant indexes, a foreign key type mismatch, money stored as a float, and more, and can fail CI. Deterministic and structure only, with no AI and no network call. Thirteen rules across integrity, index, and type categories, presets (recommended, strict, none), per-rule and per-category configuration, ignore patterns, a grouped console table (findings grouped per table, long messages wrapped) and JSON output, and exit codes for CI. Configured under `truss.doctor`.
+- Schema doctor in the dashboard: a "Health" panel lists the findings grouped by table, badges the tables that have findings on the diagram (coloured by worst severity), marks heuristic findings, and focuses a table when you click it. It rides the existing schema endpoint and is toggled with `truss.doctor.dashboard` (`TRUSS_DOCTOR_DASHBOARD`).
 
 ## [1.4.2] - 2026-07-29
 
