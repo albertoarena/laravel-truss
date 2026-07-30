@@ -21,6 +21,7 @@ const config = {
   warnAbove: Number(app.dataset.warnAbove || 60),
   focusDepth: Number(app.dataset.focusDepth || 1),
   minZoom: Number(app.dataset.minZoom || 0.4),
+  flagTables: app.dataset.doctorFlagTables !== '0', // passive always-on health flags on the diagram
 };
 
 // Seed the initial view from the URL query string so a shared/bookmarked link
@@ -714,6 +715,48 @@ function markDoctorBadges() {
   }
 }
 
+// A passive, always-on flag: a small severity-coloured badge with the finding
+// count on the corner of every table that has findings, independent of the Health
+// panel, so a problem is visible just by looking at the table. Gated by the
+// `flag_tables` config. Drawn as an SVG element inside the node, so it zooms and
+// pans with the diagram and sits on top of any Changes tint without conflicting.
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function clearPassiveHealth() {
+  el.canvas.querySelector('svg')?.querySelectorAll('.truss-health-flag').forEach((n) => n.remove());
+}
+
+function markPassiveHealth(subset) {
+  clearPassiveHealth();
+  const svg = el.canvas.querySelector('svg');
+  if (!svg || !config.flagTables || !hasDoctor(state.doctor)) return;
+
+  const present = new Set(subset.map((t) => t.name));
+  for (const [name, { severity, count }] of tableBadges(state.doctor)) {
+    if (!present.has(name)) continue;
+    const node = findTableNode(name);
+    if (!node) continue;
+
+    let bb;
+    try { bb = node.getBBox(); } catch { continue; }
+
+    const flag = document.createElementNS(SVGNS, 'g');
+    flag.setAttribute('class', `truss-health-flag truss-health-flag--${severity}`);
+    flag.setAttribute('transform', `translate(${bb.x + bb.width - 3}, ${bb.y + 3})`);
+
+    const circle = document.createElementNS(SVGNS, 'circle');
+    circle.setAttribute('r', '9');
+
+    const text = document.createElementNS(SVGNS, 'text');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.textContent = String(count);
+
+    flag.append(circle, text);
+    node.append(flag);
+  }
+}
+
 // Mark the diagram rows whose column has a finding, so the problem is visible on
 // the table itself. Reuses the per-column type cells (indexed like
 // annotateColumnTypes); each marker opens the finding popover on click.
@@ -926,6 +969,7 @@ async function render() {
     markFocusedTable();
     markDiffTables(); // re-tint after a re-render when the Changes view is on
     markDoctorBadges(); // re-badge after a re-render when the Health view is on
+    markPassiveHealth(subset); // always-on flags on tables with findings (config-gated)
     annotateColumnTypes(subset);
     markDoctorRows(subset); // after annotateColumnTypes, so a marked row's title wins
 

@@ -235,6 +235,10 @@ return [
     |   dashboard: show the findings in the dashboard "Health" panel. When false,
     |              the schema endpoint sends no doctor payload and the panel and
     |              node badges never appear, leaving the CLI/CI doctor untouched.
+    |   flag_tables: always mark tables that have findings on the diagram with a
+    |              small severity count, even when the Health panel is closed. Set
+    |              false to keep the diagram clean and surface findings only when
+    |              the panel is open.
     |
     */
 
@@ -255,6 +259,8 @@ return [
         'exclude' => [],
 
         'dashboard' => (bool) env('TRUSS_DOCTOR_DASHBOARD', true),
+
+        'flag_tables' => (bool) env('TRUSS_DOCTOR_FLAG_TABLES', true),
     ],
 
 ];

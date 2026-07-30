@@ -492,6 +492,17 @@ body {
 .truss-health-pop-item { white-space: normal; }
 .truss-health-hint { margin-top: 3px; font-size: 11.5px; color: var(--bp-muted); font-style: italic; }
 
+/* Passive always-on flag: a small severity dot with the finding count on the
+   corner of any flagged table. The digit uses the panel colour (opposite
+   luminance to every severity fg), so it reads in both themes. */
+/* High-specificity + !important to beat Mermaid's own node/circle/text styling. */
+#truss-canvas svg .truss-health-flag { pointer-events: none; }
+#truss-canvas svg .truss-health-flag circle { stroke: var(--bp-panel) !important; stroke-width: 1.5 !important; }
+#truss-canvas svg .truss-health-flag text { font-family: var(--bp-mono); font-size: 10px; font-weight: 700; fill: var(--bp-panel) !important; }
+#truss-canvas svg .truss-health-flag--error circle { fill: var(--bp-error-fg) !important; }
+#truss-canvas svg .truss-health-flag--warning circle { fill: var(--bp-warn-fg) !important; }
+#truss-canvas svg .truss-health-flag--info circle { fill: var(--bp-info-fg) !important; }
+
 /* Health view: badge tables with findings, tinted by their worst severity. */
 #truss-canvas svg g.node.truss-health-error .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-error-bg) !important; }
 #truss-canvas svg g.node.truss-health-error .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-error-fg) !important; stroke-width: 2.4px !important; }

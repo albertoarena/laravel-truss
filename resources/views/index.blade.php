@@ -23,6 +23,7 @@
         data-warn-above="{{ config('truss.large_schema.warn_above') }}"
         data-focus-depth="{{ config('truss.focus.default_depth') }}"
         data-min-zoom="{{ config('truss.diagram.min_zoom') }}"
+        data-doctor-flag-tables="{{ config('truss.doctor.flag_tables', true) ? '1' : '0' }}"
     >
         <div class="truss-toolbar">
             <span class="truss-brand">

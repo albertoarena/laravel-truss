@@ -31,6 +31,11 @@
         .truss-health-panel[hidden] { display: none; }
         .truss-health-panel.is-maximized { position: fixed; inset: 5vh 5vw; width: auto; height: auto; max-height: 90vh; z-index: 40; }
         .truss-health-group-head { cursor: pointer; }
+        #truss-canvas svg .truss-health-flag circle { stroke: #fff !important; stroke-width: 1.5 !important; }
+        #truss-canvas svg .truss-health-flag text { font-size: 10px; font-weight: 700; fill: #fff !important; }
+        #truss-canvas svg .truss-health-flag--error circle { fill: #aa1111 !important; }
+        #truss-canvas svg .truss-health-flag--warning circle { fill: #8a5a00 !important; }
+        #truss-canvas svg .truss-health-flag--info circle { fill: #12356b !important; }
         @keyframes truss-health-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
         #truss-health-btn[data-severity="error"] .truss-health-icon,
         #truss-health-btn[data-severity="warning"] .truss-health-icon { animation: truss-health-pulse 1.4s ease-in-out infinite; transform-origin: center; }
@@ -49,6 +54,7 @@
         data-warn-above="3"
         data-focus-depth="1"
         data-min-zoom="0.4"
+        data-doctor-flag-tables="1"
     >
         <div class="truss-toolbar">
             <span class="truss-brand">truss</span>
@@ -85,6 +91,11 @@
         <div class="truss-popover" id="truss-popover" hidden></div>
     </div>
 
+    <script>
+      // Let a test flip the flag-tables config via ?flag=0 before the app reads it.
+      const _p = new URLSearchParams(location.search);
+      if (_p.has('flag')) document.getElementById('truss-app').dataset.doctorFlagTables = _p.get('flag');
+    </script>
     <script type="module" src="/resources/js/truss.js"></script>
 </body>
 </html>
