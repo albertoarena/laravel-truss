@@ -96,11 +96,13 @@ php artisan truss:doctor --preset=strict --fail-on=warning
 
 It exits `0` when clean, `1` when a finding is at or above the `--fail-on` level (default `error`), and `2` on a bad option or a snapshot error, so a migration that introduces a problem can fail the build. Presets (`recommended`, `strict`, `none`), per-rule severity and enable / disable, ignore patterns, and the fail level are all configurable under `truss.doctor`. See the [configuration reference](https://trussphp.com/reference/configuration/).
 
+Every finding carries a stable code (e.g. `TRUSS-IDX-001`) shown in both the command and the panel; the [schema doctor guide](https://trussphp.com/guides/schema-doctor/) lists all the rule codes and what each checks.
+
 Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
 
 ### In the dashboard
 
-The same findings show in the dashboard. A "Health" panel (the heart toggle in the toolbar) lists them grouped by table, and every table with a problem carries a small severity badge on the diagram, so you can see what needs attention at a glance. Open the panel to read the findings, click a table to focus it, or click the marked column to see the finding for that field. Heuristic (lower-confidence) findings are marked as such.
+The same findings show in the dashboard, under the name **Health**: the command is `truss:doctor`, and the dashboard front end for it is the heart icon in the toolbar labelled "Health". Same feature, same findings. The Health panel lists them grouped by table, and every table with a problem carries a small severity badge on the diagram, so you can see what needs attention at a glance. Open the panel to read the findings, click a table to focus it, or click the marked column to see the finding for that field. Heuristic (lower-confidence) findings are marked as such.
 
 It rides the schema endpoint the diagram already loads, so there is no extra request. Two switches control it under `truss.doctor`:
 
