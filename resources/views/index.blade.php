@@ -23,6 +23,7 @@
         data-warn-above="{{ config('truss.large_schema.warn_above') }}"
         data-focus-depth="{{ config('truss.focus.default_depth') }}"
         data-min-zoom="{{ config('truss.diagram.min_zoom') }}"
+        data-doctor-flag-tables="{{ config('truss.doctor.flag_tables', true) ? '1' : '0' }}"
     >
         <div class="truss-toolbar">
             <span class="truss-brand">
@@ -71,6 +72,13 @@
                         <path d="M5 8 h8 M9 4 v8"/><path d="M11 17 h8"/>
                     </svg>
                 </button>
+                <button type="button" class="truss-util" id="truss-health-btn" title="Structure health (truss:doctor findings)" aria-expanded="false" hidden>
+                    <svg class="truss-health-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                        <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+                    </svg>
+                    <span class="truss-health-count" id="truss-health-count" aria-hidden="true" hidden></span>
+                </button>
                 <button type="button" class="truss-util" id="truss-legend-btn" title="Legend" aria-expanded="false">▤</button>
                 <button type="button" class="truss-util" id="truss-theme-btn" title="Theme">◐</button>
             </div>
@@ -105,6 +113,14 @@
         <div class="truss-diff-panel" id="truss-diff-panel" hidden>
             <div class="truss-diff-head">Changes since last migration</div>
             <div class="truss-diff-body"></div>
+        </div>
+
+        <div class="truss-health-panel" id="truss-health-panel" hidden>
+            <div class="truss-health-head">
+                <span>Structure health</span>
+                <button type="button" class="truss-health-max" id="truss-health-max-btn" title="Maximize" aria-label="Maximize" aria-pressed="false">⤢</button>
+            </div>
+            <div class="truss-health-body"></div>
         </div>
 
         <div class="truss-popover" id="truss-popover" hidden></div>

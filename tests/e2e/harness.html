@@ -21,6 +21,25 @@
         #truss-diff-btn[hidden] { display: none; }
         .truss-diff-panel { position: absolute; top: 40px; right: 14px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }
         .truss-diff-panel[hidden] { display: none; }
+        #truss-health-btn[hidden] { display: none; }
+        /* Mirror the real toolbar button: a fixed-size flex box, count as a corner badge. */
+        #truss-health-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; }
+        .truss-health-icon { flex: none; }
+        .truss-health-count { position: absolute; top: -4px; right: -4px; min-width: 13px; height: 13px; box-sizing: border-box; padding: 0 3px; font-size: 8.5px; line-height: 13px; border-radius: 7px; color: #fff; background: #aa1111; }
+        .truss-health-count[hidden] { display: none; }
+        .truss-health-panel { position: absolute; top: 40px; right: 320px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }
+        .truss-health-panel[hidden] { display: none; }
+        .truss-health-panel.is-maximized { position: fixed; inset: 5vh 5vw; width: auto; height: auto; max-height: 90vh; z-index: 40; }
+        .truss-health-group-head { cursor: pointer; }
+        #truss-canvas svg .truss-health-flag circle { stroke: #fff !important; stroke-width: 1.5 !important; }
+        #truss-canvas svg .truss-health-flag text { font-size: 10px; font-weight: 700; fill: #fff !important; }
+        #truss-canvas svg .truss-health-flag--error circle { fill: #aa1111 !important; }
+        #truss-canvas svg .truss-health-flag--warning circle { fill: #8a5a00 !important; }
+        #truss-canvas svg .truss-health-flag--info circle { fill: #12356b !important; }
+        @keyframes truss-health-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+        #truss-health-btn[data-severity="error"] .truss-health-icon,
+        #truss-health-btn[data-severity="warning"] .truss-health-icon { animation: truss-health-pulse 1.4s ease-in-out infinite; transform-origin: center; }
+        @media (prefers-reduced-motion: reduce) { #truss-health-btn .truss-health-icon { animation: none !important; } }
         .truss-menu { display: flex; flex-direction: column; }
         .truss-menu button { cursor: pointer; padding: 4px 8px; text-align: left; }
     </style>
@@ -35,6 +54,7 @@
         data-warn-above="3"
         data-focus-depth="1"
         data-min-zoom="0.4"
+        data-doctor-flag-tables="1"
     >
         <div class="truss-toolbar">
             <span class="truss-brand">truss</span>
@@ -45,6 +65,13 @@
             <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
             <button type="button" id="truss-export-btn" title="Export">Export</button>
             <button type="button" id="truss-diff-btn" title="Changes" aria-expanded="false" hidden>Changes</button>
+            <button type="button" id="truss-health-btn" title="Health" aria-expanded="false" hidden>
+                <svg class="truss-health-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                    <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+                </svg>
+                <span class="truss-health-count" id="truss-health-count" hidden></span>
+            </button>
             <span class="truss-zoom">
                 <button type="button" data-fit>Fit</button>
                 <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1">
@@ -57,9 +84,18 @@
             <div class="truss-diff-head">Changes since last migration</div>
             <div class="truss-diff-body"></div>
         </div>
+        <div class="truss-health-panel" id="truss-health-panel" hidden>
+            <div class="truss-health-head"><span>Structure health</span><button type="button" class="truss-health-max" id="truss-health-max-btn" title="Maximize" aria-pressed="false">⤢</button></div>
+            <div class="truss-health-body"></div>
+        </div>
         <div class="truss-popover" id="truss-popover" hidden></div>
     </div>
 
+    <script>
+      // Let a test flip the flag-tables config via ?flag=0 before the app reads it.
+      const _p = new URLSearchParams(location.search);
+      if (_p.has('flag')) document.getElementById('truss-app').dataset.doctorFlagTables = _p.get('flag');
+    </script>
     <script type="module" src="/resources/js/truss.js"></script>
 </body>
 </html>

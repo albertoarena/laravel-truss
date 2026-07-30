@@ -7,6 +7,7 @@ namespace AlbertoArena\Truss\Http\Controllers;
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Diff\BaselineStore;
 use AlbertoArena\Truss\Diff\SchemaDiffer;
+use AlbertoArena\Truss\Doctor\DoctorReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,6 +33,7 @@ class SchemaApiController
         private readonly SchemaCacheRepository $cache,
         private readonly BaselineStore $baselines = new BaselineStore,
         private readonly SchemaDiffer $differ = new SchemaDiffer,
+        private readonly DoctorReport $doctor = new DoctorReport,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -46,8 +48,26 @@ class SchemaApiController
         $snapshot = $this->cache->get($connection);
         $snapshot['tables'] = $this->withoutExcludedTables($snapshot['tables'], $connection);
         $snapshot['diff'] = $this->diffFor($connection, $snapshot);
+        $snapshot['doctor'] = $this->doctorFor($connection, $snapshot);
 
         return response()->json($snapshot);
+    }
+
+    /**
+     * The doctor report for the connection, or null when the dashboard panel is
+     * switched off. The snapshot is already exclusion-filtered, so excluded
+     * tables never reach a finding. Structure only, like the rest of the response.
+     *
+     * @param  array<string, mixed>  $snapshot  the already exclusion-filtered current snapshot
+     * @return array<string, mixed>|null
+     */
+    private function doctorFor(string $connection, array $snapshot): ?array
+    {
+        if (! config('truss.doctor.dashboard', true)) {
+            return null;
+        }
+
+        return $this->doctor->toArray($this->doctor->for($connection, $snapshot));
     }
 
     /**

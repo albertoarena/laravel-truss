@@ -10,6 +10,7 @@ import { toJson, toCsv } from './table-export.js';
 import { schemaToMarkdown, tableToMarkdown } from './markdown-export.js';
 import { schemaToDbml } from './dbml-export.js';
 import { hasDiff, changeList, tableStatuses } from './diff-view.js';
+import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups, columnMarkers } from './doctor-view.js';
 
 const app = document.getElementById('truss-app');
 
@@ -20,6 +21,7 @@ const config = {
   warnAbove: Number(app.dataset.warnAbove || 60),
   focusDepth: Number(app.dataset.focusDepth || 1),
   minZoom: Number(app.dataset.minZoom || 0.4),
+  flagTables: app.dataset.doctorFlagTables !== '0', // passive always-on health flags on the diagram
 };
 
 // Seed the initial view from the URL query string so a shared/bookmarked link
@@ -43,6 +45,8 @@ const state = {
   lastKey: null, // subset signature; drives auto-fit only on content change
   diff: null, // the schema diff from the API (null when disabled or no baseline)
   diffMode: false, // "Changes" view: tint changed tables and show the panel
+  doctor: null, // the doctor report from the API (null when the panel is disabled)
+  doctorMode: false, // "Health" view: badge tables with findings and show the panel
 };
 
 const el = {
@@ -64,6 +68,10 @@ const el = {
   legendBtn: document.getElementById('truss-legend-btn'),
   diffBtn: document.getElementById('truss-diff-btn'),
   diffPanel: document.getElementById('truss-diff-panel'),
+  healthBtn: document.getElementById('truss-health-btn'),
+  healthPanel: document.getElementById('truss-health-panel'),
+  healthCount: document.getElementById('truss-health-count'),
+  healthMaxBtn: document.getElementById('truss-health-max-btn'),
   themeBtn: document.getElementById('truss-theme-btn'),
   exportBtn: document.getElementById('truss-export-btn'),
   statTables: document.getElementById('truss-stat-tables'),
@@ -225,7 +233,11 @@ function annotateColumnTypes(tables) {
 let openAnchor = null;
 let menuTable = null;
 
-function positionPopover(anchor) {
+// Position the shared popover next to an anchor. `placePopover` does the raw
+// placement; `positionPopover` first closes the other overlays (so a toolbar or
+// table menu is the only thing open). Finding markers use `placePopover` so their
+// detail popover can sit alongside the open Health panel.
+function placePopover(anchor) {
   el.popover.hidden = false;
   const r = anchor.getBoundingClientRect();
   const w = el.popover.offsetWidth;
@@ -234,6 +246,23 @@ function positionPopover(anchor) {
   const top = r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6;
   el.popover.style.left = `${left}px`;
   el.popover.style.top = `${top}px`;
+  openAnchor = anchor;
+}
+
+function positionPopover(anchor) {
+  closeOverlays('popover');
+  placePopover(anchor);
+}
+
+// The export menu is a toolbar overlay, so it aligns to the top-right cluster
+// with the Legend/Changes/Health panels instead of hanging off its button.
+function positionCluster(anchor) {
+  closeOverlays('popover');
+  el.popover.hidden = false;
+  const host = app.getBoundingClientRect();
+  const w = el.popover.offsetWidth;
+  el.popover.style.left = `${host.right - w - 14}px`;
+  el.popover.style.top = `${host.top + 62}px`;
   openAnchor = anchor;
 }
 
@@ -444,7 +473,7 @@ function showExportMenu(anchor) {
     + '<button type="button" data-act="md">Data dictionary (Markdown)</button>'
     + '<button type="button" data-act="dbml">DBML</button>'
     + '</div>';
-  positionPopover(anchor);
+  positionCluster(anchor);
 }
 
 /** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
@@ -500,6 +529,7 @@ function toggleDiff() {
 }
 
 function openDiff() {
+  closeOverlays('diff');
   state.diffMode = true;
   el.diffBtn?.setAttribute('aria-expanded', 'true');
   renderDiffPanel();
@@ -591,6 +621,294 @@ function diffValue(value) {
   return Array.isArray(value) ? `[${value.join(', ')}]` : String(value);
 }
 
+/* ---- structure health ("Health" view) --------------------------------- */
+
+// Show the Health button only when the response carried a doctor payload (the
+// panel is enabled). The count bubble reflects the total, coloured by the worst
+// severity present; when there are no findings the button reads as a clean pass.
+function updateDoctorAvailability() {
+  const available = state.doctor != null;
+  el.healthBtn?.toggleAttribute('hidden', !available);
+  if (!available) {
+    if (state.doctorMode) closeHealth();
+    return;
+  }
+
+  const { total } = doctorSummary(state.doctor);
+  const worst = worstSeverity(state.doctor) ?? 'clean';
+  el.healthBtn?.setAttribute('data-severity', worst);
+  el.healthBtn?.setAttribute('title', total > 0
+    ? `Structure health: ${total} finding${total === 1 ? '' : 's'} (truss:doctor)`
+    : 'Structure health: no problems found (truss:doctor)');
+  if (el.healthCount) {
+    el.healthCount.textContent = total > 0 ? String(total) : '';
+    el.healthCount.toggleAttribute('hidden', total === 0);
+  }
+}
+
+function toggleHealth() {
+  if (state.doctor == null) return;
+  if (state.doctorMode) {
+    closeHealth();
+    hidePopover(); // also dismiss a finding popover opened from a marker
+  } else {
+    openHealth();
+  }
+}
+
+function openHealth() {
+  closeOverlays('health');
+  state.doctorMode = true;
+  el.healthBtn?.setAttribute('aria-expanded', 'true');
+  renderHealthPanel();
+  el.healthPanel?.removeAttribute('hidden');
+  markDoctorBadges();
+  markDoctorRows(currentSubset());
+}
+
+function closeHealth() {
+  state.doctorMode = false;
+  el.healthBtn?.setAttribute('aria-expanded', 'false');
+  el.healthPanel?.setAttribute('hidden', '');
+  restoreHealth();
+  clearDoctorBadges();
+  clearDoctorRows();
+}
+
+// Expand the panel to a large centred overlay for reading, or restore it.
+function toggleHealthMax() {
+  el.healthPanel?.classList.contains('is-maximized') ? restoreHealth() : maximizeHealth();
+}
+
+function maximizeHealth() {
+  el.healthPanel?.classList.add('is-maximized');
+  el.healthMaxBtn?.setAttribute('aria-pressed', 'true');
+  if (el.healthMaxBtn) {
+    el.healthMaxBtn.textContent = '⤡';
+    el.healthMaxBtn.title = 'Restore';
+  }
+}
+
+function restoreHealth() {
+  el.healthPanel?.classList.remove('is-maximized');
+  el.healthMaxBtn?.setAttribute('aria-pressed', 'false');
+  if (el.healthMaxBtn) {
+    el.healthMaxBtn.textContent = '⤢';
+    el.healthMaxBtn.title = 'Maximize';
+  }
+}
+
+// Badge the diagram nodes for tables that have findings, coloured by their worst
+// severity. Only active while the Health panel is open, so the canvas stays clean
+// otherwise.
+function clearDoctorBadges() {
+  el.canvas.querySelector('svg')
+    ?.querySelectorAll('g.node.truss-health-error, g.node.truss-health-warning, g.node.truss-health-info')
+    .forEach((n) => n.classList.remove('truss-health-error', 'truss-health-warning', 'truss-health-info'));
+}
+
+function markDoctorBadges() {
+  clearDoctorBadges();
+  if (!state.doctorMode || !hasDoctor(state.doctor)) return;
+  for (const [name, { severity }] of tableBadges(state.doctor)) {
+    findTableNode(name)?.classList.add(`truss-health-${severity}`);
+  }
+}
+
+// A passive, always-on flag: a small severity-coloured badge with the finding
+// count on the corner of every table that has findings, independent of the Health
+// panel, so a problem is visible just by looking at the table. Gated by the
+// `flag_tables` config. Drawn as an SVG element inside the node, so it zooms and
+// pans with the diagram and sits on top of any Changes tint without conflicting.
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function clearPassiveHealth() {
+  el.canvas.querySelector('svg')?.querySelectorAll('.truss-health-flag').forEach((n) => n.remove());
+}
+
+function markPassiveHealth(subset) {
+  clearPassiveHealth();
+  const svg = el.canvas.querySelector('svg');
+  if (!svg || !config.flagTables || !hasDoctor(state.doctor)) return;
+
+  const present = new Set(subset.map((t) => t.name));
+  for (const [name, { severity, count }] of tableBadges(state.doctor)) {
+    if (!present.has(name)) continue;
+    const node = findTableNode(name);
+    if (!node) continue;
+
+    let bb;
+    try { bb = node.getBBox(); } catch { continue; }
+
+    const flag = document.createElementNS(SVGNS, 'g');
+    flag.setAttribute('class', `truss-health-flag truss-health-flag--${severity}`);
+    flag.setAttribute('transform', `translate(${bb.x + bb.width - 3}, ${bb.y + 3})`);
+
+    const circle = document.createElementNS(SVGNS, 'circle');
+    circle.setAttribute('r', '9');
+
+    const text = document.createElementNS(SVGNS, 'text');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.textContent = String(count);
+
+    flag.append(circle, text);
+    node.append(flag);
+  }
+}
+
+// Mark the diagram rows whose column has a finding, so the problem is visible on
+// the table itself. Reuses the per-column type cells (indexed like
+// annotateColumnTypes); each marker opens the finding popover on click.
+function clearDoctorRows() {
+  el.canvas.querySelector('svg')?.querySelectorAll('.truss-health-marker').forEach((label) => {
+    label.classList.remove('truss-health-marker', 'truss-health-marker--error', 'truss-health-marker--warning', 'truss-health-marker--info');
+    delete label.dataset.healthTable;
+    delete label.dataset.healthColumn;
+  });
+}
+
+function markDoctorRows(subset) {
+  clearDoctorRows();
+  const svg = el.canvas.querySelector('svg');
+  if (!svg || !state.doctorMode || !hasDoctor(state.doctor)) return;
+
+  const byName = new Map(subset.map((t) => [t.name, t]));
+  for (const node of svg.querySelectorAll('g.node')) {
+    const nameLabel = node.querySelector('g.label.name .nodeLabel');
+    const table = byName.get(nameLabel?.textContent.trim());
+    if (!table) continue;
+
+    const markers = columnMarkers(state.doctor, table.name, table.columns.map((c) => c.name));
+    if (markers.size === 0) continue;
+
+    // Mark the column *name* cell (indexed like the type cells), so the affordance
+    // sits on the field the finding is about.
+    const nameCells = node.querySelectorAll('g.label.attribute-name');
+    table.columns.forEach((col, i) => {
+      const marker = markers.get(col.name);
+      const label = nameCells[i]?.querySelector('.nodeLabel');
+      if (!marker || !label) return;
+      label.classList.add('truss-health-marker', `truss-health-marker--${marker.severity}`);
+      label.dataset.healthTable = table.name;
+      label.dataset.healthColumn = col.name;
+      label.setAttribute('role', 'button');
+      label.setAttribute('tabindex', '0');
+      label.setAttribute('title', marker.findings.map((f) => f.message).join('\n'));
+    });
+  }
+}
+
+// The detail popover for a marked column: its findings, each with message and
+// hint. Uses placePopover so it can sit alongside the open Health panel.
+function showFindingPopover(anchor, tableName, column) {
+  const findings = (state.doctor?.findings ?? []).filter((f) => f.table === tableName && f.column === column);
+  if (findings.length === 0) return;
+
+  menuTable = null;
+  el.popover.innerHTML = `<div class="truss-popover-head">${escapeHtml(tableName)}.${escapeHtml(column)}</div>`
+    + '<ul class="truss-health-pop">'
+    + findings.map((f) => `<li class="truss-health-pop-item truss-health-item--${f.severity}">`
+      + `<div class="truss-health-item-head"><span class="truss-health-badge">${escapeHtml(f.severity)}</span> `
+      + `<code class="truss-health-code">${escapeHtml(f.code)}</code></div>`
+      + `<div class="truss-health-msg">${escapeHtml(f.message)}</div>`
+      + (f.hint ? `<div class="truss-health-hint">${escapeHtml(f.hint)}</div>` : '')
+      + '</li>').join('')
+    + '</ul>';
+  placePopover(anchor);
+}
+
+function renderHealthPanel() {
+  const body = el.healthPanel?.querySelector('.truss-health-body');
+  if (!body) return;
+
+  const groups = findingGroups(state.doctor);
+  if (groups.length === 0) {
+    body.innerHTML = '<p class="truss-health-empty">No structural problems found.</p>';
+    return;
+  }
+
+  // On a large schema the groups start collapsed so the panel stays scannable.
+  const open = state.tables.length <= config.warnAbove;
+  body.innerHTML = groups.map((group) => healthGroup(group, open)).join('');
+}
+
+function healthGroup(group, open) {
+  const items = group.findings.map((f) => healthItem(f)).join('');
+  return `<details class="truss-health-group truss-health-group--${group.severity}"${open ? ' open' : ''}>`
+    + '<summary class="truss-health-group-head">'
+    + `<span class="truss-health-dot truss-health-dot--${group.severity}"></span>`
+    + `<span class="truss-health-table">${escapeHtml(group.table)}</span>`
+    + `<span class="truss-health-count-inline">${group.findings.length}</span></summary>`
+    + '<div class="truss-health-group-body">'
+    + `<button type="button" class="truss-health-focus" data-health-focus="${escapeHtml(group.table)}">Focus this table</button>`
+    + `<ul class="truss-health-items">${items}</ul></div></details>`;
+}
+
+function healthItem(finding) {
+  const location = finding.column ?? '(table)';
+  const heuristic = finding.confidence === 'heuristic'
+    ? ' <span class="truss-health-heuristic" title="Heuristic: a lower-confidence signal">heuristic</span>'
+    : '';
+  return `<li class="truss-health-item truss-health-item--${finding.severity}">`
+    + `<div class="truss-health-item-head"><span class="truss-health-badge">${escapeHtml(finding.severity)}</span> `
+    + `<code class="truss-health-code">${escapeHtml(finding.code)}</code> `
+    + `<span class="truss-health-loc">${escapeHtml(location)}</span>${heuristic}</div>`
+    + `<div class="truss-health-msg">${escapeHtml(finding.message)}</div></li>`;
+}
+
+// Focus a table straight from the Health panel, reusing the focus pipeline.
+function focusTableFromDoctor(name) {
+  if (!state.tables.some((t) => t.name === name)) return;
+  state.focusRoot = name;
+  if (el.focus) el.focus.value = name;
+  render();
+}
+
+/* ---- overlay coordination --------------------------------------------- */
+
+// Only one overlay is open at a time: opening any panel or menu closes the rest,
+// so they never stack or overlap. `except` names the one being opened, so it is
+// left untouched. The toolbar overlays (Legend, Changes, Health, the Export menu)
+// all anchor to the same top-right cluster.
+function closeOverlays(except) {
+  if (except !== 'legend' && el.legend && !el.legend.hasAttribute('hidden')) closeLegend();
+  if (except !== 'diff' && state.diffMode) closeDiff();
+  if (except !== 'health' && state.doctorMode) closeHealth();
+  if (except !== 'more' && el.more?.classList.contains('is-open')) closeMore();
+  if (except !== 'popover') hidePopover();
+}
+
+function openLegend() {
+  closeOverlays('legend');
+  el.legend?.removeAttribute('hidden');
+  el.legendBtn?.setAttribute('aria-expanded', 'true');
+}
+
+function closeLegend() {
+  el.legend?.setAttribute('hidden', '');
+  el.legendBtn?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleLegend() {
+  el.legend?.hasAttribute('hidden') ? openLegend() : closeLegend();
+}
+
+function openMore() {
+  closeOverlays('more');
+  el.more?.classList.add('is-open');
+  el.moreBtn?.setAttribute('aria-expanded', 'true');
+}
+
+function closeMore() {
+  el.more?.classList.remove('is-open');
+  el.moreBtn?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMore() {
+  el.more?.classList.contains('is-open') ? closeMore() : openMore();
+}
+
 /* ---- rendering -------------------------------------------------------- */
 
 function banner(kind, text) {
@@ -650,7 +968,10 @@ async function render() {
     normalizeSvg();
     markFocusedTable();
     markDiffTables(); // re-tint after a re-render when the Changes view is on
+    markDoctorBadges(); // re-badge after a re-render when the Health view is on
+    markPassiveHealth(subset); // always-on flags on tables with findings (config-gated)
     annotateColumnTypes(subset);
+    markDoctorRows(subset); // after annotateColumnTypes, so a marked row's title wins
 
     // Auto-fit only when the *content* changed (new tables): filtering and
     // focusing frame their result (honouring the readable floor), while a label
@@ -722,6 +1043,7 @@ async function loadSchema() {
   state.fallback = Boolean(payload.fallback);
   state.generatedAt = payload.generated_at ?? null;
   state.diff = payload.diff ?? null;
+  state.doctor = payload.doctor ?? null;
   // Apply a focus requested via the URL, once we can confirm the table exists.
   state.focusRoot = (state.pendingFocus && state.tables.some((t) => t.name === state.pendingFocus))
     ? state.pendingFocus
@@ -731,6 +1053,7 @@ async function loadSchema() {
   populateFocusOptions();
   updateFooter();
   updateDiffAvailability();
+  updateDoctorAvailability();
   await render();
 }
 
@@ -803,6 +1126,13 @@ function wireEvents() {
   // Enum label and table name: open/close the shared popover. Delegated so it
   // survives re-renders. A menu action click is handled by its own listener below.
   el.canvas.addEventListener('click', (e) => {
+    const marker = e.target.closest('.truss-health-marker');
+    if (marker) {
+      e.stopPropagation();
+      if (openAnchor === marker) hidePopover();
+      else showFindingPopover(marker, marker.dataset.healthTable, marker.dataset.healthColumn);
+      return;
+    }
     const enumLabel = e.target.closest('.truss-enum-type');
     if (enumLabel) {
       e.stopPropagation();
@@ -832,7 +1162,7 @@ function wireEvents() {
     }
   });
   document.addEventListener('click', (e) => {
-    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name, #truss-export-btn')) hidePopover();
+    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name, .truss-health-marker, #truss-export-btn')) hidePopover();
   });
 
   // Unified pointer handling: one pointer pans (mouse or touch), two pointers
@@ -843,7 +1173,7 @@ function wireEvents() {
   const mid = (rect) => { const p = [...pointers.values()]; return { x: (p[0].x + p[1].x) / 2 - rect.left, y: (p[0].y + p[1].y) / 2 - rect.top }; };
 
   el.viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-table-name, .truss-popover')) return;
+    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-table-name, .truss-health-marker, .truss-popover')) return;
     hidePopover();
     e.preventDefault();
     el.viewport.setPointerCapture(e.pointerId);
@@ -885,19 +1215,18 @@ function wireEvents() {
   el.fit?.addEventListener('click', () => fitToViewport(0));
 
   // Utility cluster.
-  el.moreBtn?.addEventListener('click', () => {
-    const open = el.more?.classList.toggle('is-open');
-    el.moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  el.legendBtn?.addEventListener('click', () => {
-    const shown = el.legend?.hasAttribute('hidden');
-    el.legend?.toggleAttribute('hidden', !shown);
-    el.legendBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
-  });
+  el.moreBtn?.addEventListener('click', toggleMore);
+  el.legendBtn?.addEventListener('click', toggleLegend);
   el.diffBtn?.addEventListener('click', toggleDiff);
   el.diffPanel?.addEventListener('click', (e) => {
     const focus = e.target.closest('[data-diff-focus]');
     if (focus) focusTableFromDiff(focus.dataset.diffFocus);
+  });
+  el.healthBtn?.addEventListener('click', toggleHealth);
+  el.healthMaxBtn?.addEventListener('click', toggleHealthMax);
+  el.healthPanel?.addEventListener('click', (e) => {
+    const focus = e.target.closest('[data-health-focus]');
+    if (focus) focusTableFromDoctor(focus.dataset.healthFocus);
   });
   el.themeBtn?.addEventListener('click', cycleTheme);
 

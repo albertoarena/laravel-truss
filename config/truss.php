@@ -216,4 +216,51 @@ return [
         'disk' => env('TRUSS_DIFF_DISK'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Doctor
+    |--------------------------------------------------------------------------
+    |
+    | `truss:doctor` reviews the schema for problems visible from structure
+    | alone (a table with no primary key, an unindexed foreign key, and so on)
+    | and can fail CI. Structure only: it never reads row data and makes no
+    | network call.
+    |
+    |   preset:  recommended (high-confidence rules), strict (every rule), none.
+    |   rules:   per-rule overrides keyed by code: false disables, true enables
+    |            (even a heuristic one), ['severity' => 'error'] changes severity.
+    |   ignore:  per-rule fnmatch patterns (table or table.column) to silence.
+    |   fail_on:   the severity at or above which the command exits non-zero.
+    |   exclude:   extra tables to skip, on top of truss.excluded_tables.
+    |   dashboard: show the findings in the dashboard "Health" panel. When false,
+    |              the schema endpoint sends no doctor payload and the panel and
+    |              node badges never appear, leaving the CLI/CI doctor untouched.
+    |   flag_tables: always mark tables that have findings on the diagram with a
+    |              small severity count, even when the Health panel is closed. Set
+    |              false to keep the diagram clean and surface findings only when
+    |              the panel is open.
+    |
+    */
+
+    'doctor' => [
+        'preset' => env('TRUSS_DOCTOR_PRESET', 'recommended'),
+
+        'rules' => [
+            // 'TRUSS-INT-002' => true,
+            // 'TRUSS-IDX-001' => ['severity' => 'error'],
+        ],
+
+        'ignore' => [
+            // 'TRUSS-IDX-001' => ['audit_log.actor_id'],
+        ],
+
+        'fail_on' => env('TRUSS_DOCTOR_FAIL_ON', 'error'),
+
+        'exclude' => [],
+
+        'dashboard' => (bool) env('TRUSS_DOCTOR_DASHBOARD', true),
+
+        'flag_tables' => (bool) env('TRUSS_DOCTOR_FLAG_TABLES', true),
+    ],
+
 ];

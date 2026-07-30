@@ -51,6 +51,17 @@ it('passes the managed connections to the view for the connection switcher', fun
         ->assertSee('["testing"]', false); // the default managed connection under test
 });
 
+it('reflects the doctor flag-tables config in the view', function () {
+    config()->set('truss.enabled', true);
+    Gate::define('viewTruss', fn ($user = null) => true);
+
+    config()->set('truss.doctor.flag_tables', true);
+    $this->get('/truss')->assertOk()->assertSee('data-doctor-flag-tables="1"', false);
+
+    config()->set('truss.doctor.flag_tables', false);
+    $this->get('/truss')->assertOk()->assertSee('data-doctor-flag-tables="0"', false);
+});
+
 it('honours a custom route prefix', function () {
     config()->set('truss.enabled', true);
     Gate::define('viewTruss', fn ($user = null) => true);

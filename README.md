@@ -26,6 +26,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Map-style pan and zoom, with auto-fit and a Fit button.
 - Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, or DBML, all generated in the browser and structure-only.
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
+- Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
 - Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
 - Light and dark "blueprint" theme.
 - Self-contained: Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
@@ -82,6 +83,31 @@ Out of the box Truss visualizes your application's default database connection. 
 When two or more connections are configured, a connection picker appears in the dashboard toolbar. Switching it re-renders that connection's schema, and the selection is kept in the URL so a given view can be shared or bookmarked. Each connection is introspected against its own database only, so a shared server never shows tables that belong to another database.
 
 The keys are Laravel connection names from `config/database.php`. Per-connection options mirror the global ones (such as `excluded_tables`), so you can hide different tables on each connection.
+
+## Schema doctor
+
+`php artisan truss:doctor` (aliased `truss:check`) reviews your database structure for problems visible from structure alone: a table with no primary key, a foreign key with no index, duplicate indexes, money stored as a float, and more. It is deterministic and structure-only, with no AI and no network call, so it is safe to run in CI.
+
+```bash
+php artisan truss:doctor
+php artisan truss:doctor --connection=mysql --format=json
+php artisan truss:doctor --preset=strict --fail-on=warning
+```
+
+It exits `0` when clean, `1` when a finding is at or above the `--fail-on` level (default `error`), and `2` on a bad option or a snapshot error, so a migration that introduces a problem can fail the build. Presets (`recommended`, `strict`, `none`), per-rule severity and enable / disable, ignore patterns, and the fail level are all configurable under `truss.doctor`. See the [configuration reference](https://trussphp.com/reference/configuration/).
+
+Every finding carries a stable code (e.g. `TRUSS-IDX-001`) shown in both the command and the panel; the [schema doctor guide](https://trussphp.com/guides/schema-doctor/) lists all the rule codes and what each checks.
+
+Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
+
+### In the dashboard
+
+The same findings show in the dashboard, under the name **Health**: the command is `truss:doctor`, and the dashboard front end for it is the heart icon in the toolbar labelled "Health". Same feature, same findings. The Health panel lists them grouped by table, and every table with a problem carries a small severity badge on the diagram, so you can see what needs attention at a glance. Open the panel to read the findings, click a table to focus it, or click the marked column to see the finding for that field. Heuristic (lower-confidence) findings are marked as such.
+
+It rides the schema endpoint the diagram already loads, so there is no extra request. Two switches control it under `truss.doctor`:
+
+- `dashboard` (env `TRUSS_DOCTOR_DASHBOARD`, default on): show the Health panel at all. When off, the dashboard never receives any findings and the CLI is untouched.
+- `flag_tables` (env `TRUSS_DOCTOR_FLAG_TABLES`, default on): always badge tables with findings on the diagram, even with the panel closed. Turn it off to keep the diagram clean and surface findings only when the panel is open.
 
 ## Storage
 
