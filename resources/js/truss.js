@@ -232,6 +232,7 @@ let openAnchor = null;
 let menuTable = null;
 
 function positionPopover(anchor) {
+  closeOverlays('popover');
   el.popover.hidden = false;
   const r = anchor.getBoundingClientRect();
   const w = el.popover.offsetWidth;
@@ -240,6 +241,18 @@ function positionPopover(anchor) {
   const top = r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6;
   el.popover.style.left = `${left}px`;
   el.popover.style.top = `${top}px`;
+  openAnchor = anchor;
+}
+
+// The export menu is a toolbar overlay, so it aligns to the top-right cluster
+// with the Legend/Changes/Health panels instead of hanging off its button.
+function positionCluster(anchor) {
+  closeOverlays('popover');
+  el.popover.hidden = false;
+  const host = app.getBoundingClientRect();
+  const w = el.popover.offsetWidth;
+  el.popover.style.left = `${host.right - w - 14}px`;
+  el.popover.style.top = `${host.top + 62}px`;
   openAnchor = anchor;
 }
 
@@ -450,7 +463,7 @@ function showExportMenu(anchor) {
     + '<button type="button" data-act="md">Data dictionary (Markdown)</button>'
     + '<button type="button" data-act="dbml">DBML</button>'
     + '</div>';
-  positionPopover(anchor);
+  positionCluster(anchor);
 }
 
 /** Flag the focused table's node so CSS can highlight it (cleared otherwise). */
@@ -506,6 +519,7 @@ function toggleDiff() {
 }
 
 function openDiff() {
+  closeOverlays('diff');
   state.diffMode = true;
   el.diffBtn?.setAttribute('aria-expanded', 'true');
   renderDiffPanel();
@@ -628,6 +642,7 @@ function toggleHealth() {
 }
 
 function openHealth() {
+  closeOverlays('health');
   state.doctorMode = true;
   el.healthBtn?.setAttribute('aria-expanded', 'true');
   renderHealthPanel();
@@ -704,6 +719,50 @@ function focusTableFromDoctor(name) {
   state.focusRoot = name;
   if (el.focus) el.focus.value = name;
   render();
+}
+
+/* ---- overlay coordination --------------------------------------------- */
+
+// Only one overlay is open at a time: opening any panel or menu closes the rest,
+// so they never stack or overlap. `except` names the one being opened, so it is
+// left untouched. The toolbar overlays (Legend, Changes, Health, the Export menu)
+// all anchor to the same top-right cluster.
+function closeOverlays(except) {
+  if (except !== 'legend') closeLegend();
+  if (except !== 'diff') closeDiff();
+  if (except !== 'health') closeHealth();
+  if (except !== 'more') closeMore();
+  if (except !== 'popover') hidePopover();
+}
+
+function openLegend() {
+  closeOverlays('legend');
+  el.legend?.removeAttribute('hidden');
+  el.legendBtn?.setAttribute('aria-expanded', 'true');
+}
+
+function closeLegend() {
+  el.legend?.setAttribute('hidden', '');
+  el.legendBtn?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleLegend() {
+  el.legend?.hasAttribute('hidden') ? openLegend() : closeLegend();
+}
+
+function openMore() {
+  closeOverlays('more');
+  el.more?.classList.add('is-open');
+  el.moreBtn?.setAttribute('aria-expanded', 'true');
+}
+
+function closeMore() {
+  el.more?.classList.remove('is-open');
+  el.moreBtn?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMore() {
+  el.more?.classList.contains('is-open') ? closeMore() : openMore();
 }
 
 /* ---- rendering -------------------------------------------------------- */
@@ -1003,15 +1062,8 @@ function wireEvents() {
   el.fit?.addEventListener('click', () => fitToViewport(0));
 
   // Utility cluster.
-  el.moreBtn?.addEventListener('click', () => {
-    const open = el.more?.classList.toggle('is-open');
-    el.moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  el.legendBtn?.addEventListener('click', () => {
-    const shown = el.legend?.hasAttribute('hidden');
-    el.legend?.toggleAttribute('hidden', !shown);
-    el.legendBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
-  });
+  el.moreBtn?.addEventListener('click', toggleMore);
+  el.legendBtn?.addEventListener('click', toggleLegend);
   el.diffBtn?.addEventListener('click', toggleDiff);
   el.diffPanel?.addEventListener('click', (e) => {
     const focus = e.target.closest('[data-diff-focus]');
