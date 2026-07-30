@@ -7,34 +7,66 @@ namespace AlbertoArena\Truss\Doctor\Formatters;
 use AlbertoArena\Truss\Doctor\Contracts\Formatter;
 use AlbertoArena\Truss\Doctor\Finding;
 use AlbertoArena\Truss\Doctor\FindingCollection;
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Helper\TableCell;
+use Symfony\Component\Console\Helper\TableCellStyle;
+use Symfony\Component\Console\Helper\TableSeparator;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
- * A plain-text report for the terminal: a one-line summary, then the findings
- * grouped by table. Deliberately free of ANSI colour so the command can style it
+ * A plain-text report for the terminal: a one-line summary, then the findings as
+ * a bordered table grouped by table (a full-width header row per table, then one
+ * row per finding). Long messages wrap inside their column so the table stays a
+ * comfortable width. Deliberately free of ANSI colour so the command can style it
  * and so the output is stable to snapshot in tests.
  */
 final class ConsoleFormatter implements Formatter
 {
+    /**
+     * Width the message column wraps at. Keeps the table narrow enough for a
+     * typical terminal while leaving the message readable.
+     */
+    private const MESSAGE_WIDTH = 60;
+
     public function format(FindingCollection $findings): string
     {
         if ($findings->isEmpty()) {
             return "Truss doctor: no findings.\n";
         }
 
-        $lines = [$this->summaryLine($findings), ''];
+        $buffer = new BufferedOutput;
 
-        foreach ($this->groupByTable($findings) as $table => $tableFindings) {
-            $lines[] = $table;
+        $table = (new Table($buffer))
+            ->setColumnMaxWidth(3, self::MESSAGE_WIDTH);
 
-            foreach ($tableFindings as $finding) {
-                $location = $finding->column !== null ? "{$finding->table}.{$finding->column}" : $finding->table;
-                $lines[] = sprintf('  %-7s %s  %s  %s', $finding->severity->value, $finding->code, $location, $finding->message);
+        $first = true;
+
+        foreach ($this->groupByTable($findings) as $tableName => $tableFindings) {
+            if (! $first) {
+                $table->addRow(new TableSeparator);
             }
 
-            $lines[] = '';
+            $table->addRow([new TableCell($tableName, [
+                'colspan' => 4,
+                'style' => new TableCellStyle(['cellFormat' => '<info>%s</info>']),
+            ])]);
+            $table->addRow(new TableSeparator);
+
+            foreach ($tableFindings as $finding) {
+                $table->addRow([
+                    $finding->severity->value,
+                    $finding->code,
+                    $finding->column ?? '(table)',
+                    $finding->message,
+                ]);
+            }
+
+            $first = false;
         }
 
-        return implode("\n", $lines);
+        $table->render();
+
+        return $this->summaryLine($findings)."\n\n".$buffer->fetch();
     }
 
     private function summaryLine(FindingCollection $findings): string
