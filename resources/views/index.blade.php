@@ -115,7 +115,10 @@
         </div>
 
         <div class="truss-health-panel" id="truss-health-panel" hidden>
-            <div class="truss-health-head">Structure health</div>
+            <div class="truss-health-head">
+                <span>Structure health</span>
+                <button type="button" class="truss-health-max" id="truss-health-max-btn" title="Maximize" aria-label="Maximize" aria-pressed="false">⤢</button>
+            </div>
             <div class="truss-health-body"></div>
         </div>
 

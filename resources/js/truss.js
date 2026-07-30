@@ -70,6 +70,7 @@ const el = {
   healthBtn: document.getElementById('truss-health-btn'),
   healthPanel: document.getElementById('truss-health-panel'),
   healthCount: document.getElementById('truss-health-count'),
+  healthMaxBtn: document.getElementById('truss-health-max-btn'),
   themeBtn: document.getElementById('truss-theme-btn'),
   exportBtn: document.getElementById('truss-export-btn'),
   statTables: document.getElementById('truss-stat-tables'),
@@ -654,7 +655,31 @@ function closeHealth() {
   state.doctorMode = false;
   el.healthBtn?.setAttribute('aria-expanded', 'false');
   el.healthPanel?.setAttribute('hidden', '');
+  restoreHealth();
   clearDoctorBadges();
+}
+
+// Expand the panel to a large centred overlay for reading, or restore it.
+function toggleHealthMax() {
+  el.healthPanel?.classList.contains('is-maximized') ? restoreHealth() : maximizeHealth();
+}
+
+function maximizeHealth() {
+  el.healthPanel?.classList.add('is-maximized');
+  el.healthMaxBtn?.setAttribute('aria-pressed', 'true');
+  if (el.healthMaxBtn) {
+    el.healthMaxBtn.textContent = '⤡';
+    el.healthMaxBtn.title = 'Restore';
+  }
+}
+
+function restoreHealth() {
+  el.healthPanel?.classList.remove('is-maximized');
+  el.healthMaxBtn?.setAttribute('aria-pressed', 'false');
+  if (el.healthMaxBtn) {
+    el.healthMaxBtn.textContent = '⤢';
+    el.healthMaxBtn.title = 'Maximize';
+  }
 }
 
 // Badge the diagram nodes for tables that have findings, coloured by their worst
@@ -1070,6 +1095,7 @@ function wireEvents() {
     if (focus) focusTableFromDiff(focus.dataset.diffFocus);
   });
   el.healthBtn?.addEventListener('click', toggleHealth);
+  el.healthMaxBtn?.addEventListener('click', toggleHealthMax);
   el.healthPanel?.addEventListener('click', (e) => {
     const focus = e.target.closest('[data-health-focus]');
     if (focus) focusTableFromDoctor(focus.dataset.healthFocus);

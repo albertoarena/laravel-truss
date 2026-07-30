@@ -265,6 +265,10 @@ body {
   box-shadow: 0 8px 28px rgba(0, 0, 0, .18); padding: 12px 14px; color: var(--bp-fg);
 }
 .truss-health-panel[hidden] { display: none; }
+/* Maximized: a large centred overlay for reading a long report. */
+.truss-health-panel.is-maximized {
+  position: fixed; inset: 6vh 8vw; width: auto; height: auto; max-height: 88vh; z-index: 40;
+}
 #truss-health-btn[hidden] { display: none; }
 #truss-health-btn[data-severity="error"] { color: var(--bp-error-fg); }
 #truss-health-btn[data-severity="warning"] { color: var(--bp-warn-fg); }
@@ -282,9 +286,15 @@ body {
 }
 .truss-health-count[hidden] { display: none; }
 .truss-health-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-family: var(--bp-mono); font-size: 11px; letter-spacing: .01em;
   color: var(--bp-muted); margin-bottom: 10px;
 }
+.truss-health-max {
+  font: inherit; font-size: 13px; line-height: 1; color: var(--bp-muted);
+  background: none; border: 0; padding: 2px 4px; cursor: pointer; border-radius: 3px;
+}
+.truss-health-max:hover, .truss-health-max:focus-visible { color: var(--bp-ink); background: var(--bp-info-bg); }
 .truss-health-empty { margin: 0; font-size: 12.5px; color: var(--bp-muted); }
 .truss-health-group { margin-bottom: 8px; }
 .truss-health-group:last-child { margin-bottom: 0; }

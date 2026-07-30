@@ -113,6 +113,32 @@ test('the icon respects reduced motion', async ({ page }) => {
   expect(await iconAnimation(page)).toBe('none');
 });
 
+test('maximizes and restores the Health panel', async ({ page }) => {
+  await load(page, { ...base, doctor });
+  await page.locator('#truss-health-btn').click();
+
+  const panel = page.locator('#truss-health-panel');
+  const compact = (await panel.boundingBox()).width;
+
+  await page.locator('#truss-health-max-btn').click();
+  await expect(panel).toHaveClass(/is-maximized/);
+  expect((await panel.boundingBox()).width).toBeGreaterThan(compact);
+
+  await page.locator('#truss-health-max-btn').click();
+  await expect(panel).not.toHaveClass(/is-maximized/);
+});
+
+test('a reopened Health panel starts compact again', async ({ page }) => {
+  await load(page, { ...base, doctor });
+  await page.locator('#truss-health-btn').click();
+  await page.locator('#truss-health-max-btn').click();
+  await expect(page.locator('#truss-health-panel')).toHaveClass(/is-maximized/);
+
+  await page.locator('#truss-health-btn').click(); // close
+  await page.locator('#truss-health-btn').click(); // reopen
+  await expect(page.locator('#truss-health-panel')).not.toHaveClass(/is-maximized/);
+});
+
 test('reports a clean schema when there are no findings', async ({ page }) => {
   await load(page, { ...base, doctor: { summary: { total: 0, error: 0, warning: 0, info: 0 }, findings: [] } });
 
