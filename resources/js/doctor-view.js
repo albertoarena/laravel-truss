@@ -48,6 +48,27 @@ export function tableSeverity(doctor, name) {
   return tableBadges(doctor).get(name)?.severity ?? 'none';
 }
 
+// Map of columnName -> { severity, findings } for one table, for marking the
+// offending rows on the diagram. Only real columns of the table are keyed;
+// findings with no column, or whose `column` is an index/constraint name rather
+// than a column (so not in `columnNames`), are table-level and left out (they
+// show as the node badge and in the panel).
+export function columnMarkers(doctor, tableName, columnNames) {
+  const columns = new Set(columnNames);
+  const map = new Map();
+  for (const f of doctor?.findings ?? []) {
+    if (f.table !== tableName || f.column == null || !columns.has(f.column)) continue;
+    const current = map.get(f.column);
+    if (!current) {
+      map.set(f.column, { severity: f.severity, findings: [f] });
+      continue;
+    }
+    current.findings.push(f);
+    if (SEVERITY_RANK[f.severity] > SEVERITY_RANK[current.severity]) current.severity = f.severity;
+  }
+  return map;
+}
+
 // Ordered per-table group model for the panel: [{ table, severity, findings }].
 // Each table appears once, in the order its first finding does (the payload is
 // already sorted by severity, then table, then code), and `severity` is the

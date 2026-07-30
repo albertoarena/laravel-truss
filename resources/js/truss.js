@@ -10,7 +10,7 @@ import { toJson, toCsv } from './table-export.js';
 import { schemaToMarkdown, tableToMarkdown } from './markdown-export.js';
 import { schemaToDbml } from './dbml-export.js';
 import { hasDiff, changeList, tableStatuses } from './diff-view.js';
-import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups } from './doctor-view.js';
+import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups, columnMarkers } from './doctor-view.js';
 
 const app = document.getElementById('truss-app');
 
@@ -232,8 +232,11 @@ function annotateColumnTypes(tables) {
 let openAnchor = null;
 let menuTable = null;
 
-function positionPopover(anchor) {
-  closeOverlays('popover');
+// Position the shared popover next to an anchor. `placePopover` does the raw
+// placement; `positionPopover` first closes the other overlays (so a toolbar or
+// table menu is the only thing open). Finding markers use `placePopover` so their
+// detail popover can sit alongside the open Health panel.
+function placePopover(anchor) {
   el.popover.hidden = false;
   const r = anchor.getBoundingClientRect();
   const w = el.popover.offsetWidth;
@@ -243,6 +246,11 @@ function positionPopover(anchor) {
   el.popover.style.left = `${left}px`;
   el.popover.style.top = `${top}px`;
   openAnchor = anchor;
+}
+
+function positionPopover(anchor) {
+  closeOverlays('popover');
+  placePopover(anchor);
 }
 
 // The export menu is a toolbar overlay, so it aligns to the top-right cluster
@@ -639,7 +647,12 @@ function updateDoctorAvailability() {
 
 function toggleHealth() {
   if (state.doctor == null) return;
-  state.doctorMode ? closeHealth() : openHealth();
+  if (state.doctorMode) {
+    closeHealth();
+    hidePopover(); // also dismiss a finding popover opened from a marker
+  } else {
+    openHealth();
+  }
 }
 
 function openHealth() {
@@ -649,6 +662,7 @@ function openHealth() {
   renderHealthPanel();
   el.healthPanel?.removeAttribute('hidden');
   markDoctorBadges();
+  markDoctorRows(currentSubset());
 }
 
 function closeHealth() {
@@ -657,6 +671,7 @@ function closeHealth() {
   el.healthPanel?.setAttribute('hidden', '');
   restoreHealth();
   clearDoctorBadges();
+  clearDoctorRows();
 }
 
 // Expand the panel to a large centred overlay for reading, or restore it.
@@ -697,6 +712,65 @@ function markDoctorBadges() {
   for (const [name, { severity }] of tableBadges(state.doctor)) {
     findTableNode(name)?.classList.add(`truss-health-${severity}`);
   }
+}
+
+// Mark the diagram rows whose column has a finding, so the problem is visible on
+// the table itself. Reuses the per-column type cells (indexed like
+// annotateColumnTypes); each marker opens the finding popover on click.
+function clearDoctorRows() {
+  el.canvas.querySelector('svg')?.querySelectorAll('.truss-health-marker').forEach((label) => {
+    label.classList.remove('truss-health-marker', 'truss-health-marker--error', 'truss-health-marker--warning', 'truss-health-marker--info');
+    delete label.dataset.healthTable;
+    delete label.dataset.healthColumn;
+  });
+}
+
+function markDoctorRows(subset) {
+  clearDoctorRows();
+  const svg = el.canvas.querySelector('svg');
+  if (!svg || !state.doctorMode || !hasDoctor(state.doctor)) return;
+
+  const byName = new Map(subset.map((t) => [t.name, t]));
+  for (const node of svg.querySelectorAll('g.node')) {
+    const nameLabel = node.querySelector('g.label.name .nodeLabel');
+    const table = byName.get(nameLabel?.textContent.trim());
+    if (!table) continue;
+
+    const markers = columnMarkers(state.doctor, table.name, table.columns.map((c) => c.name));
+    if (markers.size === 0) continue;
+
+    const typeCells = node.querySelectorAll('g.label.attribute-type');
+    table.columns.forEach((col, i) => {
+      const marker = markers.get(col.name);
+      const label = typeCells[i]?.querySelector('.nodeLabel');
+      if (!marker || !label) return;
+      label.classList.add('truss-health-marker', `truss-health-marker--${marker.severity}`);
+      label.dataset.healthTable = table.name;
+      label.dataset.healthColumn = col.name;
+      label.setAttribute('role', 'button');
+      label.setAttribute('tabindex', '0');
+      label.setAttribute('title', marker.findings.map((f) => f.message).join('\n'));
+    });
+  }
+}
+
+// The detail popover for a marked column: its findings, each with message and
+// hint. Uses placePopover so it can sit alongside the open Health panel.
+function showFindingPopover(anchor, tableName, column) {
+  const findings = (state.doctor?.findings ?? []).filter((f) => f.table === tableName && f.column === column);
+  if (findings.length === 0) return;
+
+  menuTable = null;
+  el.popover.innerHTML = `<div class="truss-popover-head">${escapeHtml(tableName)}.${escapeHtml(column)}</div>`
+    + '<ul class="truss-health-pop">'
+    + findings.map((f) => `<li class="truss-health-pop-item truss-health-item--${f.severity}">`
+      + `<div class="truss-health-item-head"><span class="truss-health-badge">${escapeHtml(f.severity)}</span> `
+      + `<code class="truss-health-code">${escapeHtml(f.code)}</code></div>`
+      + `<div class="truss-health-msg">${escapeHtml(f.message)}</div>`
+      + (f.hint ? `<div class="truss-health-hint">${escapeHtml(f.hint)}</div>` : '')
+      + '</li>').join('')
+    + '</ul>';
+  placePopover(anchor);
 }
 
 function renderHealthPanel() {
@@ -753,10 +827,10 @@ function focusTableFromDoctor(name) {
 // left untouched. The toolbar overlays (Legend, Changes, Health, the Export menu)
 // all anchor to the same top-right cluster.
 function closeOverlays(except) {
-  if (except !== 'legend') closeLegend();
-  if (except !== 'diff') closeDiff();
-  if (except !== 'health') closeHealth();
-  if (except !== 'more') closeMore();
+  if (except !== 'legend' && el.legend && !el.legend.hasAttribute('hidden')) closeLegend();
+  if (except !== 'diff' && state.diffMode) closeDiff();
+  if (except !== 'health' && state.doctorMode) closeHealth();
+  if (except !== 'more' && el.more?.classList.contains('is-open')) closeMore();
   if (except !== 'popover') hidePopover();
 }
 
@@ -851,6 +925,7 @@ async function render() {
     markDiffTables(); // re-tint after a re-render when the Changes view is on
     markDoctorBadges(); // re-badge after a re-render when the Health view is on
     annotateColumnTypes(subset);
+    markDoctorRows(subset); // after annotateColumnTypes, so a marked row's title wins
 
     // Auto-fit only when the *content* changed (new tables): filtering and
     // focusing frame their result (honouring the readable floor), while a label
@@ -1005,6 +1080,13 @@ function wireEvents() {
   // Enum label and table name: open/close the shared popover. Delegated so it
   // survives re-renders. A menu action click is handled by its own listener below.
   el.canvas.addEventListener('click', (e) => {
+    const marker = e.target.closest('.truss-health-marker');
+    if (marker) {
+      e.stopPropagation();
+      if (openAnchor === marker) hidePopover();
+      else showFindingPopover(marker, marker.dataset.healthTable, marker.dataset.healthColumn);
+      return;
+    }
     const enumLabel = e.target.closest('.truss-enum-type');
     if (enumLabel) {
       e.stopPropagation();
@@ -1034,7 +1116,7 @@ function wireEvents() {
     }
   });
   document.addEventListener('click', (e) => {
-    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name, #truss-export-btn')) hidePopover();
+    if (openAnchor && !e.target.closest('.truss-popover, .truss-enum-type, .truss-table-name, .truss-health-marker, #truss-export-btn')) hidePopover();
   });
 
   // Unified pointer handling: one pointer pans (mouse or touch), two pointers
@@ -1045,7 +1127,7 @@ function wireEvents() {
   const mid = (rect) => { const p = [...pointers.values()]; return { x: (p[0].x + p[1].x) / 2 - rect.left, y: (p[0].y + p[1].y) / 2 - rect.top }; };
 
   el.viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-table-name, .truss-popover')) return;
+    if (e.target.closest?.('#truss-zoom, .truss-legend, .truss-enum-type, .truss-table-name, .truss-health-marker, .truss-popover')) return;
     hidePopover();
     e.preventDefault();
     el.viewport.setPointerCapture(e.pointerId);

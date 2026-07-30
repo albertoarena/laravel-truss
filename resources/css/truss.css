@@ -453,6 +453,25 @@ body {
 #truss-canvas svg g.node.truss-diff-changed .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-diff-changed-border) !important; stroke-width: 2.4px !important; }
 #truss-canvas svg g.node.truss-diff-changed g.label.name .nodeLabel { color: var(--bp-diff-changed-border) !important; font-weight: 600; }
 
+/* Health view: mark the offending column rows, clickable for the finding detail.
+   High-specificity selectors beat Mermaid's inherited label colour. */
+#truss-canvas svg .nodeLabel.truss-health-marker,
+#truss-canvas svg .nodeLabel.truss-health-marker p { cursor: pointer; pointer-events: auto; font-weight: 600; }
+#truss-canvas svg .nodeLabel.truss-health-marker--error,
+#truss-canvas svg .nodeLabel.truss-health-marker--error p { color: var(--bp-error-fg) !important; }
+#truss-canvas svg .nodeLabel.truss-health-marker--warning,
+#truss-canvas svg .nodeLabel.truss-health-marker--warning p { color: var(--bp-warn-fg) !important; }
+#truss-canvas svg .nodeLabel.truss-health-marker--info,
+#truss-canvas svg .nodeLabel.truss-health-marker--info p { color: var(--bp-info-fg) !important; }
+#truss-canvas svg .nodeLabel.truss-health-marker--error p::after { content: " \26D4"; }
+#truss-canvas svg .nodeLabel.truss-health-marker--warning p::after,
+#truss-canvas svg .nodeLabel.truss-health-marker--info p::after { content: " \26A0"; }
+
+/* finding detail popover (shared popover, reused for a column's findings) */
+.truss-health-pop { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; max-width: 260px; }
+.truss-health-pop-item { white-space: normal; }
+.truss-health-hint { margin-top: 3px; font-size: 11.5px; color: var(--bp-muted); font-style: italic; }
+
 /* Health view: badge tables with findings, tinted by their worst severity. */
 #truss-canvas svg g.node.truss-health-error .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-error-bg) !important; }
 #truss-canvas svg g.node.truss-health-error .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-error-fg) !important; stroke-width: 2.4px !important; }

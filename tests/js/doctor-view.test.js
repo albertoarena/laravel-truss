@@ -6,6 +6,7 @@ import {
   tableBadges,
   tableSeverity,
   findingGroups,
+  columnMarkers,
 } from '../../resources/js/doctor-view.js';
 
 // A doctor payload shaped exactly like the API `doctor` field (see DoctorReport),
@@ -83,5 +84,27 @@ describe('findingGroups', () => {
   it('is empty for a null payload', () => {
     expect(findingGroups(null)).toEqual([]);
     expect(tableBadges(null).size).toBe(0);
+  });
+});
+
+describe('columnMarkers', () => {
+  it('maps a table per-column findings, worst severity per column', () => {
+    const map = columnMarkers(doctor, 'activity_logs', ['id', 'company_uuid']);
+    expect(map.get('company_uuid').severity).toBe('error');
+    expect(map.get('company_uuid').findings.map((f) => f.code)).toEqual(['TRUSS-INT-003']);
+    expect(map.has('id')).toBe(false);
+  });
+
+  it('leaves out table-level findings and columns not on the table', () => {
+    // activity_logs also has INT-007 with column null: table-level, not a marker.
+    const map = columnMarkers(doctor, 'activity_logs', ['company_uuid']);
+    expect([...map.keys()]).toEqual(['company_uuid']);
+
+    // A column the table does not have yields nothing.
+    expect(columnMarkers(doctor, 'flags', ['nope']).size).toBe(0);
+  });
+
+  it('is empty for a null payload', () => {
+    expect(columnMarkers(null, 'x', ['a']).size).toBe(0);
   });
 });
