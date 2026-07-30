@@ -273,6 +273,12 @@ body {
 #truss-health-btn[data-severity="error"] { color: var(--bp-error-fg); }
 #truss-health-btn[data-severity="warning"] { color: var(--bp-warn-fg); }
 #truss-health-btn[data-severity="clean"] { color: var(--bp-diff-added-border); }
+/* When selected, the button fills with --bp-ink, so nudge the heart's colour toward
+   the panel colour (the opposite luminance to --bp-ink) to keep proper contrast on
+   the fill in both themes, while staying recognisably the severity hue. */
+#truss-health-btn[aria-expanded="true"][data-severity="error"] { color: color-mix(in srgb, var(--bp-error-fg), var(--bp-panel) 60%); }
+#truss-health-btn[aria-expanded="true"][data-severity="warning"] { color: color-mix(in srgb, var(--bp-warn-fg), var(--bp-panel) 60%); }
+#truss-health-btn[aria-expanded="true"][data-severity="clean"] { color: color-mix(in srgb, var(--bp-diff-added-border), var(--bp-panel) 60%); }
 /* The icon must not shrink in the flex button, and the count rides the corner as
    an out-of-flow badge, so neither squeezes the heart to a sliver. */
 #truss-health-btn { position: relative; }
@@ -286,10 +292,15 @@ body {
   position: absolute; top: -4px; right: -4px;
   min-width: 13px; height: 13px; box-sizing: border-box; padding: 0 3px;
   font-family: var(--bp-mono); font-size: 8.5px; font-weight: 700; line-height: 13px;
-  border-radius: 7px; background: currentColor; text-align: center;
+  border-radius: 7px; text-align: center;
+  color: var(--bp-panel); background: var(--bp-muted);
 }
-/* The digit reads against the badge fill (the button's severity colour). */
-.truss-health-count { color: var(--bp-panel); }
+/* The badge fills with the severity colour; the digit uses the panel colour, which
+   is the opposite luminance to every severity fg, so it reads in both themes. The
+   count only shows when there are findings, so error/warning are the live cases. */
+#truss-health-btn[data-severity="error"] .truss-health-count { background: var(--bp-error-fg); }
+#truss-health-btn[data-severity="warning"] .truss-health-count { background: var(--bp-warn-fg); }
+#truss-health-btn[data-severity="clean"] .truss-health-count { background: var(--bp-diff-added-border); }
 .truss-health-count[hidden] { display: none; }
 .truss-health-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;

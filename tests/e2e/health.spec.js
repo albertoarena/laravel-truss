@@ -108,6 +108,20 @@ test('the heart keeps its size when the count badge is shown', async ({ page }) 
   expect(width).toBeGreaterThan(12);
 });
 
+test('the count badge digit is legible against its fill', async ({ page }) => {
+  await load(page, { ...base, doctor });
+
+  const badge = page.locator('#truss-health-count');
+  await expect(badge).toHaveText('3');
+
+  // The fill and the digit must differ, or the number is an invisible blob.
+  const { bg, fg } = await badge.evaluate((n) => {
+    const s = getComputedStyle(n);
+    return { bg: s.backgroundColor, fg: s.color };
+  });
+  expect(bg).not.toBe(fg);
+});
+
 test('the icon stays still when the schema is clean', async ({ page }) => {
   await load(page, { ...base, doctor: { summary: { total: 0, error: 0, warning: 0, info: 0 }, findings: [] } });
 
