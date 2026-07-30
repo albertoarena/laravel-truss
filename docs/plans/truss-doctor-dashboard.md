@@ -1,8 +1,9 @@
 # Plan: doctor results in the dashboard (schema doctor, Phase 4)
 
-Status: Approved, building. The full implementation plan for surfacing `truss:doctor`
-findings in the browser dashboard. Phase 4 of the schema doctor (see `truss-doctor.md`),
-built on the same branch as Phase 1.
+Status: Base panel shipped on `feature/doctor-phase-1` (PR #17): the Health toolbar
+toggle, the grouped panel, node badges, heuristic markers, and click-to-focus. A round of
+UX refinements from first local testing is planned next, in **Phase 4.1** below. Phase 4
+of the schema doctor (see `truss-doctor.md`), built on the same branch as Phase 1.
 Owner: Alberto Arena
 Roadmap: part of the Schema doctor concept published on trussphp.com.
 Related: `src/Http/Controllers/SchemaApiController.php` (the endpoint the payload rides);
@@ -168,3 +169,49 @@ in the same PR. Demo/docs-site follow-up queued for the release (docs repo).
 5. **Landing**: **extend the Phase 1 branch** (`feature/doctor-phase-1`, PR #17) with the
    dashboard rather than a separate PR, as further commits: first the server half
    (`DoctorReport` + endpoint, Pest), then the frontend panel (JS + Playwright).
+
+## Phase 4.1: UX refinements (after first local testing, 2026-07-30)
+
+Four refinements from running the panel against a real schema. All frontend, all on the
+same branch, each test-first (Vitest for pure mapping, Playwright for interaction). Ordered
+so the shared overlay behaviour lands before the pieces that depend on it: icon, then
+overlay coordination, then maximize, then in-table markers.
+
+1. **A legible, animated Health icon.** Replace the faint ECG-pulse glyph with a bolder
+   **heart-with-pulse** SVG that reads at 15px. The button is shown whenever the panel is
+   enabled: a **calm green heart with no count when the schema is clean**, and the
+   worst-severity colour with the count when there are findings. Add a gentle CSS
+   `@keyframes` **pulse** (scale/opacity) that runs **only when there are error or warning
+   findings** (an attention beat), stays steady when clean, and is disabled under
+   `prefers-reduced-motion`. No JS animation. (The earlier "blank icon" was a stale
+   compiled view / cached CSS or the too-thin glyph, not a missing-when-clean case.)
+
+2. **One overlay at a time, aligned.** Today Legend, Changes, Health, the Export menu, and
+   the More menu each toggle independently, so they stack, overlap, and the Export menu is
+   anchored differently from the rest. Introduce a single "active overlay" controller:
+   opening any one popover or menu **closes the others**, and they all share one top-right
+   anchor and offset. This supersedes the standalone "Export view menu misalignment" note.
+   Playwright: opening B closes A; the Export menu no longer overlaps the Health panel.
+
+3. **Maximize / restore the Health panel.** A control in the panel header expands it from
+   the compact 300px popover to a large centred overlay (~80% of the viewport, scrollable),
+   with a restore control back to the compact size. The maximized panel is modal, so it
+   participates in the single-active-overlay rule from refinement 2 (opening it closes the
+   others; opening another closes it). Purely a reading-comfort affordance.
+
+4. **In-table finding markers.** When the Health view is active, annotate the rendered
+   diagram so a table's own findings are visible on it, reusing the existing
+   `annotateColumnTypes` post-render pass over the Mermaid SVG:
+   - A per-column finding (e.g. INT-003 on `company_uuid`) puts a small severity icon
+     (warning / error) on **that column's row**.
+   - A table-level finding with no column (e.g. INT-001 "no primary key", INT-007 pivot
+     without a unique key) marks the **table header** instead.
+   - Clicking a marker opens the **existing popover** (`#truss-popover`) with the finding's
+     message and hint. Markers appear only while the Health view is on, so the diagram stays
+     clean otherwise.
+   - Pure mapping (findings -> column/table -> marker model) is Vitest-tested; the marker
+     render and the click-to-popover are Playwright-tested.
+
+Definition of done for 4.1: heart-pulse icon (with reduced-motion-safe animation), single
+active overlay with aligned anchors, maximize/restore, and in-table markers with popovers,
+all green across Vitest + Playwright, on PR #17.
