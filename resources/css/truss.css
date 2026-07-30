@@ -273,17 +273,23 @@ body {
 #truss-health-btn[data-severity="error"] { color: var(--bp-error-fg); }
 #truss-health-btn[data-severity="warning"] { color: var(--bp-warn-fg); }
 #truss-health-btn[data-severity="clean"] { color: var(--bp-diff-added-border); }
-.truss-health-icon { transform-origin: center; }
+/* The icon must not shrink in the flex button, and the count rides the corner as
+   an out-of-flow badge, so neither squeezes the heart to a sliver. */
+#truss-health-btn { position: relative; }
+.truss-health-icon { transform-origin: center; flex: none; }
 /* A gentle heartbeat, only while there is something to look at. */
 @keyframes truss-health-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
 #truss-health-btn[data-severity="error"] .truss-health-icon,
 #truss-health-btn[data-severity="warning"] .truss-health-icon { animation: truss-health-pulse 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { #truss-health-btn .truss-health-icon { animation: none !important; } }
 .truss-health-count {
-  font-family: var(--bp-mono); font-size: 9.5px; font-weight: 600; line-height: 1;
-  min-width: 14px; padding: 2px 3px; margin-left: 3px; border-radius: 7px;
-  background: currentColor; color: var(--bp-panel); text-align: center;
+  position: absolute; top: -4px; right: -4px;
+  min-width: 13px; height: 13px; box-sizing: border-box; padding: 0 3px;
+  font-family: var(--bp-mono); font-size: 8.5px; font-weight: 700; line-height: 13px;
+  border-radius: 7px; background: currentColor; text-align: center;
 }
+/* The digit reads against the badge fill (the button's severity colour). */
+.truss-health-count { color: var(--bp-panel); }
 .truss-health-count[hidden] { display: none; }
 .truss-health-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -453,19 +459,22 @@ body {
 #truss-canvas svg g.node.truss-diff-changed .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-diff-changed-border) !important; stroke-width: 2.4px !important; }
 #truss-canvas svg g.node.truss-diff-changed g.label.name .nodeLabel { color: var(--bp-diff-changed-border) !important; font-weight: 600; }
 
-/* Health view: mark the offending column rows, clickable for the finding detail.
-   High-specificity selectors beat Mermaid's inherited label colour. */
+/* Health view: mark the offending column's *name* as clickable for the finding
+   detail. A dotted underline in the severity colour signals it is a control (the
+   same cue the enum values use), and does not add width, so it is never clipped
+   by Mermaid's fixed-width cells the way an injected icon would be. High-specificity
+   selectors beat Mermaid's inherited label colour. */
 #truss-canvas svg .nodeLabel.truss-health-marker,
-#truss-canvas svg .nodeLabel.truss-health-marker p { cursor: pointer; pointer-events: auto; font-weight: 600; }
+#truss-canvas svg .nodeLabel.truss-health-marker p {
+  cursor: pointer; pointer-events: auto; font-weight: 600;
+  text-decoration: underline dotted; text-underline-offset: 2px; text-decoration-thickness: 1.5px;
+}
 #truss-canvas svg .nodeLabel.truss-health-marker--error,
 #truss-canvas svg .nodeLabel.truss-health-marker--error p { color: var(--bp-error-fg) !important; }
 #truss-canvas svg .nodeLabel.truss-health-marker--warning,
 #truss-canvas svg .nodeLabel.truss-health-marker--warning p { color: var(--bp-warn-fg) !important; }
 #truss-canvas svg .nodeLabel.truss-health-marker--info,
 #truss-canvas svg .nodeLabel.truss-health-marker--info p { color: var(--bp-info-fg) !important; }
-#truss-canvas svg .nodeLabel.truss-health-marker--error p::after { content: " \26D4"; }
-#truss-canvas svg .nodeLabel.truss-health-marker--warning p::after,
-#truss-canvas svg .nodeLabel.truss-health-marker--info p::after { content: " \26A0"; }
 
 /* finding detail popover (shared popover, reused for a column's findings) */
 .truss-health-pop { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; max-width: 260px; }

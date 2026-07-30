@@ -31,6 +31,7 @@ test('marks the offending column on the diagram and opens a finding popover', as
 
   const marker = page.locator('#truss-canvas svg .truss-health-marker--error').first();
   await expect(marker).toBeVisible();
+  await expect(marker).toContainText('user_id'); // the marker sits on the field name
 
   await marker.click();
 

@@ -739,10 +739,12 @@ function markDoctorRows(subset) {
     const markers = columnMarkers(state.doctor, table.name, table.columns.map((c) => c.name));
     if (markers.size === 0) continue;
 
-    const typeCells = node.querySelectorAll('g.label.attribute-type');
+    // Mark the column *name* cell (indexed like the type cells), so the affordance
+    // sits on the field the finding is about.
+    const nameCells = node.querySelectorAll('g.label.attribute-name');
     table.columns.forEach((col, i) => {
       const marker = markers.get(col.name);
-      const label = typeCells[i]?.querySelector('.nodeLabel');
+      const label = nameCells[i]?.querySelector('.nodeLabel');
       if (!marker || !label) return;
       label.classList.add('truss-health-marker', `truss-health-marker--${marker.severity}`);
       label.dataset.healthTable = table.name;

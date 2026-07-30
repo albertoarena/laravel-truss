@@ -99,6 +99,15 @@ test('the icon pulses only when there are error or warning findings', async ({ p
   expect(await iconAnimation(page)).toBe('truss-health-pulse');
 });
 
+test('the heart keeps its size when the count badge is shown', async ({ page }) => {
+  await load(page, { ...base, doctor });
+
+  // The count is an out-of-flow corner badge, so the heart is not squeezed to a sliver.
+  const width = await page.locator('#truss-health-btn .truss-health-icon')
+    .evaluate((n) => n.getBoundingClientRect().width);
+  expect(width).toBeGreaterThan(12);
+});
+
 test('the icon stays still when the schema is clean', async ({ page }) => {
   await load(page, { ...base, doctor: { summary: { total: 0, error: 0, warning: 0, info: 0 }, findings: [] } });
 

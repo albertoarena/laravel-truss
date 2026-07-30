@@ -202,8 +202,10 @@ overlay coordination, then maximize, then in-table markers.
 4. **In-table finding markers.** When the Health view is active, annotate the rendered
    diagram so a table's own findings are visible on it, reusing the existing
    `annotateColumnTypes` post-render pass over the Mermaid SVG:
-   - A per-column finding (e.g. INT-003 on `company_uuid`) puts a small severity icon
-     (warning / error) on **that column's row**.
+   - A per-column finding (e.g. INT-003 on `company_uuid`) marks **that column's name**
+     in the severity colour with a dotted underline (the same cue the enum values use).
+     An injected icon is avoided on purpose: Mermaid renders each cell at a fixed width and
+     clips overflow, so an appended glyph disappears; the underline adds no width.
    - A table-level finding with no column (e.g. INT-001 "no primary key", INT-007 pivot
      without a unique key) marks the **table header** instead.
    - Clicking a marker opens the **existing popover** (`#truss-popover`) with the finding's
