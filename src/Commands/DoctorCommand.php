@@ -6,14 +6,12 @@ namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Doctor\Contracts\Formatter;
-use AlbertoArena\Truss\Doctor\DoctorRunner;
+use AlbertoArena\Truss\Doctor\DoctorReport;
 use AlbertoArena\Truss\Doctor\FindingCollection;
 use AlbertoArena\Truss\Doctor\Formatters\ConsoleFormatter;
 use AlbertoArena\Truss\Doctor\Formatters\JsonFormatter;
-use AlbertoArena\Truss\Doctor\RuleRegistry;
 use AlbertoArena\Truss\Doctor\Severity;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -64,23 +62,13 @@ class DoctorCommand extends Command
             return 2;
         }
 
-        $connection = $snapshot['connection'];
-        $snapshot['driver'] = $this->driverFor($connection);
-        $snapshot['tables'] = $this->selectTables($snapshot['tables'] ?? [], $connection);
-
-        $rules = RuleRegistry::default()->resolve(
+        $findings = (new DoctorReport)->for(
+            $snapshot['connection'],
+            $snapshot,
             $preset,
             $this->categories('only'),
             $this->categories('skip'),
-            $this->enabledOverrides(),
-        );
-
-        $findings = (new DoctorRunner)->run(
-            $rules,
-            $snapshot,
-            $connection,
-            $this->severityOverrides(),
-            (array) config('truss.doctor.ignore', []),
+            $this->option('table') !== null ? (string) $this->option('table') : null,
         );
 
         foreach (explode("\n", rtrim($this->formatterFor($format)->format($findings), "\n")) as $line) {
@@ -97,35 +85,6 @@ class DoctorCommand extends Command
             && in_array($failOn, ['error', 'warning', 'info', 'never'], true);
     }
 
-    private function driverFor(string $connection): string
-    {
-        try {
-            return DB::connection($connection)->getDriverName();
-        } catch (Throwable) {
-            return '';
-        }
-    }
-
-    /**
-     * Drop excluded tables, and narrow to --table when given.
-     *
-     * @param  list<array<string, mixed>>  $tables
-     * @return list<array<string, mixed>>
-     */
-    private function selectTables(array $tables, string $connection): array
-    {
-        $excluded = array_merge(
-            (array) config('truss.excluded_tables', []),
-            (array) config("truss.connections.{$connection}.excluded_tables", []),
-            (array) config('truss.doctor.exclude', []),
-        );
-
-        $only = $this->option('table');
-
-        return array_values(array_filter($tables, fn (array $table): bool => ! in_array($table['name'], $excluded, true)
-            && ($only === null || $table['name'] === $only)));
-    }
-
     /**
      * @return list<string>
      */
@@ -134,39 +93,6 @@ class DoctorCommand extends Command
         $value = (string) ($this->option($option) ?? '');
 
         return array_values(array_filter(array_map('trim', explode(',', $value))));
-    }
-
-    /**
-     * config('truss.doctor.rules') as a code => on/off map (false disables;
-     * true or a severity override enables).
-     *
-     * @return array<string, bool>
-     */
-    private function enabledOverrides(): array
-    {
-        $overrides = [];
-
-        foreach ((array) config('truss.doctor.rules', []) as $code => $value) {
-            $overrides[$code] = $value !== false;
-        }
-
-        return $overrides;
-    }
-
-    /**
-     * @return array<string, Severity>
-     */
-    private function severityOverrides(): array
-    {
-        $overrides = [];
-
-        foreach ((array) config('truss.doctor.rules', []) as $code => $value) {
-            if (is_array($value) && isset($value['severity'])) {
-                $overrides[$code] = Severity::from((string) $value['severity']);
-            }
-        }
-
-        return $overrides;
     }
 
     private function formatterFor(string $format): Formatter

@@ -131,6 +131,41 @@ it('embeds a null diff when the feature is disabled even if a baseline exists', 
     $this->getJson('/truss/api/schema')->assertOk()->assertJsonPath('diff', null);
 });
 
+it('embeds doctor findings for the connection', function () {
+    // A table with no primary key trips the high-confidence INT-001 rule.
+    Schema::create('ledger', fn ($table) => $table->string('note'));
+
+    $doctor = $this->getJson('/truss/api/schema')->assertOk()->json('doctor');
+
+    expect($doctor['summary']['total'])->toBeGreaterThanOrEqual(1);
+
+    $finding = collect($doctor['findings'])->firstWhere('code', 'TRUSS-INT-001');
+    expect($finding)->not->toBeNull()
+        ->and($finding['table'])->toBe('ledger')
+        ->and($finding['severity'])->toBe('error')
+        ->and($finding['confidence'])->toBe('high')
+        ->and($finding['category'])->toBe('integrity');
+});
+
+it('embeds a null doctor payload when the dashboard panel is disabled', function () {
+    config()->set('truss.doctor.dashboard', false);
+    Schema::create('ledger', fn ($table) => $table->string('note'));
+
+    $this->getJson('/truss/api/schema')->assertOk()->assertJsonPath('doctor', null);
+});
+
+it('keeps excluded tables out of doctor findings', function () {
+    config()->set('truss.excluded_tables', ['ledger']);
+    Schema::create('ledger', fn ($table) => $table->string('note'));
+    Schema::create('posts', fn ($table) => $table->id());
+
+    $response = $this->getJson('/truss/api/schema')->assertOk();
+
+    $tables = collect($response->json('doctor.findings'))->pluck('table');
+    expect($tables)->not->toContain('ledger');
+    expect($response->getContent())->not->toContain('ledger');
+});
+
 it('keeps excluded tables out of the embedded diff', function () {
     config()->set('truss.excluded_tables', ['sessions']);
     Storage::fake('local');

@@ -230,8 +230,11 @@ return [
     |   rules:   per-rule overrides keyed by code: false disables, true enables
     |            (even a heuristic one), ['severity' => 'error'] changes severity.
     |   ignore:  per-rule fnmatch patterns (table or table.column) to silence.
-    |   fail_on: the severity at or above which the command exits non-zero.
-    |   exclude: extra tables to skip, on top of truss.excluded_tables.
+    |   fail_on:   the severity at or above which the command exits non-zero.
+    |   exclude:   extra tables to skip, on top of truss.excluded_tables.
+    |   dashboard: show the findings in the dashboard "Health" panel. When false,
+    |              the schema endpoint sends no doctor payload and the panel and
+    |              node badges never appear, leaving the CLI/CI doctor untouched.
     |
     */
 
@@ -250,6 +253,8 @@ return [
         'fail_on' => env('TRUSS_DOCTOR_FAIL_ON', 'error'),
 
         'exclude' => [],
+
+        'dashboard' => (bool) env('TRUSS_DOCTOR_DASHBOARD', true),
     ],
 
 ];
