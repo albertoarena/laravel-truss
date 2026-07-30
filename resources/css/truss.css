@@ -269,6 +269,12 @@ body {
 #truss-health-btn[data-severity="error"] { color: var(--bp-error-fg); }
 #truss-health-btn[data-severity="warning"] { color: var(--bp-warn-fg); }
 #truss-health-btn[data-severity="clean"] { color: var(--bp-diff-added-border); }
+.truss-health-icon { transform-origin: center; }
+/* A gentle heartbeat, only while there is something to look at. */
+@keyframes truss-health-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+#truss-health-btn[data-severity="error"] .truss-health-icon,
+#truss-health-btn[data-severity="warning"] .truss-health-icon { animation: truss-health-pulse 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #truss-health-btn .truss-health-icon { animation: none !important; } }
 .truss-health-count {
   font-family: var(--bp-mono); font-size: 9.5px; font-weight: 600; line-height: 1;
   min-width: 14px; padding: 2px 3px; margin-left: 3px; border-radius: 7px;

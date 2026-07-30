@@ -80,6 +80,39 @@ test('toggling the Health button off hides the panel and clears badges', async (
   await expect(page.locator('#truss-canvas svg g.node.truss-health-error')).toHaveCount(0);
 });
 
+test('shows a heart icon and colours the button by worst severity', async ({ page }) => {
+  await load(page, { ...base, doctor });
+
+  const button = page.locator('#truss-health-btn');
+  await expect(button.locator('svg.truss-health-icon')).toHaveCount(1);
+  await expect(button).toHaveAttribute('data-severity', 'error');
+});
+
+async function iconAnimation(page) {
+  return page.locator('#truss-health-btn .truss-health-icon')
+    .evaluate((n) => getComputedStyle(n).animationName);
+}
+
+test('the icon pulses only when there are error or warning findings', async ({ page }) => {
+  await load(page, { ...base, doctor });
+
+  expect(await iconAnimation(page)).toBe('truss-health-pulse');
+});
+
+test('the icon stays still when the schema is clean', async ({ page }) => {
+  await load(page, { ...base, doctor: { summary: { total: 0, error: 0, warning: 0, info: 0 }, findings: [] } });
+
+  await expect(page.locator('#truss-health-btn')).toHaveAttribute('data-severity', 'clean');
+  expect(await iconAnimation(page)).toBe('none');
+});
+
+test('the icon respects reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await load(page, { ...base, doctor });
+
+  expect(await iconAnimation(page)).toBe('none');
+});
+
 test('reports a clean schema when there are no findings', async ({ page }) => {
   await load(page, { ...base, doctor: { summary: { total: 0, error: 0, warning: 0, info: 0 }, findings: [] } });
 

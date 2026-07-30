@@ -26,6 +26,10 @@
         .truss-health-panel { position: absolute; top: 40px; right: 320px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }
         .truss-health-panel[hidden] { display: none; }
         .truss-health-group-head { cursor: pointer; }
+        @keyframes truss-health-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+        #truss-health-btn[data-severity="error"] .truss-health-icon,
+        #truss-health-btn[data-severity="warning"] .truss-health-icon { animation: truss-health-pulse 1.4s ease-in-out infinite; transform-origin: center; }
+        @media (prefers-reduced-motion: reduce) { #truss-health-btn .truss-health-icon { animation: none !important; } }
         .truss-menu { display: flex; flex-direction: column; }
         .truss-menu button { cursor: pointer; padding: 4px 8px; text-align: left; }
     </style>
@@ -50,7 +54,13 @@
             <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
             <button type="button" id="truss-export-btn" title="Export">Export</button>
             <button type="button" id="truss-diff-btn" title="Changes" aria-expanded="false" hidden>Changes</button>
-            <button type="button" id="truss-health-btn" title="Health" aria-expanded="false" hidden>Health<span class="truss-health-count" id="truss-health-count" hidden></span></button>
+            <button type="button" id="truss-health-btn" title="Health" aria-expanded="false" hidden>
+                <svg class="truss-health-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                    <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+                </svg>
+                <span class="truss-health-count" id="truss-health-count" hidden></span>
+            </button>
             <span class="truss-zoom">
                 <button type="button" data-fit>Fit</button>
                 <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1">
