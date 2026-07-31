@@ -5,7 +5,8 @@ formatters, exit codes, and the config block). The later phases remain planned a
 documented here so the direction is not lost. The dashboard phase has its own plan in
 `truss-doctor-dashboard.md`.
 Owner: Alberto Arena
-Roadmap: Approved next (concept published on trussphp.com).
+Roadmap: Phase 1 shipped in v1.5.0 (Shipped on trussphp.com). The later phases are
+published as Exploring ("Schema doctor: more rules and CI formats").
 Related: `src/Doctor/**`; `src/Commands/DoctorCommand.php`; `config/truss.php` (the
 `doctor` block); `docs/DECISIONS.md` (Schema doctor); `src/Diff/**` (the mirrored
 architecture).
