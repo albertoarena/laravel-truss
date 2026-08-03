@@ -13,6 +13,7 @@ use AlbertoArena\Truss\Commands\ShowCommand;
 use AlbertoArena\Truss\Http\Controllers\AssetController;
 use AlbertoArena\Truss\Http\Controllers\IndexController;
 use AlbertoArena\Truss\Http\Controllers\SchemaApiController;
+use AlbertoArena\Truss\Http\Controllers\ThemeController;
 use AlbertoArena\Truss\Http\Middleware\Authorize;
 use AlbertoArena\Truss\Listeners\RebuildOnMigrationsEnded;
 use Illuminate\Database\Events\MigrationsEnded;
@@ -83,6 +84,10 @@ class TrussServiceProvider extends PackageServiceProvider
         ], function (): void {
             Route::get('/', IndexController::class)->name('truss.index');
             Route::get('/api/schema', SchemaApiController::class)->name('truss.api.schema');
+            // Optional custom-theme stylesheet, generated from truss.theme.
+            // Same-origin so a strict CSP keeps style-src 'self'; gated with the
+            // rest so it never confirms Truss exists to the unauthorized.
+            Route::get('/theme.css', ThemeController::class)->name('truss.theme');
             // Static assets served from the package (no publish step, no CDN).
             // Gated with everything else so they never confirm Truss exists.
             Route::get('/assets/{file}', AssetController::class)->name('truss.asset');

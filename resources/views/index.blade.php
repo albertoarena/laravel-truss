@@ -10,6 +10,13 @@
 
     <link rel="stylesheet" href="{{ route('truss.asset', 'truss.css') }}">
 
+    {{-- Optional custom-theme overrides, generated from truss.theme. Linked after
+         the base sheet so its variables win, and only when a theme is configured
+         (a default install makes no extra request). Same-origin, CSP-safe. --}}
+    @if ($hasCustomTheme ?? false)
+        <link rel="stylesheet" href="{{ route('truss.theme') }}">
+    @endif
+
     {{-- Mermaid as a global (UMD). Self-hosted from the package by default (no
          CDN); config('truss.diagram.mermaid_url') opts into a CDN. --}}
     <script src="{{ config('truss.diagram.mermaid_url') ?: route('truss.asset', 'mermaid.min.js') }}"></script>

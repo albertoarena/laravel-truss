@@ -28,7 +28,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
 - Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
 - Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
-- Light and dark "blueprint" theme.
+- Light and dark "blueprint" theme, or bring your own: define custom colours and fonts from config to match your app. Config driven, CSP-safe, no build step.
 - Self-contained: Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
 - Cached snapshot, rebuilt automatically after migrations.
 
@@ -131,6 +131,35 @@ php artisan truss:export --format=dbml --output=docs/schema.dbml --check
 `--check` regenerates the export, compares it against `--output`, writes nothing, and exits non-zero when they differ, so a migration that changes the schema without refreshing the committed file fails the build. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error (unknown format, unwritable path, an unmanaged connection, `--check` without `--output`, or no tables matched the filters). Add `--fresh` to rebuild the cached snapshot before exporting.
 
 Config `excluded_tables` always wins over `--tables`, so the export never exposes a table the dashboard hides. Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
+
+## Theming
+
+Truss ships a light and dark "blueprint" theme. To match the app it is embedded in, redefine its colours and fonts from config under `truss.theme`. Everything is optional: you set a few semantic knobs and the rest stay on the default, so a handful of values re-skins the whole dashboard (chrome and diagram) in both light and dark.
+
+If you have not published the config yet (Truss works fine without it), publish it first with `php artisan vendor:publish --tag=truss-config`, then edit the `theme` block:
+
+```php
+// config/truss.php
+'theme' => [
+    'fonts' => [
+        'sans' => 'Inter, system-ui, sans-serif',
+    ],
+    'colors' => [
+        'light' => [
+            'accent' => '#3730a3',
+            'background' => '#ffffff',
+        ],
+        'dark' => [
+            'accent' => '#a5b4fc',
+            'background' => '#0b1020',
+        ],
+    ],
+],
+```
+
+The colour knobs are `accent`, `accent-secondary`, `background`, `surface`, `surface-alt`, `text`, `muted`, and `border`; each maps onto the tokens it paints (`accent`, for instance, covers headings, primary-key badges, entity borders, and the focus ring). Set a knob under both `light` and `dark` to theme both modes, or omit `dark` to theme light only. Colours accept hex, `rgb()` / `hsl()`, or a CSS colour keyword; fonts are family names only, so name a font your app already loads or a system font (Truss serves no font files here).
+
+The overrides are delivered as a same-origin stylesheet, so a strict Content-Security-Policy still needs only `style-src 'self'` (no inline styles), and a default install with no custom theme makes no extra request. Each value is validated before it is emitted, so an invalid value is ignored and falls back to the default rather than breaking the sheet. Contrast is yours to check: a custom palette can fail accessibility, so verify both modes against WCAG AA.
 
 ## Storage
 
