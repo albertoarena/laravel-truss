@@ -119,7 +119,35 @@ class ThemeStylesheet
             }
         }
 
+        // The background grid is a translucent tint of the accent, so it follows
+        // a custom accent rather than staying on the shipped blue. This needs the
+        // colour channels, so it applies only when the accent is a hex value; an
+        // rgb()/hsl()/keyword accent leaves the grid on the default.
+        $rgb = isset($knobs['accent']) ? $this->hexToRgb($this->sanitizeColor($knobs['accent'])) : null;
+        if ($rgb !== null) {
+            $decls[] = "--bp-grid: rgba({$rgb}, 0.07);";
+            $decls[] = "--bp-grid-strong: rgba({$rgb}, 0.12);";
+        }
+
         return $decls;
+    }
+
+    /**
+     * The "r, g, b" channels of a hex colour, or null if it is not hex (a short
+     * or long hex, with or without an alpha byte, which is dropped).
+     */
+    private function hexToRgb(?string $value): ?string
+    {
+        if ($value === null || preg_match('/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i', $value) !== 1) {
+            return null;
+        }
+
+        $hex = ltrim($value, '#');
+        if (strlen($hex) <= 4) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        return hexdec(substr($hex, 0, 2)).', '.hexdec(substr($hex, 2, 2)).', '.hexdec(substr($hex, 4, 2));
     }
 
     /**
