@@ -566,13 +566,9 @@ body {
   .truss-brand { font-size: 0; gap: 0; } /* mark only, hide the wordmark */
   .truss-field--search { flex: 1; min-width: 0; }
   .truss-field--search input { width: 100%; }
-  /* The ⋯ button and the secondary dropdown are already set up at <=1024px. */
-
-  /* legend as a bottom sheet */
-  .truss-legend {
-    top: auto; bottom: 0; left: 0; right: 0; width: auto;
-    border-radius: 10px 10px 0 0; border-bottom: none;
-  }
+  /* The ⋯ button and the secondary dropdown are already set up at <=1024px. The
+     legend stays a top-right dropdown here too, matching the changes and health
+     panels, rather than becoming a full-width bottom sheet. */
 
   .truss-footer { gap: 10px; font-size: 10px; }
   #truss-stat-updated { display: none; }

@@ -63,6 +63,17 @@
         </div>
 
         <main id="truss-viewport"><div id="truss-canvas"></div></main>
+
+        <!-- Legend shown (not hidden) so its resting position can be asserted. It
+             should sit top-right like the health/changes panels, not become a
+             full-width bottom sheet on mobile. -->
+        <div class="truss-legend" id="truss-legend">
+            <div class="truss-legend-head">Legend</div>
+            <dl class="truss-legend-list">
+                <dt>PK</dt><dd>Primary key</dd>
+                <dt>FK</dt><dd>Foreign key</dd>
+            </dl>
+        </div>
     </div>
 </body>
 </html>
