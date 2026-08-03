@@ -26,6 +26,7 @@
 - `php artisan truss:show` — print the database structure as a terminal table (structure only)
 - `php artisan truss:open` — open the Truss dashboard in the browser
 - `php artisan truss:rebuild` — manually rebuild the cached schema snapshot
+- `php artisan truss:export` — export the structure (dbml/json/csv/markdown/mermaid) for CI and tooling; `--check` fails on drift
 
 Frontend assets (JS/CSS + a vendored Mermaid) are served from the package via a gated `{prefix}/assets/{file}` route — no `vendor:publish`, no CDN. Set `TRUSS_MERMAID_URL` to load Mermaid from a CDN instead.
 

@@ -1,0 +1,48 @@
+Table categories {
+  id "bigint unsigned" [pk]
+  parent_id "bigint unsigned"
+}
+
+Table posts {
+  id "bigint unsigned" [pk]
+  user_id "bigint unsigned" [not null]
+  title varchar(255) [not null]
+  status "enum('draft','published','archived')" [not null, default: 'draft']
+  published_at timestamp
+
+  indexes {
+    status
+  }
+}
+
+Table role_user {
+  role_id "bigint unsigned" [not null]
+  user_id "bigint unsigned" [not null]
+
+  indexes {
+    (role_id, user_id) [pk]
+  }
+}
+
+Table roles {
+  id "bigint unsigned" [pk]
+  name varchar(255) [not null]
+}
+
+Table users {
+  id "bigint unsigned" [pk]
+  name varchar(255) [not null]
+  email varchar(255) [not null]
+
+  indexes {
+    email [unique]
+  }
+}
+
+Ref: categories.parent_id > categories.id
+
+Ref: posts.user_id > users.id
+
+Ref: role_user.role_id > roles.id
+
+Ref: role_user.user_id > users.id
