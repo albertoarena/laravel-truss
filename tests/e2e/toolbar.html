@@ -64,15 +64,20 @@
 
         <main id="truss-viewport"><div id="truss-canvas"></div></main>
 
-        <!-- Legend shown (not hidden) so its resting position can be asserted. It
-             should sit top-right like the health/changes panels, not become a
-             full-width bottom sheet on mobile. -->
+        <!-- Legend and the changes panel shown (not hidden) so their resting
+             positions can be compared. The legend should sit top-right at the
+             same vertical offset as the other overlays, not become a full-width
+             bottom sheet or a few pixels higher. -->
         <div class="truss-legend" id="truss-legend">
             <div class="truss-legend-head">Legend</div>
             <dl class="truss-legend-list">
                 <dt>PK</dt><dd>Primary key</dd>
                 <dt>FK</dt><dd>Foreign key</dd>
             </dl>
+        </div>
+        <div class="truss-diff-panel" id="truss-diff-panel">
+            <div class="truss-diff-head">Changes since last migration</div>
+            <div class="truss-diff-body"></div>
         </div>
     </div>
 </body>

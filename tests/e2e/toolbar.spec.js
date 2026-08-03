@@ -43,7 +43,7 @@ test('narrow (640px): still no overflow, controls behind the more button', async
   await expect(page.locator('#truss-more-btn')).toBeVisible();
 });
 
-test('mobile (430px): the legend is a top-anchored dropdown, not a bottom sheet', async ({ page }) => {
+test('mobile (430px): the legend is a top-anchored dropdown aligned with the other overlays', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 900 });
   await page.goto(URL);
 
@@ -51,10 +51,13 @@ test('mobile (430px): the legend is a top-anchored dropdown, not a bottom sheet'
     const r = el.getBoundingClientRect();
     return { top: r.top, left: r.left, right: r.right };
   });
+  const panelTop = await page.locator('#truss-diff-panel').evaluate((el) => el.getBoundingClientRect().top);
 
-  // Anchored just under the toolbar like the health/changes panels, not pinned
-  // to the bottom of the page.
+  // Anchored just under the toolbar, not pinned to the bottom of the page.
   expect(box.top).toBeLessThan(120);
+  // At the same vertical offset as the other overlays (changes/health), not a
+  // few pixels higher.
+  expect(box.top).toBe(panelTop);
   // A right-hand dropdown panel, not a full-width bottom sheet.
   expect(box.left).toBeGreaterThan(0);
   expect(box.right).toBeLessThanOrEqual(430);

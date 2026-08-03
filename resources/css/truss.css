@@ -556,7 +556,6 @@ body {
   .truss-secondary { gap: 12px; }
   .truss-field-label { display: none; }
   .truss-field--search input { width: 130px; }
-  .truss-legend { top: 58px; }
 }
 
 /* Phone: collapse the secondary controls behind the ⋯ button as a panel;
