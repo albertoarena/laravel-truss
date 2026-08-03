@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The dashboard toolbar no longer overflows the viewport on a small desktop. With every control active (filter, focus, depth, type labels, and the export, changes, health, legend, and theme buttons) and long table names, the bar could grow wider than the window; because it is sticky it pinned only vertically, so a horizontal drag slid the whole header sideways and clipped the brand. The secondary controls (focus, depth, type labels) now fold into the more menu below 1024px, the focus and connection selects are width capped, and the search field can shrink, so the toolbar always fits.
+
 ## [1.5.0] - 2026-07-30
 
 ### Added

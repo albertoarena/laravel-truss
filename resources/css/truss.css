@@ -164,7 +164,8 @@ body {
   display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
 }
 .truss-field[hidden] { display: none; }
-.truss-field--search input { width: 150px; }
+.truss-field--search { min-width: 0; } /* let the search field shrink under pressure */
+.truss-field--search input { width: 150px; min-width: 0; }
 .truss-field-label {
   font-family: var(--bp-mono); font-size: 11px; letter-spacing: .01em;
   color: var(--bp-muted);
@@ -177,6 +178,9 @@ body {
   background: var(--bp-field); border: 1px solid var(--bp-field-line); border-radius: 2px; padding: 6px 9px;
 }
 .truss-toolbar input[type="number"] { width: 52px; }
+/* Cap the selects so a long table name (focus) or connection name cannot grow
+   the bar without bound and push the rest of the toolbar off-screen. */
+.truss-toolbar select { max-width: 180px; }
 .truss-toolbar input:focus, .truss-toolbar select:focus {
   outline: none; border-color: var(--bp-ink);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--bp-ink) 22%, transparent);
@@ -527,6 +531,25 @@ body {
 
 /* ---- responsive ------------------------------------------------------- */
 
+/* Small desktop: fold the secondary controls (focus, depth, type labels) behind
+   the ⋯ button as a dropdown panel, so a fully-featured toolbar (every control
+   active, long table names) never overflows the viewport. The bar is sticky and
+   pins vertically only, so an overflow would otherwise let a horizontal drag
+   slide the whole header and clip the brand. The phone block below layers on
+   mark-only branding and a full-width search. */
+@media (max-width: 1024px) {
+  .truss-util--more { display: inline-flex; }
+
+  .truss-secondary {
+    display: none; position: absolute; top: 100%; right: 8px; margin-top: 6px;
+    flex-direction: column; align-items: flex-start; gap: 14px; padding: 14px 16px;
+    background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .18); z-index: 25;
+  }
+  .truss-secondary.is-open { display: flex; }
+  .truss-secondary .truss-field-label { display: inline; } /* labels back inside the panel */
+}
+
 /* Tablet: drop the field labels to reclaim horizontal room; inputs stay. */
 @media (max-width: 900px) {
   .truss-toolbar { gap: 12px; }
@@ -543,16 +566,7 @@ body {
   .truss-brand { font-size: 0; gap: 0; } /* mark only, hide the wordmark */
   .truss-field--search { flex: 1; min-width: 0; }
   .truss-field--search input { width: 100%; }
-  .truss-util--more { display: inline-flex; }
-
-  .truss-secondary {
-    display: none; position: absolute; top: 100%; right: 8px; margin-top: 6px;
-    flex-direction: column; align-items: flex-start; gap: 14px; padding: 14px 16px;
-    background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, .18); z-index: 25;
-  }
-  .truss-secondary.is-open { display: flex; }
-  .truss-secondary .truss-field-label { display: inline; } /* labels back inside the panel */
+  /* The ⋯ button and the secondary dropdown are already set up at <=1024px. */
 
   /* legend as a bottom sheet */
   .truss-legend {

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Truss toolbar layout harness</title>
+    <!-- The REAL shipped stylesheet, so this exercises the actual responsive
+         rules (unlike harness.html, which inlines only the interaction bits). -->
+    <link rel="stylesheet" href="/resources/css/truss.css">
+</head>
+<body>
+    <!-- The real toolbar structure from resources/views/index.blade.php, with the
+         diff and health buttons shown (not hidden) so this mirrors the worst
+         case: an app with every toolbar control active, which is where the bar
+         overflowed on a small desktop. The focus select carries a long option to
+         stand in for long table names, another driver of the overflow. -->
+    <div id="truss-app">
+        <div class="truss-toolbar">
+            <span class="truss-brand">
+                <svg class="truss-mark" width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path d="M16 5 L27 26 H5 Z" stroke-width="1.7" stroke-linejoin="miter"/>
+                </svg>
+                truss
+            </span>
+
+            <label class="truss-field truss-field--search">
+                <span class="truss-field-label">Filter</span>
+                <input id="truss-search" type="search" placeholder="table name…">
+            </label>
+
+            <div class="truss-secondary" id="truss-more">
+                <label class="truss-field">
+                    <span class="truss-field-label">Focus</span>
+                    <select id="truss-focus">
+                        <option>none</option>
+                        <option>land_registry_entries_project_documents</option>
+                    </select>
+                </label>
+                <label class="truss-field">
+                    <span class="truss-field-label">Depth</span>
+                    <input id="truss-depth" type="number" min="0" step="1">
+                </label>
+                <label class="truss-field truss-field--check">
+                    <input id="truss-labels" type="checkbox"> <span class="truss-field-label">Laravel types</span>
+                </label>
+            </div>
+
+            <div class="truss-utils">
+                <label class="truss-field truss-field--conn" hidden>
+                    <span class="truss-field-label">Connections</span>
+                    <select id="truss-connection"></select>
+                </label>
+                <button type="button" class="truss-util truss-util--more" id="truss-more-btn" title="More controls" aria-expanded="false">⋯</button>
+                <button type="button" class="truss-util" id="truss-export-btn" title="Export">⤓</button>
+                <button type="button" class="truss-util" id="truss-diff-btn" title="Changes">⇄</button>
+                <button type="button" class="truss-util" id="truss-health-btn" title="Health">
+                    <svg class="truss-health-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12 h6 l2 5 2-10 2 5 h4"/></svg>
+                    <span class="truss-health-count" id="truss-health-count">7</span>
+                </button>
+                <button type="button" class="truss-util" id="truss-legend-btn" title="Legend">▤</button>
+                <button type="button" class="truss-util" id="truss-theme-btn" title="Theme">◐</button>
+            </div>
+        </div>
+
+        <main id="truss-viewport"><div id="truss-canvas"></div></main>
+    </div>
+</body>
+</html>
