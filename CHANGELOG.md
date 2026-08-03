@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Theming now re-skins the whole diagram, not just the tables. A custom `truss.theme` palette previously left the relationship lines and labels, the background grid label backdrop, and (in dark mode) the odd table rows and input backgrounds on the shipped Blueprint colours, so a themed diagram showed blue lines and mismatched rows. The `background`, `surface`, and `muted` knobs now also drive those tokens (`edge-bg`; `row-odd` and `field`; `rel` and `edge`), so a few knob values re-skin the diagram completely.
+
 ## [1.6.0] - 2026-08-03
 
 ### Added

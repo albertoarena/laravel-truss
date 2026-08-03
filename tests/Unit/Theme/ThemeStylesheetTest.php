@@ -34,11 +34,11 @@ it('covers every documented knob and only maps known ones', function () {
     $knobs = [
         'accent' => ['ink', 'focus-border'],
         'accent-secondary' => ['cyan'],
-        'background' => ['bg'],
-        'surface' => ['panel', 'entity-bg'],
+        'background' => ['bg', 'edge-bg'],
+        'surface' => ['panel', 'entity-bg', 'row-odd', 'field'],
         'surface-alt' => ['row-even'],
         'text' => ['fg', 'entity-text'],
-        'muted' => ['muted'],
+        'muted' => ['muted', 'rel', 'edge'],
         'border' => ['entity-border', 'hair', 'panel-line', 'field-line'],
     ];
 
@@ -48,6 +48,24 @@ it('covers every documented knob and only maps known ones', function () {
             expect($css)->toContain("--bp-{$token}: #abcdef;");
         }
     }
+});
+
+it('themes the diagram chrome, not just tables, so a custom palette leaves nothing at the default', function () {
+    // Regression guard: relationship lines/labels (rel, edge, edge-bg), odd rows,
+    // and inputs used to stay on the Blueprint default, so a custom theme rendered
+    // a half-themed diagram (blue lines and dark-mode rows on a warm palette).
+    $css = themeCss(['colors' => ['light' => [
+        'muted' => '#777777',       // drives rel + edge (relationship lines and labels)
+        'background' => '#eeeeee',  // drives edge-bg (label backdrop)
+        'surface' => '#ffffff',     // drives row-odd + field (odd rows, inputs)
+    ]]]);
+
+    foreach (['rel', 'edge'] as $line) {
+        expect($css)->toContain("--bp-{$line}: #777777;");
+    }
+    expect($css)->toContain('--bp-edge-bg: #eeeeee;')
+        ->and($css)->toContain('--bp-row-odd: #ffffff;')
+        ->and($css)->toContain('--bp-field: #ffffff;');
 });
 
 it('places dark overrides under the media query and the forced-dark selector', function () {
