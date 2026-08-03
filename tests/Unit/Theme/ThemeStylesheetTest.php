@@ -68,6 +68,29 @@ it('themes the diagram chrome, not just tables, so a custom palette leaves nothi
         ->and($css)->toContain('--bp-field: #ffffff;');
 });
 
+it('derives a faint background grid from the accent colour', function () {
+    // The grid is a translucent tint of the accent, so it follows a custom
+    // accent instead of staying on the shipped blue.
+    $css = themeCss(['colors' => ['light' => ['accent' => '#112233'], 'dark' => ['accent' => '#aabbcc']]]);
+
+    expect($css)->toContain('--bp-grid: rgba(17, 34, 51, 0.07);')
+        ->and($css)->toContain('--bp-grid-strong: rgba(17, 34, 51, 0.12);')
+        ->and($css)->toContain('--bp-grid: rgba(170, 187, 204, 0.07);');
+});
+
+it('accepts a short #rgb accent for the grid derivation', function () {
+    expect(themeCss(['colors' => ['light' => ['accent' => '#abc']]]))
+        ->toContain('--bp-grid: rgba(170, 187, 204, 0.07);');
+});
+
+it('skips the grid derivation when the accent is not a hex colour', function () {
+    // rgb()/hsl()/keyword accents are valid, but the grid tint needs channels.
+    $css = themeCss(['colors' => ['light' => ['accent' => 'rebeccapurple']]]);
+
+    expect($css)->toContain('--bp-ink: rebeccapurple;')
+        ->and($css)->not->toContain('--bp-grid:');
+});
+
 it('places dark overrides under the media query and the forced-dark selector', function () {
     $css = themeCss(['colors' => ['dark' => ['background' => '#0b1020']]]);
 
