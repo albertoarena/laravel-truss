@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-08-03
+
 ### Added
 
 - Theming and custom palettes: match Truss to the app it is embedded in by defining your own colours and fonts from config under `truss.theme`. A small set of semantic knobs (`accent`, `background`, `surface`, `text`, `border`, and more) plus two font-family knobs re-skin the whole dashboard, chrome and diagram, in both light and dark; only the knobs you set are overridden, the rest stay on the default, so a handful of values is enough. Delivered as a same-origin stylesheet, so a strict Content-Security-Policy still needs only `style-src 'self'`, with no build step and no extra request on a default install. Each value is validated before it is emitted, so an invalid value falls back to the default rather than breaking the sheet.
