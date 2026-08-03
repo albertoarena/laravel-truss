@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Theming and custom palettes: match Truss to the app it is embedded in by defining your own colours and fonts from config under `truss.theme`. A small set of semantic knobs (`accent`, `background`, `surface`, `text`, `border`, and more) plus two font-family knobs re-skin the whole dashboard, chrome and diagram, in both light and dark; only the knobs you set are overridden, the rest stay on the default, so a handful of values is enough. Delivered as a same-origin stylesheet, so a strict Content-Security-Policy still needs only `style-src 'self'`, with no build step and no extra request on a default install. Each value is validated before it is emitted, so an invalid value falls back to the default rather than breaking the sheet.
 - Schema export from the command line: `php artisan truss:export` writes the database structure to DBML, JSON, CSV, a Markdown data dictionary, or Mermaid, for CI, tooling, and version control. The command-line counterpart to the dashboard export button, generated from PHP so it needs no browser. Writes to stdout by default (pipeable) or a file with `--output`, filters with `--tables` / `--exclude` (config `excluded_tables` always wins), targets a connection with `--connection`, and rebuilds first with `--fresh`. Output is deterministic (the same schema always produces the same bytes), so `--check` can fail the build when a committed export file has gone stale. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error. Structure only, with no network call.
+
+### Removed
+
+- The unused `truss.diagram.theme` config key (it was wired to nothing). Theme selection now lives under the new `truss.theme` block.
 
 ### Fixed
 

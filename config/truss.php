@@ -145,7 +145,6 @@ return [
 
     'diagram' => [
         'type_labels' => env('TRUSS_TYPE_LABELS', 'native'),
-        'theme' => env('TRUSS_DIAGRAM_THEME', 'default'),
 
         // Where the browser loads Mermaid from. Null (the default) self-hosts it
         // from the package's own asset route — no CDN, so a strict CSP needs only
@@ -157,6 +156,56 @@ return [
         // auto-zoomed below this (it stays legible and you pan). The "Fit" button
         // ignores this and frames the whole diagram. 1.0 = 100%.
         'min_zoom' => (float) env('TRUSS_MIN_ZOOM', 0.7),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Theme
+    |--------------------------------------------------------------------------
+    |
+    | Truss ships a light and dark "blueprint" theme. To match the app Truss is
+    | embedded in, redefine its colours and fonts here. Everything is optional:
+    | only the knobs you set are overridden, the rest stay on the default, so a
+    | handful of values re-skins the whole dashboard (chrome and diagram) in both
+    | light and dark. Config driven, no build step.
+    |
+    | It is delivered as a same-origin stylesheet, so a strict CSP still needs
+    | only style-src 'self' (no inline styles). Each value is validated before it
+    | is emitted; an invalid value is ignored and falls back to the default.
+    |
+    | Colours accept hex, rgb()/rgba()/hsl()/hsla(), or a CSS colour keyword.
+    | Fonts are family names only: name a font your app already loads or a system
+    | font (Truss serves no font files here). Set a knob under both 'light' and
+    | 'dark' to theme both modes; omit 'dark' to theme light only.
+    |
+    | Colour knobs and what each paints:
+    |   accent            primary accent: headings, PK badges, entity borders, focus ring
+    |   accent-secondary  secondary accent
+    |   background        the canvas / page background
+    |   surface           panels and table bodies
+    |   surface-alt       row striping
+    |   text              body and diagram text
+    |   muted             secondary text
+    |   border            table, panel, and field lines
+    |
+    */
+
+    'theme' => [
+        'fonts' => [
+            'mono' => env('TRUSS_THEME_FONT_MONO'),
+            'sans' => env('TRUSS_THEME_FONT_SANS'),
+        ],
+
+        'colors' => [
+            'light' => [
+                // 'accent' => '#3730a3',
+                // 'background' => '#ffffff',
+            ],
+            'dark' => [
+                // 'accent' => '#a5b4fc',
+                // 'background' => '#0b1020',
+            ],
+        ],
     ],
 
     /*

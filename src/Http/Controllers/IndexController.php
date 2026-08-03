@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Http\Controllers;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Theme\ThemeStylesheet;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -16,10 +17,11 @@ use Illuminate\Contracts\View\View;
  */
 class IndexController
 {
-    public function __invoke(SchemaCacheRepository $cache): View
+    public function __invoke(SchemaCacheRepository $cache, ThemeStylesheet $theme): View
     {
         return view('truss::index', [
             'connections' => $cache->managedConnections(),
+            'hasCustomTheme' => $theme->isConfigured((array) config('truss.theme', [])),
         ]);
     }
 }
