@@ -24,7 +24,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Focus mode: a table and its foreign-key neighbours, centred and highlighted.
 - Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
-- Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, or DBML, all generated in the browser and structure-only.
+- Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, or DBML, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic.
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
 - Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
 - Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
@@ -108,6 +108,29 @@ It rides the schema endpoint the diagram already loads, so there is no extra req
 
 - `dashboard` (env `TRUSS_DOCTOR_DASHBOARD`, default on): show the Health panel at all. When off, the dashboard never receives any findings and the CLI is untouched.
 - `flag_tables` (env `TRUSS_DOCTOR_FLAG_TABLES`, default on): always badge tables with findings on the diagram, even with the panel closed. Turn it off to keep the diagram clean and surface findings only when the panel is open.
+
+## Schema export
+
+`php artisan truss:export` writes your database structure to a standard format for CI, tooling, and version control. It is the command-line counterpart to the dashboard's export button, generated from PHP so it does not need a human with the diagram open. Deterministic and structure-only, with no network call, so it is safe in CI and commit hooks.
+
+```bash
+php artisan truss:export                                  # DBML to stdout
+php artisan truss:export --format=json                    # dbml, json, csv, markdown, or mermaid
+php artisan truss:export --format=dbml --output=docs/schema.dbml
+php artisan truss:export --tables=orders,order_lines      # only these (config exclusions still apply)
+php artisan truss:export --connection=mysql --exclude=telemetry
+```
+
+Output goes to stdout by default so it pipes cleanly; `--output` writes a file. The output is deterministic: the same schema always produces the same bytes, whatever order the database reports its tables in. That is what makes the CI drift-check reliable:
+
+```bash
+# Fail the build if the committed schema file is out of date
+php artisan truss:export --format=dbml --output=docs/schema.dbml --check
+```
+
+`--check` regenerates the export, compares it against `--output`, writes nothing, and exits non-zero when they differ, so a migration that changes the schema without refreshing the committed file fails the build. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error (unknown format, unwritable path, an unmanaged connection, `--check` without `--output`, or no tables matched the filters). Add `--fresh` to rebuild the cached snapshot before exporting.
+
+Config `excluded_tables` always wins over `--tables`, so the export never exposes a table the dashboard hides. Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
 
 ## Storage
 

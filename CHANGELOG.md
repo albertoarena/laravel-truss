@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Schema export from the command line: `php artisan truss:export` writes the database structure to DBML, JSON, CSV, a Markdown data dictionary, or Mermaid, for CI, tooling, and version control. The command-line counterpart to the dashboard export button, generated from PHP so it needs no browser. Writes to stdout by default (pipeable) or a file with `--output`, filters with `--tables` / `--exclude` (config `excluded_tables` always wins), targets a connection with `--connection`, and rebuilds first with `--fresh`. Output is deterministic (the same schema always produces the same bytes), so `--check` can fail the build when a committed export file has gone stale. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error. Structure only, with no network call.
+
 ### Fixed
 
 - The dashboard toolbar no longer overflows the viewport on a small desktop. With every control active (filter, focus, depth, type labels, and the export, changes, health, legend, and theme buttons) and long table names, the bar could grow wider than the window; because it is sticky it pinned only vertically, so a horizontal drag slid the whole header sideways and clipped the brand. The secondary controls (focus, depth, type labels) now fold into the more menu below 1024px, the focus and connection selects are width capped, and the search field can shrink, so the toolbar always fits.

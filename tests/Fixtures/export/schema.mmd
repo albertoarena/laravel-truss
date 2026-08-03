@@ -1,0 +1,28 @@
+erDiagram
+  categories {
+    bigint_unsigned id PK
+    bigint_unsigned parent_id FK "self-ref"
+  }
+  posts {
+    bigint_unsigned id PK
+    bigint_unsigned user_id FK
+    varchar_255 title
+    enum status
+    timestamp published_at
+  }
+  role_user {
+    bigint_unsigned role_id PK, FK
+    bigint_unsigned user_id PK, FK
+  }
+  roles {
+    bigint_unsigned id PK
+    varchar_255 name
+  }
+  users {
+    bigint_unsigned id PK
+    varchar_255 name
+    varchar_255 email
+  }
+  users ||--o{ posts : "posts_user_id_foreign"
+  roles ||--o{ role_user : "role_user_role_id_foreign"
+  users ||--o{ role_user : "role_user_user_id_foreign"
