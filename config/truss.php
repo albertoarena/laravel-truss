@@ -181,11 +181,11 @@ return [
     | Colour knobs and what each paints:
     |   accent            primary accent: headings, PK badges, entity borders, focus ring
     |   accent-secondary  secondary accent
-    |   background        the canvas / page background
-    |   surface           panels and table bodies
+    |   background        the canvas / page background (and relationship-label backdrop)
+    |   surface           panels, table bodies, rows, and inputs
     |   surface-alt       row striping
     |   text              body and diagram text
-    |   muted             secondary text
+    |   muted             secondary text and the relationship lines / labels
     |   border            table, panel, and field lines
     |
     */

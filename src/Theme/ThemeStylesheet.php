@@ -32,11 +32,11 @@ class ThemeStylesheet
     private const KNOBS = [
         'accent' => ['ink', 'focus-border'],
         'accent-secondary' => ['cyan'],
-        'background' => ['bg'],
-        'surface' => ['panel', 'entity-bg'],
+        'background' => ['bg', 'edge-bg'],
+        'surface' => ['panel', 'entity-bg', 'row-odd', 'field'],
         'surface-alt' => ['row-even'],
         'text' => ['fg', 'entity-text'],
-        'muted' => ['muted'],
+        'muted' => ['muted', 'rel', 'edge'],
         'border' => ['entity-border', 'hair', 'panel-line', 'field-line'],
     ];
 
