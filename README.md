@@ -14,7 +14,7 @@
 
 Laravel Truss is a live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app, so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
 
-**[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed. See what has shipped and what is next on the **[roadmap](https://trussphp.com/roadmap/)**.
+**[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed, then build a palette in the **[theme builder](https://trussphp.com/theme-builder/)** and copy the config. See what has shipped and what is next on the **[roadmap](https://trussphp.com/roadmap/)**.
 
 > **Stay updated:** click **Watch > Custom > Releases** to hear about new features, or follow along in [Discussions](https://github.com/albertoarena/laravel-truss/discussions).
 
@@ -135,6 +135,8 @@ Config `excluded_tables` always wins over `--tables`, so the export never expose
 ## Theming
 
 Truss ships a light and dark "blueprint" theme. To match the app it is embedded in, redefine its colours and fonts from config under `truss.theme`. Everything is optional: you set a few semantic knobs and the rest stay on the default, so a handful of values re-skins the whole dashboard (chrome and diagram) in both light and dark.
+
+Prefer to design it visually? The **[theme builder](https://trussphp.com/theme-builder/)** lets you dial in colours and fonts against a live dashboard preview and copy the config block straight into `config/truss.php`.
 
 If you have not published the config yet (Truss works fine without it), publish it first with `php artisan vendor:publish --tag=truss-config`, then edit the `theme` block:
 
