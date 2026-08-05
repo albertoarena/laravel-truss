@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-08-05
+
+### Added
+
+- A `SECURITY.md` security policy that documents a private disclosure channel and the reporting scope, so a vulnerability can be reported privately instead of through a public issue.
+
+### Changed
+
+- The frontend test suites now run in CI. A new workflow installs Node, runs the Vitest unit tests, and runs the Playwright browser tests on every push and pull request, so client-side changes and dependency bumps are exercised automatically rather than relying on a local run.
+- The development test runner (Vitest) was upgraded to 4.x. Test tooling only, with no change to the shipped package.
+
+### Security
+
+- Every GitHub Actions reference in CI is now pinned to a full commit SHA with a trailing version comment, so a moved or compromised tag can no longer redirect a workflow to unintended code.
+- Added a Dependabot configuration covering GitHub Actions, Composer, and npm, on a weekly schedule with a seven-day cooldown, so dependency and action updates arrive as reviewable pull requests and the pinned SHAs stay current.
+
 ## [1.6.1] - 2026-08-03
 
 ### Fixed
