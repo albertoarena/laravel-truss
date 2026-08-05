@@ -1,0 +1,41 @@
+version: 2
+updates:
+  # Keep the SHA-pinned workflow actions current. Dependabot rewrites both the
+  # SHA and the trailing version comment when a new release lands.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # Composer dependencies (runtime and dev). Minor and patch bumps are grouped
+  # into a single PR to keep the noise down; majors open on their own.
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      composer-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Client-side diagram tooling (Vitest, Playwright, the Mermaid generator).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
