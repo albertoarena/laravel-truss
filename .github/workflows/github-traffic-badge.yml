@@ -12,7 +12,7 @@ jobs:
   update-badge:
     runs-on: ubuntu-latest
     steps:
-      - uses: albertoarena/github-traffic-badge@v1
+      - uses: albertoarena/github-traffic-badge@56f6f3e0ed586f14440561758b197ca57a38f480 # v1.1.4
         with:
           token: ${{ secrets.TRAFFIC_TOKEN }}
           metric: views
