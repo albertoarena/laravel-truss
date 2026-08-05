@@ -12,6 +12,6 @@
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@playwright/test": "^1.61.1",
     "mermaid": "^11.16.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.1.10"
   }
 }
