@@ -1,0 +1,34 @@
+name: frontend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '20'
+
+      # package-lock.json is gitignored, so there is no committed lockfile for
+      # npm ci; install from package.json instead.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (Playwright)
+        run: npm run test:e2e
