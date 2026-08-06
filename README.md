@@ -185,9 +185,9 @@ Starring the repo and sharing it help just as much.
 
 ## 📬 Stay updated
 
-Occasional emails on Laravel, database tooling, and AI-assisted development: new releases, packages, and write-ups. No spam, unsubscribe anytime.
+Subscribe and get my free Spatie Event Sourcing cheat sheet (printable PDF), plus practical notes on Laravel and AI-assisted development, roughly once a month. No spam.
 
-**[Subscribe to the newsletter →](https://albertoarena.it/subscribe/?utm_source=github&utm_medium=readme&utm_campaign=newsletter&utm_content=laravel-truss)**
+**[Get the cheat sheet →](https://albertoarena.it/subscribe/?utm_source=github&utm_medium=readme&utm_campaign=newsletter&utm_content=laravel-truss)**
 
 ## License
 
