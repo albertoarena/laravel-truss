@@ -183,6 +183,12 @@ Laravel Truss is free and open source. If it has saved you time, you can support
 
 Starring the repo and sharing it help just as much.
 
+## 📬 Stay updated
+
+Occasional emails on Laravel, database tooling, and AI-assisted development: new releases, packages, and write-ups. No spam, unsubscribe anytime.
+
+**[Subscribe to the newsletter →](https://albertoarena.it/subscribe/?utm_source=github&utm_medium=readme&utm_campaign=newsletter&utm_content=laravel-truss)**
+
 ## License
 
 The MIT License (MIT). See [LICENSE](LICENSE).
