@@ -1,0 +1,11 @@
+# Socket.dev configuration: https://docs.socket.dev/docs/socket-yml
+version: 2
+
+issueRules:
+  # robust-predicates (Shewchuk's robust geometric predicates) is machine-generated
+  # floating-point code that trips heuristic "obfuscated code" detection. It reaches
+  # this package only as a dev-only transitive dependency
+  # (mermaid > d3 > d3-delaunay > delaunator > robust-predicates) and never ships to
+  # consumers: the package serves a prebuilt, vendored Mermaid from resources/. This
+  # repo's only npm surface is local dev tooling, so the obfuscation alert is noise.
+  obfuscatedFile: false
