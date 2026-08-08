@@ -312,4 +312,25 @@ return [
         'flag_tables' => (bool) env('TRUSS_DOCTOR_FLAG_TABLES', true),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MCP server
+    |--------------------------------------------------------------------------
+    |
+    | The optional read-only, structure-only MCP server exposes the live schema
+    | to a coding agent (structure only, never row data). It requires the
+    | optional first-party `laravel/mcp` package: install it with
+    | `composer require laravel/mcp`. When that package is absent this switch has
+    | no effect (the server is only registered when the package is present), so a
+    | host that does not opt in is unaffected.
+    |
+    | `enabled`: master switch for registering the server once laravel/mcp is
+    | installed. Defaults on, so installing the package is the only opt-in step.
+    |
+    */
+
+    'mcp' => [
+        'enabled' => (bool) env('TRUSS_MCP_ENABLED', true),
+    ],
+
 ];

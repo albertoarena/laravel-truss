@@ -45,6 +45,9 @@
         "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^3.5"
     },
+    "suggest": {
+        "laravel/mcp": "Enables the optional read-only, structure-only Truss MCP server (Truss as AI context). Opt in with `composer require laravel/mcp`. Needs Laravel >= 12.41.1 or 13."
+    },
     "autoload": {
         "psr-4": {
             "AlbertoArena\\Truss\\": "src/"
