@@ -8,8 +8,10 @@ use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Export\Annotator;
 use AlbertoArena\Truss\Export\CompactTransform;
 use AlbertoArena\Truss\Export\Contracts\CommentReader;
+use AlbertoArena\Truss\Export\FocusTransform;
 use AlbertoArena\Truss\Export\SchemaExporter;
 use Illuminate\Console\Command;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -32,6 +34,8 @@ class ExportCommand extends Command
         {--connection= : Export this connection instead of the default}
         {--tables= : Only these tables, comma-separated}
         {--exclude= : Skip these tables, comma-separated (applied after --tables)}
+        {--focus= : Reduce to this table and its foreign-key neighbourhood}
+        {--depth= : Neighbourhood hops for --focus (default: truss.focus.default_depth)}
         {--compact : Drop defaults and non-unique indexes to shrink the output}
         {--no-annotations : Strip config/database annotations from the export}
         {--output= : Write to this file instead of stdout}
@@ -85,6 +89,20 @@ class ExportCommand extends Command
             $this->error('No tables matched the given filters.');
 
             return 2;
+        }
+
+        if ($this->option('focus')) {
+            $depth = $this->option('depth') !== null
+                ? (int) $this->option('depth')
+                : (int) config('truss.focus.default_depth', 1);
+
+            try {
+                $tables = (new FocusTransform)->apply($tables, (string) $this->option('focus'), $depth);
+            } catch (InvalidArgumentException $e) {
+                $this->error($e->getMessage());
+
+                return 2;
+            }
         }
 
         if ($this->option('compact')) {
