@@ -24,7 +24,8 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Focus mode: a table and its foreign-key neighbours, centred and highlighted.
 - Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
-- Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, or DBML, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic.
+- Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, DBML, or a token-trimmed `llm` format, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic.
+- Feed your real, live structure to a coding agent as grounding context: annotate it with business meaning, trim it with `--compact`, and narrow it with `--focus`, so the agent stops inventing columns. Structure only, never row data.
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
 - Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
 - Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
@@ -115,7 +116,7 @@ It rides the schema endpoint the diagram already loads, so there is no extra req
 
 ```bash
 php artisan truss:export                                  # DBML to stdout
-php artisan truss:export --format=json                    # dbml, json, csv, markdown, or mermaid
+php artisan truss:export --format=json                    # dbml, json, csv, markdown, mermaid, or llm
 php artisan truss:export --format=dbml --output=docs/schema.dbml
 php artisan truss:export --tables=orders,order_lines      # only these (config exclusions still apply)
 php artisan truss:export --connection=mysql --exclude=telemetry
@@ -131,6 +132,20 @@ php artisan truss:export --format=dbml --output=docs/schema.dbml --check
 `--check` regenerates the export, compares it against `--output`, writes nothing, and exits non-zero when they differ, so a migration that changes the schema without refreshing the committed file fails the build. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error (unknown format, unwritable path, an unmanaged connection, `--check` without `--output`, or no tables matched the filters). Add `--fresh` to rebuild the cached snapshot before exporting.
 
 Config `excluded_tables` always wins over `--tables`, so the export never exposes a table the dashboard hides. Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
+
+### Truss as AI context
+
+The same export doubles as grounding context for a coding agent: hand it your real, live structure so it stops inventing columns. Three flags make the output worth pasting or piping into Claude Code, Cursor, or any agent:
+
+```bash
+php artisan truss:export --format=llm                     # a dense, token-trimmed plaintext format
+php artisan truss:export --compact                        # drop defaults and non-unique indexes
+php artisan truss:export --focus=orders --depth=1         # one table and its FK neighbourhood
+```
+
+**Annotations** add the business meaning a type cannot: that `status = 1` means paid, that a table is deprecated. Declare them in `config/truss.php` under `annotations` (per-table, per-column, and global notes), or read them from native database comments by keeping `'database'` in `annotations.source`. They render into every text format and are stripped with `--no-annotations`.
+
+This stays structure only. Native comments are part of the `CREATE TABLE` definition, not row content (the same boundary as column defaults), and no export, in any format or flag combination, ever contains row data. A schema is not a semantic layer: Truss says what exists, not what the business means beyond the annotations you write.
 
 ## Theming
 
