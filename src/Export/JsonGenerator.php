@@ -17,8 +17,12 @@ use AlbertoArena\Truss\Export\Contracts\Generator;
  */
 class JsonGenerator implements Generator
 {
-    public function generate(array $tables): string
+    public function generate(array $tables, array $notes = []): string
     {
+        // Per-table and per-column annotations ride along as `annotation` keys
+        // already present on the arrays; the bare-array shape is preserved, so an
+        // un-annotated snapshot encodes identically. Global notes are not added
+        // here: that would reshape the top level away from a plain table array.
         return (string) json_encode(
             array_values($tables),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,

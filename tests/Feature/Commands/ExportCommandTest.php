@@ -133,12 +133,58 @@ it('exports a fresh snapshot with --fresh', function () {
     expect(file_get_contents($this->tmp))->toContain('Table posts {');
 });
 
+it('renders config annotations into the export by default', function () {
+    config([
+        'truss.annotations.source' => ['config'],
+        'truss.annotations.notes' => ['All timestamps are UTC.'],
+        'truss.annotations.tables' => ['users' => 'One row per account.'],
+        'truss.annotations.columns' => ['users.name' => 'Display name.'],
+    ]);
+
+    $this->artisan('truss:export', ['--format' => 'markdown', '--output' => $this->tmp])
+        ->assertExitCode(0);
+
+    $out = (string) file_get_contents($this->tmp);
+    expect($out)->toContain('> All timestamps are UTC.')
+        ->and($out)->toContain('> One row per account.')
+        ->and($out)->toContain('Display name.');
+});
+
+it('strips annotations with --no-annotations', function () {
+    config([
+        'truss.annotations.source' => ['config'],
+        'truss.annotations.columns' => ['users.name' => 'Display name.'],
+    ]);
+
+    $this->artisan('truss:export', ['--format' => 'markdown', '--no-annotations' => true, '--output' => $this->tmp])
+        ->assertExitCode(0);
+
+    expect(file_get_contents($this->tmp))->not->toContain('Display name.')
+        ->not->toContain('Description');
+});
+
+it('uses truss.export.default_format when --format is omitted', function () {
+    config(['truss.export.default_format' => 'json']);
+
+    $code = Artisan::call('truss:export');
+
+    expect($code)->toBe(0)
+        ->and(Artisan::output())->toStartWith('[');
+});
+
 it('never leaks row data: the canary never appears in any format', function () {
     Schema::create('secrets', function ($table) {
         $table->id();
         $table->string('token');
     });
     DB::table('secrets')->insert(['token' => 'TRUSS_ROW_DATA_CANARY']);
+
+    // Annotations on too, so the canary sweep also covers the annotated paths.
+    config([
+        'truss.annotations.source' => ['config'],
+        'truss.annotations.notes' => ['A note.'],
+        'truss.annotations.columns' => ['users.name' => 'The name.'],
+    ]);
 
     foreach (SchemaExporter::formats() as $format) {
         $out = $this->tmp.".{$format}";

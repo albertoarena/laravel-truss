@@ -17,11 +17,14 @@ use AlbertoArena\Truss\Export\Contracts\Generator;
  */
 class MarkdownGenerator implements Generator
 {
-    public function generate(array $tables): string
+    public function generate(array $tables, array $notes = []): string
     {
+        $intro = $notes !== []
+            ? [implode("\n", array_map(fn (string $note): string => '> '.$this->flatten($note), $notes))]
+            : [];
         $sections = array_map($this->tableToMarkdown(...), $tables);
 
-        return implode("\n\n", ['# Data dictionary', ...$sections])."\n";
+        return implode("\n\n", ['# Data dictionary', ...$intro, ...$sections])."\n";
     }
 
     /**
@@ -30,19 +33,32 @@ class MarkdownGenerator implements Generator
     private function tableToMarkdown(array $table): string
     {
         $key = $this->keyResolver($table);
-        $lines = [
-            "## {$table['name']}",
-            '',
-            '| Column | Type | Null | Default | Key |',
-            '| --- | --- | --- | --- | --- |',
-        ];
+        $columns = $table['columns'] ?? [];
 
-        foreach ($table['columns'] ?? [] as $c) {
-            $lines[] = '| '.$this->cell($c['name'])
+        // The Description column appears only when a column in this table is
+        // annotated, so an un-annotated table renders exactly as before.
+        $describe = $this->hasColumnAnnotation($columns);
+
+        $head = '| Column | Type | Null | Default | Key |'.($describe ? ' Description |' : '');
+        $rule = '| --- | --- | --- | --- | --- |'.($describe ? ' --- |' : '');
+
+        $lines = ["## {$table['name']}"];
+        if (($table['annotation'] ?? null) !== null) {
+            $lines[] = '';
+            $lines[] = '> '.$this->flatten($table['annotation']);
+        }
+        $lines = [...$lines, '', $head, $rule];
+
+        foreach ($columns as $c) {
+            $row = '| '.$this->cell($c['name'])
                 .' | '.$this->cell($c['type'])
                 .' | '.(($c['nullable'] ?? false) ? 'yes' : 'no')
                 .' | '.$this->cell($c['default'] ?? null)
                 .' | '.$key($c['name']).' |';
+            if ($describe) {
+                $row .= ' '.$this->cell($c['annotation'] ?? null).' |';
+            }
+            $lines[] = $row;
         }
 
         $indexes = $table['indexes'] ?? [];
@@ -113,5 +129,28 @@ class MarkdownGenerator implements Generator
         $s = $value === null ? '' : (string) $value;
 
         return str_replace(['|', "\n"], ['\\|', ' '], $s);
+    }
+
+    /**
+     * Whether any column in the table carries an annotation, deciding whether the
+     * Description column is rendered.
+     *
+     * @param  list<array<string, mixed>>  $columns
+     */
+    private function hasColumnAnnotation(array $columns): bool
+    {
+        foreach ($columns as $column) {
+            if (($column['annotation'] ?? null) !== null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Collapse whitespace runs (including newlines) to single spaces. */
+    private function flatten(string $value): string
+    {
+        return (string) preg_replace('/\s+/', ' ', trim($value));
     }
 }

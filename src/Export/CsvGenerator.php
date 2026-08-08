@@ -18,9 +18,13 @@ class CsvGenerator implements Generator
 {
     private const HEADER = ['table', 'name', 'type', 'nullable', 'default', 'key'];
 
-    public function generate(array $tables): string
+    public function generate(array $tables, array $notes = []): string
     {
-        $rows = [self::HEADER];
+        // The annotation column appears only when some column is annotated, so an
+        // un-annotated export keeps the exact six-column shape.
+        $describe = $this->hasColumnAnnotation($tables);
+
+        $rows = [$describe ? [...self::HEADER, 'annotation'] : self::HEADER];
 
         foreach ($tables as $table) {
             $pk = $table['primary_key'] ?? [];
@@ -34,7 +38,7 @@ class CsvGenerator implements Generator
                     in_array($c['name'], $pk, true) ? 'PK' : null,
                     in_array($c['name'], $fk, true) ? 'FK' : null,
                 ]));
-                $rows[] = [
+                $row = [
                     $table['name'],
                     $c['name'],
                     $c['type'],
@@ -42,6 +46,10 @@ class CsvGenerator implements Generator
                     $c['default'] ?? '',
                     $key,
                 ];
+                if ($describe) {
+                    $row[] = $c['annotation'] ?? '';
+                }
+                $rows[] = $row;
             }
         }
 
@@ -56,5 +64,24 @@ class CsvGenerator implements Generator
         $s = $value === null ? '' : (string) $value;
 
         return preg_match('/[",\n]/', $s) === 1 ? '"'.str_replace('"', '""', $s).'"' : $s;
+    }
+
+    /**
+     * Whether any column across every table carries an annotation, deciding
+     * whether the annotation column is rendered.
+     *
+     * @param  list<array<string, mixed>>  $tables
+     */
+    private function hasColumnAnnotation(array $tables): bool
+    {
+        foreach ($tables as $table) {
+            foreach ($table['columns'] ?? [] as $column) {
+                if (($column['annotation'] ?? null) !== null) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
