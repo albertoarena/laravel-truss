@@ -314,6 +314,62 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Annotations
+    |--------------------------------------------------------------------------
+    |
+    | Business meaning that cannot be introspected: that status = 1 means paid,
+    | that total_amount is integer cents, that legacy_orders is deprecated. It is
+    | declared here (and/or read from native schema comments) and rendered into
+    | the exports so a coding agent has grounding a type alone cannot give.
+    |
+    | This is still structure only: native comments are part of the CREATE TABLE
+    | definition, not row content, the same boundary as column defaults.
+    |
+    |   source:  ordered precedence for resolving an annotation; first match
+    |            wins. 'config' reads the maps below; 'database' reads native
+    |            table/column comments (MySQL and Postgres; SQLite and SQL Server
+    |            have none and are skipped). Drop 'database' to ignore DB comments.
+    |   notes:   global notes rendered in a header block where the format has one.
+    |   tables:  per-table annotations, keyed by table name.
+    |   columns: per-column annotations, keyed by "table.column".
+    |
+    | --no-annotations (and the facade withoutAnnotations()) strip them all.
+    |
+    */
+
+    'annotations' => [
+        'source' => ['config', 'database'],
+
+        'notes' => [
+            // 'All timestamps are UTC.',
+            // 'Monetary columns are integer cents unless stated.',
+        ],
+
+        'tables' => [
+            // 'orders' => 'One row per order, not per line item.',
+        ],
+
+        'columns' => [
+            // 'orders.status' => '0 draft, 1 paid, 2 refunded',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export
+    |--------------------------------------------------------------------------
+    |
+    | `default_format`: the format truss:export and the facade use when none is
+    | given. One of dbml, json, csv, markdown, mermaid, or llm.
+    |
+    */
+
+    'export' => [
+        'default_format' => env('TRUSS_EXPORT_FORMAT', 'dbml'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | MCP server
     |--------------------------------------------------------------------------
     |

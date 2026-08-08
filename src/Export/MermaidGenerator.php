@@ -17,8 +17,10 @@ use AlbertoArena\Truss\Export\Contracts\Generator;
  */
 class MermaidGenerator implements Generator
 {
-    public function generate(array $tables): string
+    public function generate(array $tables, array $notes = []): string
     {
+        // Mermaid has no clean place for annotations or global notes, so both are
+        // omitted here by design; the other formats carry them.
         $present = array_flip(array_column($tables, 'name'));
 
         $entities = array_map($this->entityBlock(...), $tables);

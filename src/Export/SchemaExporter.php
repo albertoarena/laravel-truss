@@ -73,10 +73,14 @@ class SchemaExporter
 
     /**
      * Render already-selected, already-ordered tables in the requested format.
+     * Tables may carry `annotation` keys (per table and per column); $notes are
+     * global notes rendered by the formats that have a header block. Empty notes
+     * and un-annotated tables reproduce the un-annotated output exactly.
      *
      * @param  list<array<string, mixed>>  $tables
+     * @param  list<string>  $notes
      */
-    public function generate(string $format, array $tables): string
+    public function generate(string $format, array $tables, array $notes = []): string
     {
         if (! self::supports($format)) {
             throw new InvalidArgumentException("Unsupported export format [{$format}].");
@@ -84,7 +88,7 @@ class SchemaExporter
 
         $generator = self::GENERATORS[$format];
 
-        return (new $generator)->generate($tables);
+        return (new $generator)->generate($tables, $notes);
     }
 
     /**

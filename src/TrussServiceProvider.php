@@ -10,6 +10,8 @@ use AlbertoArena\Truss\Commands\ExportCommand;
 use AlbertoArena\Truss\Commands\OpenCommand;
 use AlbertoArena\Truss\Commands\RebuildCommand;
 use AlbertoArena\Truss\Commands\ShowCommand;
+use AlbertoArena\Truss\Export\Contracts\CommentReader;
+use AlbertoArena\Truss\Export\DatabaseCommentReader;
 use AlbertoArena\Truss\Http\Controllers\AssetController;
 use AlbertoArena\Truss\Http\Controllers\IndexController;
 use AlbertoArena\Truss\Http\Controllers\SchemaApiController;
@@ -41,6 +43,13 @@ class TrussServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasViews()
             ->hasCommands([RebuildCommand::class, ShowCommand::class, OpenCommand::class, DiffCommand::class, DoctorCommand::class, ExportCommand::class]);
+    }
+
+    public function packageRegistered(): void
+    {
+        // The DB-comment source behind the export Annotator. Bound to an
+        // interface so it can be faked in tests without a real connection.
+        $this->app->bind(CommentReader::class, DatabaseCommentReader::class);
     }
 
     public function packageBooted(): void

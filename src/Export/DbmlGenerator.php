@@ -17,12 +17,26 @@ use AlbertoArena\Truss\Export\Contracts\Generator;
  */
 class DbmlGenerator implements Generator
 {
-    public function generate(array $tables): string
+    public function generate(array $tables, array $notes = []): string
     {
+        $header = $notes !== [] ? [$this->projectBlock($notes)] : [];
         $blocks = array_map($this->tableToDbml(...), $tables);
         $refs = $this->refLines($tables);
 
-        return implode("\n\n", [...$blocks, ...$refs])."\n";
+        return implode("\n\n", [...$header, ...$blocks, ...$refs])."\n";
+    }
+
+    /**
+     * Global notes as a DBML Project note (the format's header block). Only
+     * emitted when notes exist, so an un-annotated export is unchanged.
+     *
+     * @param  list<string>  $notes
+     */
+    private function projectBlock(array $notes): string
+    {
+        $body = implode("\n", array_map(fn (string $note): string => '    '.$note, $notes));
+
+        return "Project truss {\n  Note: '''\n{$body}\n  '''\n}";
     }
 
     /**
@@ -52,6 +66,10 @@ class DbmlGenerator implements Generator
             $lines = [...$lines, '', '  indexes {', ...$idx, '  }'];
         }
 
+        if (($table['annotation'] ?? null) !== null) {
+            $lines[] = '  Note: '.$this->noteToken($table['annotation']);
+        }
+
         $lines[] = '}';
 
         return implode("\n", $lines);
@@ -76,10 +94,24 @@ class DbmlGenerator implements Generator
         if (($col['default'] ?? null) !== null) {
             $parts[] = 'default: '.$this->defaultToken($col['default']);
         }
+        if (($col['annotation'] ?? null) !== null) {
+            $parts[] = 'note: '.$this->noteToken($col['annotation']);
+        }
 
         $settings = $parts !== [] ? ' ['.implode(', ', $parts).']' : '';
 
         return '  '.$col['name'].' '.$this->typeToken($col['type']).$settings;
+    }
+
+    /**
+     * A single-quoted DBML note. Newlines are flattened to spaces (a bare note is
+     * single-line) and single quotes are escaped so the value cannot break out.
+     */
+    private function noteToken(string $note): string
+    {
+        $flat = preg_replace('/\s*\n\s*/', ' ', trim($note));
+
+        return "'".str_replace("'", "\\'", (string) $flat)."'";
     }
 
     private function typeToken(?string $type): string

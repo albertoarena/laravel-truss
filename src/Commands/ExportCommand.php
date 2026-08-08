@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Export\Annotator;
+use AlbertoArena\Truss\Export\Contracts\CommentReader;
 use AlbertoArena\Truss\Export\SchemaExporter;
 use Illuminate\Console\Command;
 use Throwable;
@@ -25,10 +27,11 @@ use Throwable;
 class ExportCommand extends Command
 {
     protected $signature = 'truss:export
-        {--format=dbml : dbml, json, csv, markdown, or mermaid}
+        {--format= : dbml, json, csv, markdown, or mermaid (default: truss.export.default_format)}
         {--connection= : Export this connection instead of the default}
         {--tables= : Only these tables, comma-separated}
         {--exclude= : Skip these tables, comma-separated (applied after --tables)}
+        {--no-annotations : Strip config/database annotations from the export}
         {--output= : Write to this file instead of stdout}
         {--check : Exit non-zero if --output would change; writes nothing}
         {--fresh : Rebuild the cached snapshot before exporting}';
@@ -37,7 +40,9 @@ class ExportCommand extends Command
 
     public function handle(SchemaCacheRepository $cache, SchemaExporter $exporter): int
     {
-        $format = (string) $this->option('format');
+        $format = $this->option('format') !== null && $this->option('format') !== ''
+            ? (string) $this->option('format')
+            : (string) config('truss.export.default_format', 'dbml');
         if (! SchemaExporter::supports($format)) {
             $this->error("Unknown --format [{$format}]. Supported: ".implode(', ', SchemaExporter::formats()).'.');
 
@@ -80,9 +85,11 @@ class ExportCommand extends Command
             return 2;
         }
 
+        [$tables, $notes] = $this->annotate($tables, (string) $snapshot['connection']);
+
         // One trailing newline, applied to every artifact identically, so writing
         // to a file, piping to stdout, and --check all compare the same bytes.
-        $content = rtrim($exporter->generate($format, $tables), "\n")."\n";
+        $content = rtrim($exporter->generate($format, $tables, $notes), "\n")."\n";
 
         if ($check) {
             return $this->check($output, $content);
@@ -95,6 +102,34 @@ class ExportCommand extends Command
         $this->output->write($content);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Resolve and apply annotations to the selected tables, returning the
+     * enriched tables and the global notes. `--no-annotations` short-circuits to
+     * the un-annotated tables and no notes. The DB-comment source is only read
+     * when 'database' is in the configured precedence, so a config-only setup
+     * makes no schema-comment query.
+     *
+     * @param  list<array<string, mixed>>  $tables
+     * @return array{0: list<array<string, mixed>>, 1: list<string>}
+     */
+    private function annotate(array $tables, string $connection): array
+    {
+        if ($this->option('no-annotations')) {
+            return [$tables, []];
+        }
+
+        $config = (array) config('truss.annotations', []);
+        $source = (array) ($config['source'] ?? ['config']);
+
+        $comments = in_array('database', $source, true)
+            ? app(CommentReader::class)->read($connection)
+            : [];
+
+        $annotator = Annotator::fromConfig($config, $comments);
+
+        return [$annotator->annotate($tables), $annotator->notes()];
     }
 
     /**

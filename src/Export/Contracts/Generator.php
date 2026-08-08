@@ -17,7 +17,12 @@ namespace AlbertoArena\Truss\Export\Contracts;
 interface Generator
 {
     /**
-     * @param  list<array<string, mixed>>  $tables
+     * @param  list<array<string, mixed>>  $tables  each may carry an optional
+     *                                              `annotation` string, and each
+     *                                              column an optional `annotation`
+     * @param  list<string>  $notes  global notes, rendered in a header block by the
+     *                               formats that have one (empty means none, so the
+     *                               output is unchanged from an un-annotated export)
      */
-    public function generate(array $tables): string;
+    public function generate(array $tables, array $notes = []): string;
 }
