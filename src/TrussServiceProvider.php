@@ -50,6 +50,9 @@ class TrussServiceProvider extends PackageServiceProvider
         // The DB-comment source behind the export Annotator. Bound to an
         // interface so it can be faked in tests without a real connection.
         $this->app->bind(CommentReader::class, DatabaseCommentReader::class);
+
+        // The entry point behind the Truss facade (the fluent export builder).
+        $this->app->singleton(TrussManager::class);
     }
 
     public function packageBooted(): void

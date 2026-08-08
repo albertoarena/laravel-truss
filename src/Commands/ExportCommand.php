@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
-use AlbertoArena\Truss\Export\Annotator;
-use AlbertoArena\Truss\Export\CompactTransform;
-use AlbertoArena\Truss\Export\Contracts\CommentReader;
-use AlbertoArena\Truss\Export\FocusTransform;
 use AlbertoArena\Truss\Export\SchemaExporter;
+use AlbertoArena\Truss\TrussManager;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 use Throwable;
@@ -44,7 +41,7 @@ class ExportCommand extends Command
 
     protected $description = 'Export the database structure for CI and tooling (structure only)';
 
-    public function handle(SchemaCacheRepository $cache, SchemaExporter $exporter): int
+    public function handle(SchemaCacheRepository $cache, TrussManager $truss): int
     {
         $format = $this->option('format') !== null && $this->option('format') !== ''
             ? (string) $this->option('format')
@@ -70,20 +67,39 @@ class ExportCommand extends Command
             return 2;
         }
 
+        // The command is a thin CLI wrapper over the shared export pipeline.
+        $builder = $truss->snapshot()
+            ->only($this->list('tables'))
+            ->except($this->list('exclude'));
+        if ($connection !== null) {
+            $builder = $builder->connection($connection);
+        }
+        if ($this->option('focus')) {
+            $depth = $this->option('depth') !== null ? (int) $this->option('depth') : null;
+            $builder = $builder->focus((string) $this->option('focus'), $depth);
+        }
+        if ($this->option('compact')) {
+            $builder = $builder->compact();
+        }
+        if ($this->option('no-annotations')) {
+            $builder = $builder->withoutAnnotations();
+        }
+        if ($this->option('fresh')) {
+            $builder = $builder->fresh();
+        }
+
         try {
-            $snapshot = $this->option('fresh') ? $cache->rebuild($connection) : $cache->get($connection);
+            $tables = $builder->toArray();
+        } catch (InvalidArgumentException $e) {
+            // A missing focus table (the connection is pre-validated above).
+            $this->error($e->getMessage());
+
+            return 2;
         } catch (Throwable $e) {
             $this->error("Could not load the schema: {$e->getMessage()}");
 
             return 2;
         }
-
-        $tables = $exporter->tablesFor(
-            $snapshot['tables'] ?? [],
-            $this->list('tables'),
-            $this->list('exclude'),
-            $this->excludedTablesFor((string) $snapshot['connection']),
-        );
 
         if ($tables === []) {
             $this->error('No tables matched the given filters.');
@@ -91,29 +107,7 @@ class ExportCommand extends Command
             return 2;
         }
 
-        if ($this->option('focus')) {
-            $depth = $this->option('depth') !== null
-                ? (int) $this->option('depth')
-                : (int) config('truss.focus.default_depth', 1);
-
-            try {
-                $tables = (new FocusTransform)->apply($tables, (string) $this->option('focus'), $depth);
-            } catch (InvalidArgumentException $e) {
-                $this->error($e->getMessage());
-
-                return 2;
-            }
-        }
-
-        if ($this->option('compact')) {
-            $tables = (new CompactTransform)->apply($tables);
-        }
-
-        [$tables, $notes] = $this->annotate($tables, (string) $snapshot['connection']);
-
-        // One trailing newline, applied to every artifact identically, so writing
-        // to a file, piping to stdout, and --check all compare the same bytes.
-        $content = rtrim($exporter->generate($format, $tables, $notes), "\n")."\n";
+        $content = $builder->render($format);
 
         if ($check) {
             return $this->check($output, $content);
@@ -126,34 +120,6 @@ class ExportCommand extends Command
         $this->output->write($content);
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Resolve and apply annotations to the selected tables, returning the
-     * enriched tables and the global notes. `--no-annotations` short-circuits to
-     * the un-annotated tables and no notes. The DB-comment source is only read
-     * when 'database' is in the configured precedence, so a config-only setup
-     * makes no schema-comment query.
-     *
-     * @param  list<array<string, mixed>>  $tables
-     * @return array{0: list<array<string, mixed>>, 1: list<string>}
-     */
-    private function annotate(array $tables, string $connection): array
-    {
-        if ($this->option('no-annotations')) {
-            return [$tables, []];
-        }
-
-        $config = (array) config('truss.annotations', []);
-        $source = (array) ($config['source'] ?? ['config']);
-
-        $comments = in_array('database', $source, true)
-            ? app(CommentReader::class)->read($connection)
-            : [];
-
-        $annotator = Annotator::fromConfig($config, $comments);
-
-        return [$annotator->annotate($tables), $annotator->notes()];
     }
 
     /**
@@ -198,19 +164,5 @@ class ExportCommand extends Command
         $value = (string) ($this->option($option) ?? '');
 
         return array_values(array_filter(array_map('trim', explode(',', $value)), fn (string $v): bool => $v !== ''));
-    }
-
-    /**
-     * The global exclusion list merged with this connection's overrides, matching
-     * what the schema endpoint strips server-side.
-     *
-     * @return list<string>
-     */
-    private function excludedTablesFor(string $connection): array
-    {
-        $global = (array) config('truss.excluded_tables', []);
-        $perConnection = (array) config("truss.connections.{$connection}.excluded_tables", []);
-
-        return array_values(array_unique([...$global, ...$perConnection]));
     }
 }

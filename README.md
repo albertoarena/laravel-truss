@@ -147,6 +147,20 @@ php artisan truss:export --focus=orders --depth=1         # one table and its FK
 
 This stays structure only. Native comments are part of the `CREATE TABLE` definition, not row content (the same boundary as column defaults), and no export, in any format or flag combination, ever contains row data. A schema is not a semantic layer: Truss says what exists, not what the business means beyond the annotations you write.
 
+The same pipeline is available programmatically through the `Truss` facade, so you can build context in your own code, tooling, or tests without shelling out to the command:
+
+```php
+use AlbertoArena\Truss\Facades\Truss;
+
+$dbml = Truss::snapshot()
+    ->only(['orders', 'order_lines'])
+    ->focus('orders', depth: 1)
+    ->compact()
+    ->toDbml();
+```
+
+The builder is immutable (each filter returns a new instance, so a base builder is safe to share) and offers `only()`, `except()`, `focus()`, `compact()`, `withoutAnnotations()`, `fresh()`, and `connection()`, plus a terminal per format (`toDbml()`, `toJson()`, `toCsv()`, `toMarkdown()`, `toMermaid()`, `toLlm()`, `toArray()`). It produces exactly the same bytes as `truss:export` for the same filters, and honours the same `excluded_tables` and managed-connection safeguards.
+
 ## Theming
 
 Truss ships a light and dark "blueprint" theme. To match the app it is embedded in, redefine its colours and fonts from config under `truss.theme`. Everything is optional: you set a few semantic knobs and the rest stay on the default, so a handful of values re-skins the whole dashboard (chrome and diagram) in both light and dark.
