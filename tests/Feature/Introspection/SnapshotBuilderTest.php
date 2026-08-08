@@ -31,6 +31,15 @@ it('scopes introspection to the connection schema and ignores other databases on
     // every schema's tables, so foreign tables leak into the snapshot. Truss must
     // only introspect the tables that belong to the target connection's own schema.
     $connection = DB::connection('testing');
+
+    // The second database is set up with SQLite's ATTACH DATABASE, so this
+    // reproduction is SQLite-only. On MySQL/Postgres getTables() is already scoped
+    // to the connection's database by config, so the leak this guards against
+    // cannot occur there in the same way.
+    if ($connection->getDriverName() !== 'sqlite') {
+        $this->markTestSkipped('The ATTACH DATABASE reproduction is SQLite-specific.');
+    }
+
     $connection->statement("ATTACH DATABASE ':memory:' AS other_app");
     $connection->statement('CREATE TABLE other_app.ghost (id integer primary key)');
 

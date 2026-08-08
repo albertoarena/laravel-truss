@@ -5,10 +5,23 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Tests;
 
 use AlbertoArena\Truss\TrussServiceProvider;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Each test builds its own schema (in a beforeEach or a fixture
+        // migration) and assumes it starts from an empty database. In-memory
+        // SQLite gives that for free, a fresh connection per test; a persistent
+        // MySQL/Postgres lane does not, so drop every table up front to
+        // guarantee the same clean slate on every driver.
+        Schema::dropAllTables();
+    }
+
     protected function getPackageProviders($app): array
     {
         return [
