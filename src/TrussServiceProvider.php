@@ -20,6 +20,7 @@ use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Laravel\Mcp\Facades\Mcp;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -51,6 +52,38 @@ class TrussServiceProvider extends PackageServiceProvider
 
         $this->registerGate();
         $this->registerRoutes();
+        $this->registerMcpServer();
+    }
+
+    /**
+     * Register the optional read-only, structure-only MCP server (workstream G)
+     * when the optional laravel/mcp package is installed and the feature is
+     * enabled. Until the server class ships (Phase 3) this is a guarded no-op:
+     * a host without laravel/mcp is byte-identical to today. The decision lives
+     * in shouldRegisterMcpServer() so it is unit-testable without laravel/mcp.
+     */
+    private function registerMcpServer(): void
+    {
+        if (! self::shouldRegisterMcpServer()) {
+            return;
+        }
+
+        // Phase 3 (workstream G) registers the server here, e.g.
+        //   \Laravel\Mcp\Facades\Mcp::local('truss', TrussSchemaServer::class);
+        // The laravel/mcp Registrar is a singleton bound by its own service
+        // provider, so a package can self-register from boot (spike-confirmed);
+        // no host-side routes/ai.php snippet is required.
+    }
+
+    /**
+     * Whether the MCP server should be registered: the feature is enabled and
+     * the optional laravel/mcp package is installed. The class_exists guard is
+     * what keeps a host that has not opted in byte-identical to today.
+     */
+    public static function shouldRegisterMcpServer(): bool
+    {
+        return (bool) config('truss.mcp.enabled', true)
+            && class_exists(Mcp::class);
     }
 
     /**

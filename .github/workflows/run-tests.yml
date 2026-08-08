@@ -42,3 +42,95 @@ jobs:
 
       - name: Run tests
         run: vendor/bin/pest
+
+  # Dedicated MySQL and Postgres lanes. The main matrix above runs SQLite, which
+  # cannot exercise native schema comments. These lanes point the `testing`
+  # connection (DB_CONNECTION + DB_*) at a service container, so the suite runs
+  # against real MySQL/Postgres, which the workstream A `database` annotation
+  # source depends on. One PHP/Laravel combo each keeps them cheap.
+  test-mysql:
+    runs-on: ubuntu-latest
+    name: MySQL - PHP 8.4 - Laravel 12
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: truss_test
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, pdo_mysql, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: truss_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: vendor/bin/pest
+
+  test-postgres:
+    runs-on: ubuntu-latest
+    name: Postgres - PHP 8.4 - Laravel 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: truss_test
+          POSTGRES_USER: truss
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U truss -d truss_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, pgsql, pdo_pgsql, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: truss_test
+          DB_USERNAME: truss
+          DB_PASSWORD: password
+        run: vendor/bin/pest
