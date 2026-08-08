@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Truss as AI context: the export now doubles as grounding context for a coding agent.
+  - **Annotations**: declare business meaning a type cannot express (that `status = 1` means paid, that a table is deprecated) under `truss.annotations` (per-table, per-column, and global notes), or read it from native database comments by keeping `'database'` in `annotations.source`. Annotations render into every text format and are stripped with `--no-annotations`. Structure only: a comment is part of the `CREATE TABLE` definition, not row data.
+  - **`--compact`**: drop column defaults and non-unique indexes to shrink the output without losing any table, column, or foreign key.
+  - **`--focus=<table>` / `--depth=<n>`**: reduce the export to a table and its foreign-key neighbourhood.
+  - **`llm` format**: a dense, token-trimmed plaintext format tuned for feeding a coding agent.
+  - **`truss.export.default_format`** config for the format used when none is given.
+- A fluent, immutable `Truss` facade for building exports programmatically, for example `Truss::snapshot()->focus('orders', depth: 1)->compact()->toDbml()`, with `only()`, `except()`, `focus()`, `compact()`, `withoutAnnotations()`, `fresh()`, and `connection()` filters and a terminal per format.
+
+### Changed
+
+- CI now runs the test suite against MySQL and Postgres service containers in addition to SQLite, so native-comment and engine-specific behaviour is exercised.
+
 ## [1.7.0] - 2026-08-05
 
 ### Added
