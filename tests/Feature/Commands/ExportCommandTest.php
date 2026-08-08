@@ -163,6 +163,28 @@ it('strips annotations with --no-annotations', function () {
         ->not->toContain('Description');
 });
 
+it('shrinks the output with --compact and keeps every table', function () {
+    Schema::create('accounts', function ($table) {
+        $table->id();
+        $table->string('status')->default('active');
+        $table->string('email')->unique();
+        $table->index('status');
+    });
+
+    $this->artisan('truss:export', ['--output' => $this->tmp])->assertExitCode(0);
+    $full = (string) file_get_contents($this->tmp);
+
+    $this->artisan('truss:export', ['--compact' => true, '--output' => $this->tmp])->assertExitCode(0);
+    $compact = (string) file_get_contents($this->tmp);
+
+    expect(strlen($compact))->toBeLessThan(strlen($full))
+        ->and($compact)->not->toContain("default: 'active'")
+        ->and($compact)->toContain('Table accounts {')
+        // Unique survives (in the indexes block); the non-unique status index is gone.
+        ->and($compact)->toContain('email [unique]')
+        ->and($compact)->toContain('status varchar [not null]');
+});
+
 it('uses truss.export.default_format when --format is omitted', function () {
     config(['truss.export.default_format' => 'json']);
 
