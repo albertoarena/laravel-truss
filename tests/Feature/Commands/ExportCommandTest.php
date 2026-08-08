@@ -180,9 +180,10 @@ it('shrinks the output with --compact and keeps every table', function () {
     expect(strlen($compact))->toBeLessThan(strlen($full))
         ->and($compact)->not->toContain("default: 'active'")
         ->and($compact)->toContain('Table accounts {')
-        // Unique survives (in the indexes block); the non-unique status index is gone.
+        // Unique survives (in the indexes block); the non-unique status index is
+        // gone. The native type token varies by driver, so match it loosely.
         ->and($compact)->toContain('email [unique]')
-        ->and($compact)->toContain('status varchar [not null]');
+        ->and($compact)->toMatch('/\n  status .+\[not null\]/');
 });
 
 it('reduces the export to a table and its neighbourhood with --focus', function () {
