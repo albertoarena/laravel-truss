@@ -6,6 +6,7 @@ namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Export\Annotator;
+use AlbertoArena\Truss\Export\CompactTransform;
 use AlbertoArena\Truss\Export\Contracts\CommentReader;
 use AlbertoArena\Truss\Export\SchemaExporter;
 use Illuminate\Console\Command;
@@ -31,6 +32,7 @@ class ExportCommand extends Command
         {--connection= : Export this connection instead of the default}
         {--tables= : Only these tables, comma-separated}
         {--exclude= : Skip these tables, comma-separated (applied after --tables)}
+        {--compact : Drop defaults and non-unique indexes to shrink the output}
         {--no-annotations : Strip config/database annotations from the export}
         {--output= : Write to this file instead of stdout}
         {--check : Exit non-zero if --output would change; writes nothing}
@@ -83,6 +85,10 @@ class ExportCommand extends Command
             $this->error('No tables matched the given filters.');
 
             return 2;
+        }
+
+        if ($this->option('compact')) {
+            $tables = (new CompactTransform)->apply($tables);
         }
 
         [$tables, $notes] = $this->annotate($tables, (string) $snapshot['connection']);

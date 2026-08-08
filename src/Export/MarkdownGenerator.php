@@ -65,7 +65,7 @@ class MarkdownGenerator implements Generator
         if ($indexes !== []) {
             $lines[] = '';
             $lines[] = 'Indexes: '.implode('; ', array_map(
-                fn (array $i): string => "{$i['name']} (".implode(', ', $i['columns']).')'.($i['unique'] ? ' UNIQUE' : ''),
+                fn (array $i): string => trim(((string) $i['name']).' (').implode(', ', $i['columns']).')'.($i['unique'] ? ' UNIQUE' : ''),
                 $indexes,
             ));
         }
