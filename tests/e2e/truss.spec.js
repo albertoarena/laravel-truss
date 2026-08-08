@@ -24,6 +24,17 @@ test.beforeEach(async ({ page }) => {
     const body = connection === 'secondary' ? secondary : primary;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   });
+  // The structural export is now server-side. In the harness there is no PHP, so
+  // stand in for the gated export route with the shared golden fixtures (the same
+  // bytes the PHP generators produce), keyed by the format in the path.
+  await page.route('**/export/**', (route) => {
+    const format = new URL(route.request().url()).pathname.split('/').pop();
+    const files = { dbml: 'schema.dbml', markdown: 'schema.md', mermaid: 'schema.mmd', json: 'schema.json' };
+    const body = files[format]
+      ? readFileSync(`tests/Fixtures/export/${files[format]}`, 'utf8')
+      : 'table,name,type,nullable,default,key\n';
+    return route.fulfill({ contentType: 'text/plain', body });
+  });
   await page.goto('/tests/e2e/harness.html');
 });
 

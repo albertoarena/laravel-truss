@@ -25,6 +25,7 @@
     <div
         id="truss-app"
         data-schema-endpoint="{{ route('truss.api.schema') }}"
+        data-export-endpoint="{{ route('truss.export', ['format' => '__format__']) }}"
         data-connections='@json($connections)'
         data-type-labels="{{ config('truss.diagram.type_labels') }}"
         data-warn-above="{{ config('truss.large_schema.warn_above') }}"
