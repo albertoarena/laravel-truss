@@ -161,6 +161,8 @@ $dbml = Truss::snapshot()
 
 The builder is immutable (each filter returns a new instance, so a base builder is safe to share) and offers `only()`, `except()`, `focus()`, `compact()`, `withoutAnnotations()`, `fresh()`, and `connection()`, plus a terminal per format (`toDbml()`, `toJson()`, `toCsv()`, `toMarkdown()`, `toMermaid()`, `toLlm()`, `toArray()`). It produces exactly the same bytes as `truss:export` for the same filters, and honours the same `excluded_tables` and managed-connection safeguards.
 
+The dashboard's structural downloads (DBML, Markdown, JSON, CSV) are served by the same pipeline over a gated `GET {prefix}/export/{format}` route (behind the `viewTruss` gate), which accepts the same filters as query parameters (`only`, `except`, `focus`, `depth`, `compact`, `connection`). The command, the facade, and the dashboard therefore share one source of truth. PNG and SVG stay in the browser (they are rendered from the live diagram).
+
 ## Theming
 
 Truss ships a light and dark "blueprint" theme. To match the app it is embedded in, redefine its colours and fonts from config under `truss.theme`. Everything is optional: you set a few semantic knobs and the rest stay on the default, so a handful of values re-skins the whole dashboard (chrome and diagram) in both light and dark.

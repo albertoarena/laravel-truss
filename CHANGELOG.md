@@ -15,10 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`--focus=<table>` / `--depth=<n>`**: reduce the export to a table and its foreign-key neighbourhood.
   - **`llm` format**: a dense, token-trimmed plaintext format tuned for feeding a coding agent.
   - **`truss.export.default_format`** config for the format used when none is given.
+- A gated `GET {prefix}/export/{format}` HTTP route that serves the same structural export as the command and facade (behind the `viewTruss` gate), so the dashboard download and any HTTP client share one pipeline.
 - A fluent, immutable `Truss` facade for building exports programmatically, for example `Truss::snapshot()->focus('orders', depth: 1)->compact()->toDbml()`, with `only()`, `except()`, `focus()`, `compact()`, `withoutAnnotations()`, `fresh()`, and `connection()` filters and a terminal per format.
 
 ### Changed
 
+- The dashboard now generates structural downloads (DBML, Markdown, JSON, CSV) server-side through the gated export route instead of duplicating the generators in JavaScript, so the CLI, the facade, and the dashboard produce identical output from one PHP source of truth. PNG and SVG are unchanged (still rendered in the browser).
 - CI now runs the test suite against MySQL and Postgres service containers in addition to SQLite, so native-comment and engine-specific behaviour is exercised.
 
 ## [1.7.0] - 2026-08-05

@@ -6,9 +6,7 @@ import { filterTables, focusTables } from './selection.js';
 import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 import { buildQuery, parseQuery } from './url-state.js';
-import { toJson, toCsv } from './table-export.js';
-import { schemaToMarkdown, tableToMarkdown } from './markdown-export.js';
-import { schemaToDbml } from './dbml-export.js';
+import { buildExportUrl } from './export-request.js';
 import { hasDiff, changeList, tableStatuses } from './diff-view.js';
 import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups, columnMarkers } from './doctor-view.js';
 
@@ -16,6 +14,7 @@ const app = document.getElementById('truss-app');
 
 const config = {
   endpoint: app.dataset.schemaEndpoint,
+  exportEndpoint: app.dataset.exportEndpoint,
   connections: JSON.parse(app.dataset.connections || '[]'),
   typeLabels: app.dataset.typeLabels || 'native',
   warnAbove: Number(app.dataset.warnAbove || 60),
@@ -314,27 +313,55 @@ function downloadFile(name, content, mime) {
   downloadBlob(name, new Blob([content], { type: mime }));
 }
 
+// Structural formats are generated server-side (the same pipeline as the CLI and
+// the facade), so a download fetches the gated export route and saves the body.
+// PNG and SVG stay client-side. The extension and MIME per format:
+const EXPORT_EXT = { dbml: 'dbml', json: 'json', csv: 'csv', markdown: 'md', mermaid: 'mmd', llm: 'txt' };
+const EXPORT_MIME = {
+  dbml: 'text/plain', json: 'application/json', csv: 'text/csv',
+  markdown: 'text/markdown', mermaid: 'text/plain', llm: 'text/plain',
+};
+
+// Fetch the export for a table set and save it. `only` empty means the whole
+// (already exclusion-filtered) schema.
+async function fetchExport(format, only) {
+  const url = buildExportUrl(config.exportEndpoint, format, { only, connection: state.connection });
+  const res = await fetch(url, { headers: { Accept: 'text/plain' } });
+  return res.ok ? res.text() : null;
+}
+
+async function downloadExport(format, only, baseName) {
+  const content = await fetchExport(format, only);
+  if (content !== null) downloadFile(`${baseName}.${EXPORT_EXT[format]}`, content, EXPORT_MIME[format]);
+}
+
 function runMenuAction(act) {
   const table = menuTable;
   hidePopover();
   if (act === 'png') { exportImage('png'); return; }
   if (act === 'svg') { exportImage('svg'); return; }
-  if (act === 'md') { downloadFile(`${exportBaseName()}.md`, schemaToMarkdown(currentSubset(), { connection: state.connection }), 'text/markdown'); return; }
-  if (act === 'dbml') { downloadFile(`${exportBaseName()}.dbml`, schemaToDbml(currentSubset()), 'text/plain'); return; }
+  // Whole-diagram structural exports: the current (filtered/focused) subset.
+  if (act === 'md') { downloadExport('markdown', subsetNames(), exportBaseName()); return; }
+  if (act === 'dbml') { downloadExport('dbml', subsetNames(), exportBaseName()); return; }
   if (!table) return;
   if (act === 'focus' || act === 'unfocus') {
     state.focusRoot = act === 'focus' ? table.name : '';
     if (el.focus) el.focus.value = state.focusRoot;
     render();
   } else if (act === 'copy') {
-    navigator.clipboard?.writeText(toJson(table));
+    fetchExport('json', [table.name]).then((json) => { if (json !== null) navigator.clipboard?.writeText(json); });
   } else if (act === 'json') {
-    downloadFile(`${table.name}.json`, toJson(table), 'application/json');
+    downloadExport('json', [table.name], table.name);
   } else if (act === 'csv') {
-    downloadFile(`${table.name}.csv`, toCsv(table), 'text/csv');
+    downloadExport('csv', [table.name], table.name);
   } else if (act === 'table-md') {
-    downloadFile(`${table.name}.md`, tableToMarkdown(table), 'text/markdown');
+    downloadExport('markdown', [table.name], table.name);
   }
+}
+
+/** The names of the tables currently in view, for a whole-diagram export. */
+function subsetNames() {
+  return currentSubset().map((t) => t.name);
 }
 
 /* ---- diagram export --------------------------------------------------- */

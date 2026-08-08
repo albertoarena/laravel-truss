@@ -13,6 +13,7 @@ use AlbertoArena\Truss\Commands\ShowCommand;
 use AlbertoArena\Truss\Export\Contracts\CommentReader;
 use AlbertoArena\Truss\Export\DatabaseCommentReader;
 use AlbertoArena\Truss\Http\Controllers\AssetController;
+use AlbertoArena\Truss\Http\Controllers\ExportController;
 use AlbertoArena\Truss\Http\Controllers\IndexController;
 use AlbertoArena\Truss\Http\Controllers\SchemaApiController;
 use AlbertoArena\Truss\Http\Controllers\ThemeController;
@@ -129,6 +130,10 @@ class TrussServiceProvider extends PackageServiceProvider
         ], function (): void {
             Route::get('/', IndexController::class)->name('truss.index');
             Route::get('/api/schema', SchemaApiController::class)->name('truss.api.schema');
+            // Structural export in a chosen format, driving the same pipeline as
+            // the command and facade. Gated with everything else; PNG and SVG stay
+            // client-side (they are canvas/DOM artifacts with no server form).
+            Route::get('/export/{format}', ExportController::class)->name('truss.export');
             // Optional custom-theme stylesheet, generated from truss.theme.
             // Same-origin so a strict CSP keeps style-src 'self'; gated with the
             // rest so it never confirms Truss exists to the unauthorized.
