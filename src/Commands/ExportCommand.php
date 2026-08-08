@@ -30,7 +30,7 @@ use Throwable;
 class ExportCommand extends Command
 {
     protected $signature = 'truss:export
-        {--format= : dbml, json, csv, markdown, or mermaid (default: truss.export.default_format)}
+        {--format= : dbml, json, csv, markdown, mermaid, or llm (default: truss.export.default_format)}
         {--connection= : Export this connection instead of the default}
         {--tables= : Only these tables, comma-separated}
         {--exclude= : Skip these tables, comma-separated (applied after --tables)}

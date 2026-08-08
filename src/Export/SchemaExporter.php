@@ -28,6 +28,7 @@ class SchemaExporter
         'csv' => CsvGenerator::class,
         'markdown' => MarkdownGenerator::class,
         'mermaid' => MermaidGenerator::class,
+        'llm' => LlmGenerator::class,
     ];
 
     /**

@@ -15,7 +15,7 @@ function threeTables(): array
 }
 
 it('lists the supported formats and reports support', function () {
-    expect(SchemaExporter::formats())->toBe(['dbml', 'json', 'csv', 'markdown', 'mermaid'])
+    expect(SchemaExporter::formats())->toBe(['dbml', 'json', 'csv', 'markdown', 'mermaid', 'llm'])
         ->and(SchemaExporter::supports('dbml'))->toBeTrue()
         ->and(SchemaExporter::supports('yaml'))->toBeFalse();
 });
