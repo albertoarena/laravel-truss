@@ -1,0 +1,30 @@
+{
+  "_comment": "Shared focus fixture. Both the PHP FocusTransform (tests/Unit/Export/FocusTransformTest.php) and the JS focusTables (tests/js/focus-fixture.test.js) must produce these exact table-name subsets, so the CLI/facade export focus and the interactive dashboard focus agree. Covers depth 0/1/2, a self-referencing FK (categories), a composite-PK pivot (post_tag), and an isolated table that only links at one hop (tags).",
+  "tables": [
+    { "name": "users", "foreign_keys": [] },
+    { "name": "posts", "foreign_keys": [
+      { "columns": ["user_id"], "references_table": "users" },
+      { "columns": ["category_id"], "references_table": "categories" }
+    ] },
+    { "name": "categories", "foreign_keys": [
+      { "columns": ["parent_id"], "references_table": "categories" }
+    ] },
+    { "name": "comments", "foreign_keys": [
+      { "columns": ["post_id"], "references_table": "posts" },
+      { "columns": ["user_id"], "references_table": "users" }
+    ] },
+    { "name": "tags", "foreign_keys": [] },
+    { "name": "post_tag", "foreign_keys": [
+      { "columns": ["post_id"], "references_table": "posts" },
+      { "columns": ["tag_id"], "references_table": "tags" }
+    ] }
+  ],
+  "cases": [
+    { "root": "posts", "depth": 0, "expected": ["posts"] },
+    { "root": "posts", "depth": 1, "expected": ["users", "posts", "categories", "comments", "post_tag"] },
+    { "root": "posts", "depth": 2, "expected": ["users", "posts", "categories", "comments", "tags", "post_tag"] },
+    { "root": "categories", "depth": 1, "expected": ["posts", "categories"] },
+    { "root": "tags", "depth": 1, "expected": ["tags", "post_tag"] },
+    { "root": "tags", "depth": 0, "expected": ["tags"] }
+  ]
+}

@@ -185,6 +185,31 @@ it('shrinks the output with --compact and keeps every table', function () {
         ->and($compact)->toContain('status varchar [not null]');
 });
 
+it('reduces the export to a table and its neighbourhood with --focus', function () {
+    Schema::create('teams', fn ($table) => $table->id());
+    Schema::create('projects', function ($table) {
+        $table->id();
+        $table->foreignId('team_id')->constrained();
+    });
+
+    // posts/users (from beforeEach) plus teams/projects; focus on projects at
+    // depth 1 keeps projects + teams and drops the unrelated posts/users.
+    $this->artisan('truss:export', ['--focus' => 'projects', '--depth' => '1', '--output' => $this->tmp])
+        ->assertExitCode(0);
+
+    $out = (string) file_get_contents($this->tmp);
+    expect($out)->toContain('Table projects {')
+        ->and($out)->toContain('Table teams {')
+        ->and($out)->not->toContain('Table posts {')
+        ->and($out)->not->toContain('Table users {');
+});
+
+it('exits 2 when --focus names a table that is not in the set', function () {
+    $this->artisan('truss:export', ['--focus' => 'ghost'])
+        ->expectsOutputToContain('Cannot focus on [ghost]')
+        ->assertExitCode(2);
+});
+
 it('uses truss.export.default_format when --format is omitted', function () {
     config(['truss.export.default_format' => 'json']);
 
