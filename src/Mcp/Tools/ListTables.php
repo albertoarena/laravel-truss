@@ -10,8 +10,10 @@ use InvalidArgumentException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
+#[Name('list_tables')]
 #[Description('List the database tables, each with a one-line structural summary: column count, whether it has a primary key, and foreign-key count. Structure only, never row data.')]
 class ListTables extends Tool
 {

@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
 /**
@@ -19,6 +20,7 @@ use Laravel\Mcp\Server\Tool;
  * on) over MCP. Deterministic and structure only: it never reads row data and
  * makes no model or network call.
  */
+#[Name('get_structural_review')]
 #[Description('Run the deterministic structural review: problems visible from structure alone, such as a table with no primary key or an unindexed foreign key. Returns a severity summary and the findings. Structure only, no row data.')]
 class GetStructuralReview extends Tool
 {
