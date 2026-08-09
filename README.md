@@ -163,6 +163,36 @@ The builder is immutable (each filter returns a new instance, so a base builder 
 
 The dashboard's structural downloads (DBML, Markdown, JSON, CSV) are served by the same pipeline over a gated `GET {prefix}/export/{format}` route (behind the `viewTruss` gate), which accepts the same filters as query parameters (`only`, `except`, `focus`, `depth`, `compact`, `connection`). The command, the facade, and the dashboard therefore share one source of truth. PNG and SVG stay in the browser (they are rendered from the live diagram).
 
+### MCP server
+
+For coding agents that speak the Model Context Protocol (Claude Code, Cursor, and others), Truss ships an optional read-only, structure-only MCP server, so the agent queries your current schema on demand instead of working from a paste that goes stale. It is opt-in and adds no required dependency:
+
+```bash
+composer require laravel/mcp
+php artisan mcp:start truss
+```
+
+Point your MCP client at that command (local stdio). For Claude Code or Cursor:
+
+```json
+{
+  "mcpServers": {
+    "truss": { "command": "php", "args": ["artisan", "mcp:start", "truss"] }
+  }
+}
+```
+
+The server exposes five tools and one resource, all read-only and structure-only:
+
+- `list_tables`: the tables, each with a one-line structural summary.
+- `describe_table`: one table's columns, keys, indexes, foreign keys, and annotations.
+- `get_schema`: the whole structure in any format (`dbml`, `json`, `csv`, `markdown`, `mermaid`, `llm`), optionally compact or limited to some tables.
+- `focus_table`: a table and its foreign-key neighbourhood.
+- `get_structural_review`: the deterministic `truss:doctor` findings.
+- Resource `truss://schema`: the whole structure as one compact document.
+
+Every tool answers with structure only, never row data, and honours the same `excluded_tables` and managed-connection safeguards as the rest of Truss. It requires Laravel 12.41.1 or newer (or Laravel 13); Truss's own minimum is unaffected. Set `truss.mcp.enabled` to `false` to turn it off. A note on safety: if you pair a schema like this with a tool that executes generated SQL, that tool needs its own read-only connection and validation; Truss produces context, it never runs a query for you.
+
 ## Theming
 
 Truss ships a light and dark "blueprint" theme. To match the app it is embedded in, redefine its colours and fonts from config under `truss.theme`. Everything is optional: you set a few semantic knobs and the rest stay on the default, so a handful of values re-skins the whole dashboard (chrome and diagram) in both light and dark.

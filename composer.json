@@ -41,6 +41,7 @@
         "spatie/laravel-package-tools": "^1.16"
     },
     "require-dev": {
+        "laravel/mcp": "^0.9",
         "laravel/pint": "^1.18",
         "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^3.5"

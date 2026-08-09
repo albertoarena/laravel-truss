@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`llm` format**: a dense, token-trimmed plaintext format tuned for feeding a coding agent.
   - **`truss.export.default_format`** config for the format used when none is given.
 - A gated `GET {prefix}/export/{format}` HTTP route that serves the same structural export as the command and facade (behind the `viewTruss` gate), so the dashboard download and any HTTP client share one pipeline.
+- An optional read-only, structure-only MCP server (Model Context Protocol) that exposes the live schema to a coding agent over local stdio, built on `laravel/mcp`. It adds the tools `list_tables`, `describe_table`, `get_schema`, `focus_table`, and `get_structural_review`, plus a `truss://schema` resource. Opt in with `composer require laravel/mcp` and start it with `php artisan mcp:start truss`; toggle with `truss.mcp.enabled`. No row data, ever, and it honours the same exclusion and managed-connection safeguards as the rest of Truss.
 - A fluent, immutable `Truss` facade for building exports programmatically, for example `Truss::snapshot()->focus('orders', depth: 1)->compact()->toDbml()`, with `only()`, `except()`, `focus()`, `compact()`, `withoutAnnotations()`, `fresh()`, and `connection()` filters and a terminal per format.
 
 ### Changed

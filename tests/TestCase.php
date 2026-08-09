@@ -6,6 +6,7 @@ namespace AlbertoArena\Truss\Tests;
 
 use AlbertoArena\Truss\TrussServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Mcp\Server\McpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -24,9 +25,14 @@ abstract class TestCase extends Orchestra
 
     protected function getPackageProviders($app): array
     {
-        return [
+        // laravel/mcp is an optional dependency, installed here as require-dev so
+        // the MCP server (workstream G) can be exercised. Its provider binds the
+        // Registrar the Truss provider registers the server against, so it must
+        // load first. Filtered by class_exists so the suite still boots without it.
+        return array_values(array_filter([
+            class_exists(McpServiceProvider::class) ? McpServiceProvider::class : null,
             TrussServiceProvider::class,
-        ];
+        ]));
     }
 
     protected function defineEnvironment($app): void
