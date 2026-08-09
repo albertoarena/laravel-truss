@@ -19,6 +19,7 @@ use AlbertoArena\Truss\Http\Controllers\SchemaApiController;
 use AlbertoArena\Truss\Http\Controllers\ThemeController;
 use AlbertoArena\Truss\Http\Middleware\Authorize;
 use AlbertoArena\Truss\Listeners\RebuildOnMigrationsEnded;
+use AlbertoArena\Truss\Mcp\TrussSchemaServer;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -69,11 +70,11 @@ class TrussServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * Register the optional read-only, structure-only MCP server (workstream G)
-     * when the optional laravel/mcp package is installed and the feature is
-     * enabled. Until the server class ships (Phase 3) this is a guarded no-op:
-     * a host without laravel/mcp is byte-identical to today. The decision lives
-     * in shouldRegisterMcpServer() so it is unit-testable without laravel/mcp.
+     * Register the optional read-only, structure-only MCP server when the
+     * optional laravel/mcp package is installed and the feature is enabled. A
+     * host that does not install laravel/mcp is byte-identical to today: the
+     * guard short-circuits on the missing class. The decision lives in
+     * shouldRegisterMcpServer() so it stays unit-testable.
      */
     private function registerMcpServer(): void
     {
@@ -81,11 +82,10 @@ class TrussServiceProvider extends PackageServiceProvider
             return;
         }
 
-        // Phase 3 (workstream G) registers the server here, e.g.
-        //   \Laravel\Mcp\Facades\Mcp::local('truss', TrussSchemaServer::class);
-        // The laravel/mcp Registrar is a singleton bound by its own service
-        // provider, so a package can self-register from boot (spike-confirmed);
-        // no host-side routes/ai.php snippet is required.
+        // Self-register the local (stdio) server. The laravel/mcp Registrar is a
+        // singleton bound by its own provider, so a package can register from
+        // boot; the host starts it with `php artisan mcp:start truss`.
+        Mcp::local('truss', TrussSchemaServer::class);
     }
 
     /**

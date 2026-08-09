@@ -3,23 +3,22 @@
 declare(strict_types=1);
 
 use AlbertoArena\Truss\TrussServiceProvider;
-use Laravel\Mcp\Facades\Mcp;
+use Laravel\Mcp\Server\Registrar;
 
 /*
- * Phase 0 scaffold for the optional MCP server (workstream G). laravel/mcp is an
- * optional `suggest` dependency and is not installed in the test environment, so
- * these lock in the guarantee that a host without it is byte-identical to today:
- * the guard short-circuits on the missing class even with the feature enabled.
- * The class-present branch is covered in Phase 3, once the server class ships.
+ * The MCP server registration guard. laravel/mcp is installed here (require-dev),
+ * so this covers the class-present branch Phase 0 deferred: with the feature
+ * enabled the local server is registered, and disabling it (or, in a host, not
+ * installing laravel/mcp) leaves the app untouched.
  */
 
 it('defaults truss.mcp.enabled to true', function () {
     expect(config('truss.mcp.enabled'))->toBeTrue();
 });
 
-it('does not register the MCP server when laravel/mcp is absent', function () {
-    expect(class_exists(Mcp::class))->toBeFalse()
-        ->and(TrussServiceProvider::shouldRegisterMcpServer())->toBeFalse();
+it('registers the local MCP server when laravel/mcp is installed and enabled', function () {
+    expect(TrussServiceProvider::shouldRegisterMcpServer())->toBeTrue()
+        ->and(app(Registrar::class)->getLocalServer('truss'))->not->toBeNull();
 });
 
 it('does not register the MCP server when the feature is disabled', function () {
