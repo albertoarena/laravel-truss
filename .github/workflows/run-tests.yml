@@ -134,3 +134,49 @@ jobs:
           DB_USERNAME: truss
           DB_PASSWORD: password
         run: vendor/bin/pest
+
+  # Enforce a coverage floor. Runs against MySQL so the native-comment paths
+  # (which SQLite cannot exercise) count, giving an accurate figure. PCOV is the
+  # coverage driver; the threshold prevents regressions without nitpicking.
+  coverage:
+    runs-on: ubuntu-latest
+    name: Coverage - PHP 8.4 - MySQL
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: truss_test
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, pdo_mysql, bcmath, intl, fileinfo
+          coverage: pcov
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Run tests with coverage
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: truss_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: vendor/bin/pest --coverage --min=94
