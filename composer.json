@@ -61,6 +61,7 @@
     },
     "scripts": {
         "test": "vendor/bin/pest",
+        "test:coverage": "vendor/bin/pest --coverage",
         "lint": "vendor/bin/pint --test",
         "lint:fix": "vendor/bin/pint"
     },
