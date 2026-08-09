@@ -11,8 +11,10 @@ use InvalidArgumentException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
+#[Name('focus_table')]
 #[Description('Get one table and its foreign-key neighbourhood (out to a given depth) in a chosen format. Useful for grounding on a slice of the schema. Structure only, never row data.')]
 class FocusTable extends Tool
 {

@@ -36,3 +36,14 @@ it('the schema resource never includes an excluded table', function () {
 it('the schema resource is published under the truss://schema uri', function () {
     expect((new SchemaResource)->uri())->toBe('truss://schema');
 });
+
+it('the schema resource mime type follows the default format', function () {
+    config()->set('truss.export.default_format', 'json');
+    expect((new SchemaResource)->mimeType())->toBe('application/json');
+
+    config()->set('truss.export.default_format', 'markdown');
+    expect((new SchemaResource)->mimeType())->toBe('text/markdown');
+
+    config()->set('truss.export.default_format', 'dbml');
+    expect((new SchemaResource)->mimeType())->toBe('text/plain');
+});

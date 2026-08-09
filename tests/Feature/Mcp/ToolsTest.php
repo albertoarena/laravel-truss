@@ -98,3 +98,44 @@ it('get_structural_review returns the deterministic findings payload', function 
 it('get_structural_review errors on an unmanaged connection', function () {
     TrussSchemaServer::tool(GetStructuralReview::class, ['connection' => 'nope'])->assertHasErrors();
 });
+
+it('each tool advertises a snake_case name and its input schema', function () {
+    $expected = [
+        ListTables::class => ['name' => 'list_tables', 'props' => ['connection'], 'required' => []],
+        DescribeTable::class => ['name' => 'describe_table', 'props' => ['table', 'connection'], 'required' => ['table']],
+        GetSchema::class => ['name' => 'get_schema', 'props' => ['format', 'compact', 'tables', 'connection'], 'required' => []],
+        FocusTable::class => ['name' => 'focus_table', 'props' => ['table', 'depth', 'format', 'connection'], 'required' => ['table']],
+        GetStructuralReview::class => ['name' => 'get_structural_review', 'props' => ['connection'], 'required' => []],
+    ];
+
+    foreach ($expected as $class => $spec) {
+        $definition = (new $class)->toArray();
+
+        expect($definition['name'])->toBe($spec['name'])
+            ->and(array_keys($definition['inputSchema']['properties'] ?? []))->toBe($spec['props'])
+            ->and($definition['inputSchema']['required'] ?? [])->toBe($spec['required']);
+    }
+});
+
+it('describe_table and focus_table require a table argument', function () {
+    TrussSchemaServer::tool(DescribeTable::class)->assertHasErrors();
+    TrussSchemaServer::tool(FocusTable::class)->assertHasErrors();
+});
+
+it('describe_table reads the named managed connection', function () {
+    TrussSchemaServer::tool(DescribeTable::class, ['table' => 'posts', 'connection' => 'testing'])
+        ->assertOk()
+        ->assertSee('user_id');
+});
+
+it('get_schema reads the named managed connection', function () {
+    TrussSchemaServer::tool(GetSchema::class, ['format' => 'dbml', 'connection' => 'testing'])
+        ->assertOk()
+        ->assertSee('Table posts {');
+});
+
+it('focus_table reads the named managed connection', function () {
+    TrussSchemaServer::tool(FocusTable::class, ['table' => 'posts', 'depth' => 1, 'connection' => 'testing'])
+        ->assertOk()
+        ->assertSee('Table users {');
+});

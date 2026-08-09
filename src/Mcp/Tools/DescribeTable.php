@@ -10,8 +10,10 @@ use InvalidArgumentException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
+#[Name('describe_table')]
 #[Description('Describe one table: its columns (name, type, nullability, default), primary key, indexes, foreign keys, and any annotations. Structure only, never row data.')]
 class DescribeTable extends Tool
 {
