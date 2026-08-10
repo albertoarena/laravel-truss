@@ -13,9 +13,11 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_schema')]
 #[Description('Get the whole database structure in a chosen format (dbml, json, csv, markdown, mermaid, or llm), optionally compact and limited to specific tables. Structure only, never row data.')]
+#[IsReadOnly]
 class GetSchema extends Tool
 {
     public function handle(Request $request): Response

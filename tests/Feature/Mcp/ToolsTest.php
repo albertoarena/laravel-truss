@@ -117,6 +117,17 @@ it('each tool advertises a snake_case name and its input schema', function () {
     }
 });
 
+it('every tool advertises itself as read-only', function () {
+    $tools = [ListTables::class, DescribeTable::class, GetSchema::class, FocusTable::class, GetStructuralReview::class];
+
+    foreach ($tools as $class) {
+        $definition = (new $class)->toArray();
+
+        expect($definition['annotations']['readOnlyHint'] ?? null)
+            ->toBeTrue("{$class} must advertise readOnlyHint: true");
+    }
+});
+
 it('describe_table and focus_table require a table argument', function () {
     TrussSchemaServer::tool(DescribeTable::class)->assertHasErrors();
     TrussSchemaServer::tool(FocusTable::class)->assertHasErrors();

@@ -13,9 +13,11 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('focus_table')]
 #[Description('Get one table and its foreign-key neighbourhood (out to a given depth) in a chosen format. Useful for grounding on a slice of the schema. Structure only, never row data.')]
+#[IsReadOnly]
 class FocusTable extends Tool
 {
     public function handle(Request $request): Response
