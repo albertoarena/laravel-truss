@@ -12,9 +12,11 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('describe_table')]
 #[Description('Describe one table: its columns (name, type, nullability, default), primary key, indexes, foreign keys, and any annotations. Structure only, never row data.')]
+#[IsReadOnly]
 class DescribeTable extends Tool
 {
     public function handle(Request $request): Response

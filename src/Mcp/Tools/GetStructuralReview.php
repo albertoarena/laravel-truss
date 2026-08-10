@@ -13,6 +13,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 /**
  * A thin wrapper over the deterministic `truss:doctor` review, surfacing the
@@ -22,6 +23,7 @@ use Laravel\Mcp\Server\Tool;
  */
 #[Name('get_structural_review')]
 #[Description('Run the deterministic structural review: problems visible from structure alone, such as a table with no primary key or an unindexed foreign key. Returns a severity summary and the findings. Structure only, no row data.')]
+#[IsReadOnly]
 class GetStructuralReview extends Tool
 {
     public function handle(Request $request): Response
