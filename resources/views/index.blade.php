@@ -51,10 +51,19 @@
             </label>
 
             <div class="truss-secondary" id="truss-more">
-                <label class="truss-field">
-                    <span class="truss-field-label">Focus</span>
-                    <select id="truss-focus"></select>
-                </label>
+                {{-- Focus is a combobox rather than a select so it can be searched
+                     by substring on a large schema (issue #39). Keyboard and
+                     screen-reader behaviour is implemented in focus-combobox.js
+                     to the ARIA combobox-with-listbox pattern. --}}
+                <div class="truss-field truss-combo">
+                    <label class="truss-field-label" for="truss-focus">Focus</label>
+                    <input id="truss-focus" type="text" role="combobox" autocomplete="off"
+                           aria-expanded="false" aria-controls="truss-focus-list"
+                           aria-autocomplete="list" placeholder="none">
+                    <ul class="truss-combo-list" id="truss-focus-list" role="listbox"
+                        aria-label="Tables" hidden></ul>
+                    <span class="truss-sr-only" id="truss-focus-status" role="status" aria-live="polite"></span>
+                </div>
                 <label class="truss-field">
                     <span class="truss-field-label">Depth</span>
                     <input id="truss-depth" type="number" min="0" step="1">

@@ -29,13 +29,14 @@
             </label>
 
             <div class="truss-secondary" id="truss-more">
-                <label class="truss-field">
-                    <span class="truss-field-label">Focus</span>
-                    <select id="truss-focus">
-                        <option>none</option>
-                        <option>land_registry_entries_project_documents</option>
-                    </select>
-                </label>
+                <div class="truss-field truss-combo">
+                    <label class="truss-field-label" for="truss-focus">Focus</label>
+                    <input id="truss-focus" type="text" role="combobox" autocomplete="off"
+                           aria-expanded="false" aria-controls="truss-focus-list"
+                           aria-autocomplete="list" placeholder="none"
+                           value="land_registry_entries_project_documents">
+                    <ul class="truss-combo-list" id="truss-focus-list" role="listbox" aria-label="Tables" hidden></ul>
+                </div>
                 <label class="truss-field">
                     <span class="truss-field-label">Depth</span>
                     <input id="truss-depth" type="number" min="0" step="1">

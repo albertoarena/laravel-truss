@@ -21,7 +21,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 ## Features
 
 - Live ER diagram of your database, rendered with Mermaid.
-- Focus mode: a table and its foreign-key neighbours, centred and highlighted.
+- Focus mode: a table and its foreign-key neighbours, centred and highlighted. The picker is searchable, matching anywhere in the table name, so it stays usable on a schema with hundreds of tables.
 - Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
 - Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, DBML, or a token-trimmed `llm` format, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic.

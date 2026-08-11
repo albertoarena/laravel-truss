@@ -186,6 +186,34 @@ body {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--bp-ink) 22%, transparent);
 }
 
+/* Focus combobox: a text input with a listbox popup (see focus-combobox.js).
+   The popup is absolutely positioned against the field, so the toolbar row keeps
+   its height whether the list is open or shut. */
+.truss-combo { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.truss-combo-list {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 45;
+  margin: 0; padding: 4px 0; list-style: none;
+  min-width: 200px; max-width: 320px; max-height: 260px; overflow-y: auto;
+  background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .2);
+  font-family: var(--bp-mono); font-size: 12px; color: var(--bp-fg);
+}
+.truss-combo-list[hidden] { display: none; }
+.truss-combo-opt { padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+/* The active option is tracked with aria-activedescendant, so it is never the
+   focused element and cannot be styled with :focus. */
+.truss-combo-opt.is-active { background: var(--bp-info-bg); color: var(--bp-info-fg); }
+.truss-combo-opt[aria-selected="true"] { font-weight: 600; }
+.truss-combo-opt--clear { color: var(--bp-muted); border-bottom: 1px solid var(--bp-panel-line); }
+.truss-combo-opt mark { background: none; color: var(--bp-cyan); font-weight: 600; }
+
+/* Available to assistive technology, absent from the visual layout: used for the
+   live region that announces how many tables matched while you type. */
+.truss-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
 /* right-hand utility cluster */
 .truss-utils { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
 .truss-util {
