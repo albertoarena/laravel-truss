@@ -104,3 +104,22 @@ test('toggling the Changes button off hides the panel and clears tints', async (
   await expect(page.locator('#truss-diff-panel')).toBeHidden();
   await expect(page.locator('#truss-canvas svg g.node.truss-diff-added')).toHaveCount(0);
 });
+
+test('explains that Changes is unavailable when the baseline could not be read', async ({ page }) => {
+  // The API reports diff_unavailable when the baseline disk failed, as opposed to
+  // simply having no baseline yet. Without a notice the panel is just missing and
+  // the user assumes nothing has changed, which is a different claim entirely.
+  await page.route('**/api/schema**', (route) => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify({ ...base, diff: null, diff_unavailable: true }),
+  }));
+  await page.goto('/tests/e2e/harness.html');
+  await expect(page.locator('#truss-canvas > svg')).toBeVisible();
+
+  await expect(page.locator('#truss-banners')).toContainText(/Changes.*unavailable/i);
+  await expect(page.locator('#truss-banners')).toContainText('TRUSS_DIFF_DISK');
+  // The diagram itself is unaffected: the point of the fix is that a baseline
+  // problem costs you one panel, not the tool.
+  await expect(page.locator('#truss-canvas')).toContainText('users');
+  await expect(page.locator('#truss-diff-btn')).toBeHidden();
+});

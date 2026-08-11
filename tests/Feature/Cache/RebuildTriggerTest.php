@@ -93,3 +93,19 @@ it('writes no baseline when schema diff is disabled, but still rebuilds', functi
     expect(app(BaselineStore::class)->has('testing'))->toBeFalse()
         ->and($repo->has('testing'))->toBeTrue();
 });
+
+it('does not break migrations when the baseline disk is unavailable', function () {
+    // The listener runs on MigrationsEnded, and Laravel does not swallow listener
+    // exceptions, so an unwritable baseline disk would fail `php artisan migrate`
+    // itself. A dev tool must never be able to break the host app's migrations.
+    config()->set('truss.enabled', true);
+    config()->set('truss.diff.disk', 'not-a-real-disk');
+
+    $repo = app(SchemaCacheRepository::class);
+    $repo->rebuild('testing'); // seed a cached snapshot, so a baseline capture is attempted
+
+    event(new MigrationsEnded('up', ['database' => 'testing']));
+
+    // The rebuild still happened: the baseline failure did not abort the listener.
+    expect($repo->has('testing'))->toBeTrue();
+});

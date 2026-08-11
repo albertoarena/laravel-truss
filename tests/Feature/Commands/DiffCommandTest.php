@@ -88,3 +88,16 @@ it('diffs a specific connection with --connection', function () {
         ->assertSuccessful()
         ->expectsOutputToContain('legacy');
 });
+
+it('names the disk and the fix when the baseline cannot be read', function () {
+    // "No baseline recorded yet" and "the disk is broken" look identical from the
+    // outside, and the second used to surface as a raw Flysystem exception with
+    // nothing pointing at TRUSS_DIFF_DISK. Field report, 2026-08-11.
+    config()->set('truss.diff.enabled', true);
+    config()->set('truss.diff.disk', 'not-a-real-disk');
+
+    $this->artisan('truss:diff')
+        ->expectsOutputToContain('not-a-real-disk')
+        ->expectsOutputToContain('TRUSS_DIFF_DISK')
+        ->assertExitCode(0);
+});

@@ -43,6 +43,7 @@ const state = {
   content: { width: 0, height: 0 }, // natural SVG size
   lastKey: null, // subset signature; drives auto-fit only on content change
   diff: null, // the schema diff from the API (null when disabled or no baseline)
+  diffUnavailable: false, // the diff baseline could not be read (a disk problem)
   diffMode: false, // "Changes" view: tint changed tables and show the panel
   doctor: null, // the doctor report from the API (null when the panel is disabled)
   doctorMode: false, // "Health" view: badge tables with findings and show the panel
@@ -1001,6 +1002,15 @@ function renderBanners() {
     el.banners.append(banner('warn',
       'A database connection was not available; the schema was rebuilt from an in-memory SQLite replay, so column types may be approximate.'));
   }
+  // A baseline the server could not read is different from having none yet: the
+  // panel is missing either way, but only this case is a problem the user can fix,
+  // and saying nothing would let it read as "nothing has changed".
+  if (state.diffUnavailable) {
+    el.banners.append(banner('warn',
+      'Changes is unavailable: the schema-diff baseline could not be read from disk. '
+      + 'Set TRUSS_DIFF_DISK to a local disk, or turn the feature off with TRUSS_DIFF_ENABLED=false. '
+      + 'The diagram is unaffected.'));
+  }
   const unscoped = !state.search && !state.focusRoot;
   if (unscoped && state.tables.length > config.warnAbove) {
     el.banners.append(banner('info',
@@ -1126,6 +1136,7 @@ async function loadSchema() {
   state.fallback = Boolean(payload.fallback);
   state.generatedAt = payload.generated_at ?? null;
   state.diff = payload.diff ?? null;
+  state.diffUnavailable = payload.diff_unavailable === true;
   state.doctor = payload.doctor ?? null;
   // Apply a focus requested via the URL, once we can confirm the table exists.
   state.focusRoot = (state.pendingFocus && state.tables.some((t) => t.name === state.pendingFocus))

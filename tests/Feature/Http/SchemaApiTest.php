@@ -178,3 +178,29 @@ it('keeps excluded tables out of the embedded diff', function () {
 
     expect($response->getContent())->not->toContain('sessions');
 });
+
+it('still serves the schema when the diff baseline disk is unavailable', function () {
+    // Field report, 2026-08-11: an app with FILESYSTEM_DISK=s3 got HTTP 500 from
+    // this endpoint on a clean install, because reading the baseline went through
+    // the S3 adapter and threw. The diagram needs no filesystem access at all, so
+    // a baseline failure must never take the whole endpoint down.
+    config()->set('truss.diff.disk', 'not-a-real-disk');
+    Schema::create('posts', function ($table) {
+        $table->id();
+    });
+
+    $response = $this->getJson('/truss/api/schema?connection=testing');
+
+    $response->assertOk();
+    expect($response->json('tables'))->not->toBeEmpty()
+        ->and($response->json('diff'))->toBeNull()
+        // Signalled separately, so `diff` keeps its existing null-or-object shape.
+        ->and($response->json('diff_unavailable'))->toBeTrue();
+});
+
+it('does not claim the diff is unavailable when the disk is healthy', function () {
+    $response = $this->getJson('/truss/api/schema?connection=testing');
+
+    $response->assertOk();
+    expect($response->json('diff_unavailable'))->toBeNull();
+});

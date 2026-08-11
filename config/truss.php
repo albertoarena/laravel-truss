@@ -255,14 +255,18 @@ return [
     | written to disk, the "Changes" toggle is hidden, and `truss:diff` reports the
     | feature is off. Set it false if you do not want Truss touching your disk.
     |
-    | `disk`: the filesystem disk the baseline is written to. Null uses the
-    | application's default disk. The path is always `truss/baselines/{connection}`.
+    | `disk`: the filesystem disk the baseline is written to, `local` by default.
+    | The path is always `truss/baselines/{connection}`. This deliberately does not
+    | follow the application's default disk: the baseline is derived tooling state,
+    | not application data, so it should not land in a production bucket, cost
+    | money, or have several instances racing on one object. A failure to read or
+    | write it is never fatal; the diff is simply unavailable until it recovers.
     |
     */
 
     'diff' => [
         'enabled' => (bool) env('TRUSS_DIFF_ENABLED', true),
-        'disk' => env('TRUSS_DIFF_DISK'),
+        'disk' => env('TRUSS_DIFF_DISK', 'local'),
     ],
 
     /*

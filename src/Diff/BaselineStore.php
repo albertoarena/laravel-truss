@@ -22,45 +22,108 @@ use Illuminate\Support\Str;
 class BaselineStore
 {
     /**
-     * @param  array<string, mixed>  $snapshot
+     * Why the last operation failed, or null when it succeeded. Callers that can
+     * say something useful (the CLI) read this; callers that cannot (the HTTP
+     * endpoint, the migration listener) ignore it and carry on.
      */
-    public function save(string $connection, array $snapshot): void
+    private ?string $lastError = null;
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @return bool false when the baseline could not be written
+     */
+    public function save(string $connection, array $snapshot): bool
     {
-        $this->disk()->put(
-            $this->path($connection),
-            json_encode($snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
-        );
+        return $this->attempt(function () use ($connection, $snapshot): bool {
+            $this->disk()->put(
+                $this->path($connection),
+                json_encode($snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+            );
+
+            return true;
+        }, false);
     }
 
     /**
-     * @return array<string, mixed>|null null when no baseline is stored
+     * @return array<string, mixed>|null null when no baseline is stored, or when
+     *                                   the disk could not be read
      */
     public function get(string $connection): ?array
     {
-        $disk = $this->disk();
-        $path = $this->path($connection);
+        return $this->attempt(function () use ($connection): ?array {
+            $disk = $this->disk();
+            $path = $this->path($connection);
 
-        if (! $disk->exists($path)) {
-            return null;
-        }
+            if (! $disk->exists($path)) {
+                return null;
+            }
 
-        $raw = $disk->get($path);
+            $raw = $disk->get($path);
 
-        if ($raw === null || $raw === '') {
-            return null;
-        }
+            if ($raw === null || $raw === '') {
+                return null;
+            }
 
-        return json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+            return json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        }, null);
     }
 
     public function has(string $connection): bool
     {
-        return $this->disk()->exists($this->path($connection));
+        return $this->attempt(fn (): bool => $this->disk()->exists($this->path($connection)), false);
     }
 
-    public function forget(string $connection): void
+    /**
+     * @return bool false when the baseline could not be deleted
+     */
+    public function forget(string $connection): bool
     {
-        $this->disk()->delete($this->path($connection));
+        return $this->attempt(function () use ($connection): bool {
+            $this->disk()->delete($this->path($connection));
+
+            return true;
+        }, false);
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    /**
+     * Run a disk operation, degrading to $fallback instead of throwing.
+     *
+     * The baseline is the only part of Truss that touches the filesystem, and it
+     * serves one secondary feature. Letting a storage error escape put it in a
+     * position to break things that do not depend on it: the schema endpoint
+     * (which needs no filesystem at all) returned 500, and the MigrationsEnded
+     * listener could fail `php artisan migrate` outright, since Laravel does not
+     * swallow listener exceptions. A missing baseline is an empty diff, so that
+     * is what every failure degrades to.
+     *
+     * Throwable rather than a narrower type on purpose: a remote adapter throws
+     * Flysystem exceptions, an unconfigured disk name throws
+     * InvalidArgumentException, and a corrupt baseline throws JsonException.
+     * All three mean the same thing here, and none should reach the caller.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $operation
+     * @param  T  $fallback
+     * @return T
+     */
+    private function attempt(callable $operation, mixed $fallback): mixed
+    {
+        try {
+            $result = $operation();
+            $this->lastError = null;
+
+            return $result;
+        } catch (\Throwable $e) {
+            $this->lastError = $e->getMessage();
+
+            return $fallback;
+        }
     }
 
     private function path(string $connection): string

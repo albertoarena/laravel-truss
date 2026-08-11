@@ -36,6 +36,22 @@ class DiffCommand extends Command
         $baseline = $baselines->get($name);
 
         if ($baseline === null) {
+            // A read failure and an absent baseline both arrive as null, and they
+            // need different advice: one is the normal state of a fresh install,
+            // the other is a misconfigured disk the user cannot guess at from
+            // "no baseline recorded".
+            $error = $baselines->lastError();
+
+            if ($error !== null) {
+                $disk = (string) config('truss.diff.disk', 'local');
+                $this->warn("Could not read the diff baseline from the [{$disk}] disk.");
+                $this->line("  {$error}");
+                $this->line('Set TRUSS_DIFF_DISK to a local disk, or disable the feature with TRUSS_DIFF_ENABLED=false.');
+                $this->line('See https://trussphp.com/guides/schema-diff/');
+
+                return self::SUCCESS;
+            }
+
             $this->warn("No baseline recorded for [{$name}] yet.");
             $this->line('A baseline is captured on the next migration while Truss is enabled.');
 
