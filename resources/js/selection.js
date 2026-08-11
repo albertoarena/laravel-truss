@@ -21,6 +21,58 @@ export function filterTables(tables, query) {
 }
 
 /**
+ * The whole selection pipeline: filter first, then narrow to the focused
+ * neighbourhood. The two compose, so a filter inside a focus searches within
+ * that neighbourhood rather than replacing it.
+ *
+ * @param {Array} tables the full received set
+ * @param {{search?: string, focusRoot?: string, depth?: number}} [selection]
+ * @returns {Array} the subset to render
+ */
+export function selectTables(tables, { search = '', focusRoot = '', depth = 1 } = {}) {
+  const subset = filterTables(tables, search);
+
+  return focusRoot ? focusTables(subset, focusRoot, depth) : subset;
+}
+
+/**
+ * Why the diagram is empty, and whether clearing the focus would bring it back.
+ * Composing filter and focus is deliberate, but when the intersection is empty
+ * the diagram looks broken: the focus control sits away from the filter box, so
+ * by the time someone searches they have usually forgotten a focus is set. The
+ * notice names both, and only offers to clear the focus when doing so would
+ * actually show something.
+ *
+ * @param {Array} tables the full received set
+ * @param {{search?: string, focusRoot?: string, depth?: number}} [selection]
+ * @returns {?{message: string, clearFocus: boolean}} null while tables are showing
+ */
+export function emptySelectionNotice(tables, { search = '', focusRoot = '', depth = 1 } = {}) {
+  if (selectTables(tables, { search, focusRoot, depth }).length > 0) {
+    return null;
+  }
+
+  const query = String(search ?? '').trim();
+  const withoutFocus = query === '' ? tables : filterTables(tables, query);
+
+  if (focusRoot && withoutFocus.length > 0) {
+    return {
+      message: query === ''
+        ? `No tables match focus: ${focusRoot}.`
+        : `No tables match "${query}" within focus: ${focusRoot}.`,
+      clearFocus: true,
+    };
+  }
+
+  // Either nothing is scoped, or the filter alone already matches nothing, in
+  // which case dropping the focus would leave the diagram just as empty.
+  return {
+    message: query === '' ? 'No tables match the current filter or focus.' : `No tables match "${query}".`,
+    clearFocus: false,
+  };
+}
+
+/**
  * A table plus its foreign-key neighbours out to `depth` hops. Neighbours are
  * followed in both directions — a table's own FKs (children → parents) and any
  * table that references it (parents → children) — so the neighbourhood is the

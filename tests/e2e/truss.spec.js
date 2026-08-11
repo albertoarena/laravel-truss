@@ -66,6 +66,35 @@ test('focus mode reduces to a table and its FK neighbours', async ({ page }) => 
   await expect(canvas(page)).not.toContainText('roles');
 });
 
+test('searching outside the focused neighbourhood explains itself and offers a way out', async ({ page }) => {
+  // Issue #34: focus a table, search for one outside it, and the diagram empties
+  // with no hint that the focus is what is hiding the match.
+  await page.selectOption('#truss-focus', 'users');
+  await expect(canvas(page)).toContainText('role_user');
+
+  await page.fill('#truss-search', 'roles');
+
+  await expect(banners(page)).toContainText('No tables match "roles" within focus: users.');
+  await expect(canvas(page)).not.toContainText('roles');
+
+  await page.click('#truss-banners [data-clear-focus]');
+
+  await expect(canvas(page)).toContainText('roles');
+  await expect(banners(page)).not.toContainText('within focus');
+  await expect(page.locator('#truss-focus')).toHaveValue('');
+  expect(new URL(page.url()).searchParams.get('focus')).toBeNull();
+  // The filter the user typed survives clearing the focus.
+  await expect(page.locator('#truss-search')).toHaveValue('roles');
+});
+
+test('no way out is offered when the filter alone matches nothing', async ({ page }) => {
+  await page.selectOption('#truss-focus', 'users');
+  await page.fill('#truss-search', 'zzz');
+
+  await expect(banners(page)).toContainText('No tables match "zzz".');
+  await expect(page.locator('#truss-banners [data-clear-focus]')).toHaveCount(0);
+});
+
 test('focus centres the focused table in the viewport', async ({ page }) => {
   await expect(page.locator('#truss-canvas > svg')).toBeVisible();
   await page.selectOption('#truss-focus', 'users');
