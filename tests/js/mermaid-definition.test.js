@@ -66,3 +66,57 @@ describe('generateErDiagram', () => {
     expect(out).toMatch(/parent_id\s+FK\s+"self-ref"/);
   });
 });
+
+// WCAG 1.1.1: the rendered SVG carries role="graphics-document" but has no
+// accessible name unless the definition declares one. Mermaid turns accTitle
+// into <title> and accDescr into <desc>, so assistive technology gets a name
+// and an orientation summary instead of an unlabelled graphic.
+describe('generateErDiagram accessibility directives', () => {
+  it('names the diagram with accTitle, immediately after the erDiagram keyword', () => {
+    const lines = generateErDiagram([users, posts]).split('\n');
+    expect(lines[0]).toBe('erDiagram');
+    expect(lines[1]).toMatch(/^\s*accTitle:\s*\S/);
+  });
+
+  it('describes the diagram by table and relationship count', () => {
+    const out = generateErDiagram([users, posts]);
+    expect(out).toMatch(/accDescr:.*\b2 tables\b/);
+    expect(out).toMatch(/accDescr:.*\b1 relationship\b/);
+  });
+
+  it('singularises the counts for a one-table diagram with no relationships', () => {
+    const out = generateErDiagram([users]);
+    expect(out).toMatch(/accDescr:.*\b1 table\b/);
+    expect(out).toMatch(/accDescr:.*\bno relationships\b/);
+  });
+
+  it('states the active filter so the description matches what is on screen', () => {
+    const out = generateErDiagram([posts], { view: { filter: 'pos' } });
+    expect(out).toMatch(/accDescr:.*filtered by "pos"/);
+  });
+
+  it('states the focused table and its depth', () => {
+    const out = generateErDiagram([users, posts], { view: { focus: 'users', depth: 2 } });
+    expect(out).toMatch(/accDescr:.*focused on users, depth 2/);
+  });
+
+  it('keeps the description to a single line when the filter contains newlines', () => {
+    // The filter is user input and reaches the definition verbatim; a newline
+    // would terminate the directive and corrupt the rest of the diagram.
+    const out = generateErDiagram([users], { view: { filter: 'a\nb\rc' } });
+    const descr = out.split('\n').filter((l) => l.includes('accDescr:'));
+    expect(descr).toHaveLength(1);
+    expect(descr[0]).toContain('filtered by "a b c"');
+  });
+
+  it('strips quotes from the filter so the quoted value cannot be broken open', () => {
+    const out = generateErDiagram([users], { view: { filter: 'a"b' } });
+    expect(out).toMatch(/filtered by "ab"/);
+  });
+
+  it('mentions neither filter nor focus when the view is unconstrained', () => {
+    const out = generateErDiagram([users, posts]);
+    expect(out).not.toContain('filtered by');
+    expect(out).not.toContain('focused on');
+  });
+});

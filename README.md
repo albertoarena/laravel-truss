@@ -30,6 +30,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
 - Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
 - Light and dark "blueprint" theme, or bring your own: define custom colours and fonts from config to match your app. Config driven, CSP-safe, no build step.
+- Keyboard and screen reader support: every trigger on the diagram answers Enter and Space, Escape closes an open menu and hands focus back, focus is always visible, and the diagram names and describes itself (its description follows the filter and focus you are looking at). Checked on every push with axe-core.
 - Self-contained: Mermaid and fonts are vendored and served from the package, so it works offline and under a strict Content-Security-Policy (no CDN).
 - Cached snapshot, rebuilt automatically after migrations.
 

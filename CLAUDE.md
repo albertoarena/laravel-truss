@@ -23,6 +23,7 @@
 - `composer lint:fix` — fix Pint issues automatically
 - `npm test` — Vitest unit tests for the client-side diagram logic (`resources/js`)
 - `npx playwright test` — browser tests for the dashboard (`tests/e2e`)
+- `npm run test:a11y` — accessibility specs only (keyboard operation + an axe-core WCAG scan); also its own CI step
 - `php artisan truss:show` — print the database structure as a terminal table (structure only)
 - `php artisan truss:open` — open the Truss dashboard in the browser
 - `php artisan truss:rebuild` — manually rebuild the cached schema snapshot

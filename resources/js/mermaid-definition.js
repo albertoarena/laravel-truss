@@ -66,8 +66,52 @@ function entityBlock(table, mode) {
 }
 
 /**
+ * Reduce arbitrary text to something safe to sit inside a quoted accDescr:
+ * one line, no quotes. The filter is user input and reaches the definition
+ * verbatim, so a newline would terminate the directive and corrupt the rest
+ * of the diagram, and a quote would break the quoted value open.
+ */
+function accSafe(text) {
+  return String(text).replace(/["\r\n]+/g, (m) => (m.includes('"') ? '' : ' '))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function plural(count, noun) {
+  return `${count} ${count === 1 ? noun : `${noun}s`}`;
+}
+
+/**
+ * The accessible name and description Mermaid renders as <title> and <desc>.
+ * Without them the SVG announces itself as a graphics document with nothing
+ * to say (WCAG 1.1.1). The description summarises rather than enumerating:
+ * the table names are already text inside the SVG, so what a screen reader
+ * user lacks is orientation, not a list.
+ */
+function accessibilityLines(tableCount, relationshipCount, view = {}) {
+  const parts = [
+    plural(tableCount, 'table'),
+    relationshipCount === 0 ? 'no relationships' : plural(relationshipCount, 'relationship'),
+  ];
+
+  if (view.filter) {
+    parts.push(`filtered by "${accSafe(view.filter)}"`);
+  }
+  if (view.focus) {
+    const depth = view.depth == null ? '' : `, depth ${Number(view.depth)}`;
+    parts.push(`focused on ${accSafe(view.focus)}${depth}`);
+  }
+
+  return [
+    '  accTitle: Database structure diagram',
+    `  accDescr: ${parts.join(', ')}.`,
+  ];
+}
+
+/**
  * @param {Array} tables the selected subset (already filtered/focused)
- * @param {{ typeLabels?: 'native' | 'laravel' }} [options]
+ * @param {{ typeLabels?: 'native' | 'laravel',
+ *           view?: { filter?: string, focus?: string, depth?: number } }} [options]
  * @returns {string} a Mermaid erDiagram definition
  */
 export function generateErDiagram(tables, options = {}) {
@@ -95,5 +139,7 @@ export function generateErDiagram(tables, options = {}) {
     }
   }
 
-  return ['erDiagram', ...entities, ...relationships].join('\n');
+  const acc = accessibilityLines(tables.length, relationships.length, options.view);
+
+  return ['erDiagram', ...acc, ...entities, ...relationships].join('\n');
 }
