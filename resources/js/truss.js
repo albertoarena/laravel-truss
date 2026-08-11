@@ -972,7 +972,7 @@ function renderBanners() {
   const unscoped = !state.search && !state.focusRoot;
   if (unscoped && state.tables.length > config.warnAbove) {
     el.banners.append(banner('info',
-      `${state.tables.length} tables — large schema. Use the filter or focus a table to keep the diagram fast and legible.`));
+      `${state.tables.length} tables, a large schema. Use the filter or focus a table to keep the diagram fast and legible.`));
   }
   // When the diagram is empty, say which of the filter and the focus emptied it,
   // and offer to drop the focus when that is what is hiding the match.
@@ -1063,7 +1063,7 @@ function updateFooter() {
 /* ---- data ------------------------------------------------------------- */
 
 function populateFocusOptions() {
-  el.focus.innerHTML = ['<option value="">— none —</option>']
+  el.focus.innerHTML = ['<option value="">- none -</option>']
     .concat(state.tables.map((t) => `<option value="${t.name}">${t.name}</option>`))
     .join('');
   el.focus.value = state.focusRoot;

@@ -134,7 +134,7 @@
         <div class="truss-popover" id="truss-popover" hidden></div>
 
         <footer class="truss-footer">
-            <span id="truss-stat-tables">—</span>
+            <span id="truss-stat-tables">&nbsp;</span>
             <span id="truss-stat-conn"></span>
             <span class="truss-flag" id="truss-stat-fallback" hidden>SQLite&nbsp;fallback</span>
             <span class="truss-footer-spacer"></span>
