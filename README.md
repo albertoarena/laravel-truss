@@ -42,6 +42,7 @@ Full documentation is at **[trussphp.com](https://trussphp.com)**.
 - [Authorization](https://trussphp.com/guides/authorization/)
 - [Configuration reference](https://trussphp.com/reference/configuration/)
 - [Roadmap](https://trussphp.com/roadmap/)
+- [Video overview](https://www.youtube.com/watch?v=zogsFocamlU) by Laravel Daily (7 min)
 
 ## Installation
 
