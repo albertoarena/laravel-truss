@@ -9,6 +9,7 @@ import { buildQuery, parseQuery } from './url-state.js';
 import { buildExportUrl } from './export-request.js';
 import { hasDiff, changeList, tableStatuses } from './diff-view.js';
 import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups, columnMarkers } from './doctor-view.js';
+import { createFocusCombobox } from './focus-combobox.js';
 
 const app = document.getElementById('truss-app');
 
@@ -54,6 +55,8 @@ const el = {
   connection: document.getElementById('truss-connection'),
   search: document.getElementById('truss-search'),
   focus: document.getElementById('truss-focus'),
+  focusList: document.getElementById('truss-focus-list'),
+  focusStatus: document.getElementById('truss-focus-status'),
   depth: document.getElementById('truss-depth'),
   labels: document.getElementById('truss-labels'),
   banners: document.getElementById('truss-banners'),
@@ -108,6 +111,8 @@ function currentSubset() {
   return selectTables(state.tables, currentSelection());
 }
 
+let focusCombo = null;
+
 /**
  * The one place the focus changes. Everything that focuses a table (the URL, the
  * per-table menu, the Changes panel, the Health panel, the picker itself) goes
@@ -119,6 +124,7 @@ function setFocus(name, { render: shouldRender = true } = {}) {
   const next = name && state.tables.some((t) => t.name === name) ? name : '';
   state.focusRoot = next;
   if (el.focus) el.focus.value = next;
+  focusCombo?.close({ revert: false });
   if (shouldRender) render();
 }
 
@@ -959,6 +965,7 @@ function focusTableFromDoctor(name) {
 // left untouched. The toolbar overlays (Legend, Changes, Health, the Export menu)
 // all anchor to the same top-right cluster.
 function closeOverlays(except) {
+  if (except !== 'focus') focusCombo?.close();
   if (except !== 'legend' && el.legend && !el.legend.hasAttribute('hidden')) closeLegend();
   if (except !== 'diff' && state.diffMode) closeDiff();
   if (except !== 'health' && state.doctorMode) closeHealth();
@@ -1135,11 +1142,11 @@ function updateFooter() {
 
 /* ---- data ------------------------------------------------------------- */
 
+// The combobox reads the table list on demand (it filters as you type), so a
+// schema load only has to re-sync what the control displays.
 function populateFocusOptions() {
-  el.focus.innerHTML = ['<option value="">- none -</option>']
-    .concat(state.tables.map((t) => `<option value="${t.name}">${t.name}</option>`))
-    .join('');
-  el.focus.value = state.focusRoot;
+  focusCombo?.sync();
+  if (el.focus) el.focus.value = state.focusRoot;
 }
 
 function populateConnectionOptions() {
@@ -1224,9 +1231,16 @@ function wireEvents() {
     render();
   }, 150));
 
-  el.focus?.addEventListener('change', (e) => {
-    setFocus(e.target.value);
-  });
+  if (el.focus && el.focusList) {
+    focusCombo = createFocusCombobox({
+      input: el.focus,
+      list: el.focusList,
+      status: el.focusStatus,
+      getTables: () => state.tables,
+      getFocus: () => state.focusRoot,
+      onSelect: (name) => setFocus(name),
+    });
+  }
 
   el.depth?.addEventListener('change', (e) => {
     state.depth = Math.max(0, Number(e.target.value) || 0);

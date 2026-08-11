@@ -1,6 +1,6 @@
 # Plan: Searchable Focus picker
 
-Status: requirements agreed 2026-08-11, ready to build
+Status: BUILT 2026-08-11 on `feat/accessibility-phase-1` (PR #41), shipping with the accessibility work as one feature. Unreleased.
 Owner: Alberto Arena
 Issue: [#39](https://github.com/albertoarena/laravel-truss/issues/39), reported by
 Alberto Peripolli ([@trippo](https://github.com/trippo)) from a schema of roughly 200
@@ -153,3 +153,24 @@ carries its own copy of the toolbar markup and needs the same change.
 Ship the CHANGELOG entry and release notes with a line thanking Alberto Peripolli
 (@trippo), following the v1.8.1 pattern: identical wording in both places, appended to the
 end of the entry.
+
+## Built
+
+Delivered as planned, with two deviations worth recording:
+
+- The widget lives in its own module (`resources/js/focus-combobox.js`) rather than inside
+  `truss.js`, which was already 1300 lines. The matcher is `resources/js/table-match.js` as
+  planned.
+- Two bugs the specs caught, both about reopening the list on a committed value. Opening
+  while a table is focused used to filter the list by the name already in the box, so the
+  only row visible was the one you had chosen and Clear focus was filtered away; opening now
+  browses the whole list and selects the text so typing replaces it. And committing with the
+  mouse leaves focus in the input (the list suppresses the blur), so a second click fired no
+  `focus` event and never reopened the list; `click` now opens it too.
+
+`AssetController`'s allow-list needed both new modules added. The existing
+`it serves every shipped JS module` test caught that, which would otherwise have been a
+404 on the shipped dashboard while every browser test passed.
+
+Tests: `tests/e2e/focus-picker.spec.js` (18 specs), `tests/js/table-match.test.js` (11),
+and the fourteen migrated assertions now going through `tests/e2e/focus-helper.js`.

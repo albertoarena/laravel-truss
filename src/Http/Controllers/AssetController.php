@@ -32,6 +32,8 @@ class AssetController
         'type-labels.js' => 'js/type-labels.js',
         'viewport.js' => 'js/viewport.js',
         'url-state.js' => 'js/url-state.js',
+        'table-match.js' => 'js/table-match.js',
+        'focus-combobox.js' => 'js/focus-combobox.js',
         'mermaid.min.js' => 'js/vendor/mermaid.min.js',
         'truss.css' => 'css/truss.css',
         'ibm-plex-mono-400.woff2' => 'fonts/ibm-plex-mono-400.woff2',
