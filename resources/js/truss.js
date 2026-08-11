@@ -108,11 +108,23 @@ function currentSubset() {
   return selectTables(state.tables, currentSelection());
 }
 
+/**
+ * The one place the focus changes. Everything that focuses a table (the URL, the
+ * per-table menu, the Changes panel, the Health panel, the picker itself) goes
+ * through here, so the control is free to be something other than a <select>
+ * without five callers knowing about it. An unknown name clears the focus rather
+ * than inventing one.
+ */
+function setFocus(name, { render: shouldRender = true } = {}) {
+  const next = name && state.tables.some((t) => t.name === name) ? name : '';
+  state.focusRoot = next;
+  if (el.focus) el.focus.value = next;
+  if (shouldRender) render();
+}
+
 /** Drop the focus but keep the filter, so the search the user just typed applies. */
 function clearFocus() {
-  state.focusRoot = '';
-  if (el.focus) el.focus.value = '';
-  render();
+  setFocus('');
 }
 
 /* ---- pan / zoom ------------------------------------------------------- */
@@ -399,9 +411,7 @@ function runMenuAction(act) {
   if (act === 'dbml') { downloadExport('dbml', subsetNames(), exportBaseName()); return; }
   if (!table) return;
   if (act === 'focus' || act === 'unfocus') {
-    state.focusRoot = act === 'focus' ? table.name : '';
-    if (el.focus) el.focus.value = state.focusRoot;
-    render();
+    setFocus(act === 'focus' ? table.name : '');
   } else if (act === 'copy') {
     fetchExport('json', [table.name]).then((json) => { if (json !== null) navigator.clipboard?.writeText(json); });
   } else if (act === 'json') {
@@ -673,9 +683,7 @@ function diffRow(status, table, details = '', focusable = false) {
 // Focus a table straight from the Changes panel, reusing the focus pipeline.
 function focusTableFromDiff(name) {
   if (!state.tables.some((t) => t.name === name)) return;
-  state.focusRoot = name;
-  if (el.focus) el.focus.value = name;
-  render();
+  setFocus(name);
 }
 
 function describeDetail(d) {
@@ -941,9 +949,7 @@ function healthItem(finding) {
 // Focus a table straight from the Health panel, reusing the focus pipeline.
 function focusTableFromDoctor(name) {
   if (!state.tables.some((t) => t.name === name)) return;
-  state.focusRoot = name;
-  if (el.focus) el.focus.value = name;
-  render();
+  setFocus(name);
 }
 
 /* ---- overlay coordination --------------------------------------------- */
@@ -1163,13 +1169,12 @@ async function loadSchema() {
   state.cacheUnavailable = payload.cache_unavailable === true;
   state.diffUnavailable = payload.diff_unavailable === true;
   state.doctor = payload.doctor ?? null;
-  // Apply a focus requested via the URL, once we can confirm the table exists.
-  state.focusRoot = (state.pendingFocus && state.tables.some((t) => t.name === state.pendingFocus))
-    ? state.pendingFocus
-    : '';
-  state.pendingFocus = null;
   state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
+  // Apply a focus requested via the URL, once we can confirm the table exists.
+  // setFocus validates the name and syncs the control; the render happens below.
+  setFocus(state.pendingFocus, { render: false });
+  state.pendingFocus = null;
   updateFooter();
   updateDiffAvailability();
   updateDoctorAvailability();
@@ -1220,8 +1225,7 @@ function wireEvents() {
   }, 150));
 
   el.focus?.addEventListener('change', (e) => {
-    state.focusRoot = e.target.value;
-    render();
+    setFocus(e.target.value);
   });
 
   el.depth?.addEventListener('change', (e) => {
