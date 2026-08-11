@@ -380,5 +380,5 @@ test('the connection switcher re-fetches and re-renders without reload', async (
 
 test('shows the large-schema warning above the configured threshold', async ({ page }) => {
   // primary has 4 tables, warn_above is 3, and nothing is filtered/focused.
-  await expect(banners(page)).toContainText('large schema');
+  await expect(banners(page)).toContainText('4 tables, a large schema.');
 });
