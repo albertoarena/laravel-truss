@@ -417,6 +417,13 @@ body {
   display: flex; align-items: center; gap: 9px;
 }
 .truss-banner::before { content: "◧"; opacity: .8; }
+/* the way out of an empty diagram, e.g. "Clear focus" */
+.truss-banner-action {
+  font: inherit; letter-spacing: inherit; color: inherit;
+  background: none; border: 0; border-bottom: 1px solid currentColor;
+  padding: 0; cursor: pointer; opacity: .85;
+}
+.truss-banner-action:hover { opacity: 1; }
 .truss-banner--info { background: var(--bp-info-bg); color: var(--bp-info-fg); }
 .truss-banner--warn { background: var(--bp-warn-bg); color: var(--bp-warn-fg); }
 .truss-banner--error { background: var(--bp-error-bg); color: var(--bp-error-fg); }

@@ -2,7 +2,7 @@
 // pure, unit-tested modules (selection, generator, viewport math). No build
 // step: native ES module; Mermaid is a global from a <script> tag.
 
-import { filterTables, focusTables } from './selection.js';
+import { selectTables, emptySelectionNotice } from './selection.js';
 import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 import { buildQuery, parseQuery } from './url-state.js';
@@ -98,12 +98,19 @@ mermaid.initialize({
 
 /* ---- selection -------------------------------------------------------- */
 
+function currentSelection() {
+  return { search: state.search, focusRoot: state.focusRoot, depth: state.depth };
+}
+
 function currentSubset() {
-  let subset = filterTables(state.tables, state.search);
-  if (state.focusRoot) {
-    subset = focusTables(subset, state.focusRoot, state.depth);
-  }
-  return subset;
+  return selectTables(state.tables, currentSelection());
+}
+
+/** Drop the focus but keep the filter, so the search the user just typed applies. */
+function clearFocus() {
+  state.focusRoot = '';
+  if (el.focus) el.focus.value = '';
+  render();
 }
 
 /* ---- pan / zoom ------------------------------------------------------- */
@@ -938,14 +945,25 @@ function toggleMore() {
 
 /* ---- rendering -------------------------------------------------------- */
 
-function banner(kind, text) {
+function banner(kind, text, action = null) {
   const node = document.createElement('div');
   node.className = `truss-banner truss-banner--${kind}`;
-  node.textContent = text;
+  node.append(document.createTextNode(text));
+
+  if (action) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'truss-banner-action';
+    button.textContent = action.label;
+    button.setAttribute(action.attribute, '');
+    button.addEventListener('click', action.onClick);
+    node.append(button);
+  }
+
   return node;
 }
 
-function renderBanners(subsetCount) {
+function renderBanners() {
   el.banners.replaceChildren();
   if (state.fallback) {
     el.banners.append(banner('warn',
@@ -956,8 +974,13 @@ function renderBanners(subsetCount) {
     el.banners.append(banner('info',
       `${state.tables.length} tables — large schema. Use the filter or focus a table to keep the diagram fast and legible.`));
   }
-  if (subsetCount === 0) {
-    el.banners.append(banner('info', 'No tables match the current filter or focus.'));
+  // When the diagram is empty, say which of the filter and the focus emptied it,
+  // and offer to drop the focus when that is what is hiding the match.
+  const notice = emptySelectionNotice(state.tables, currentSelection());
+  if (notice) {
+    el.banners.append(banner('info', notice.message, notice.clearFocus
+      ? { label: 'Clear focus', attribute: 'data-clear-focus', onClick: clearFocus }
+      : null));
   }
 }
 
@@ -976,7 +999,7 @@ function syncUrl() {
 async function render() {
   const subset = currentSubset();
   syncUrl();
-  renderBanners(subset.length);
+  renderBanners();
 
   if (subset.length === 0) {
     el.canvas.replaceChildren();
