@@ -99,7 +99,11 @@
 
             <div class="truss-zoom" id="truss-zoom">
                 <button type="button" data-fit title="Fit the whole diagram in view">Fit</button>
-                <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1" title="Zoom (scroll or pinch over the diagram)">
+                {{-- A title attribute is a tooltip, not a name: assistive technology
+                     is not required to expose it, so the slider needs a real label
+                     (WCAG 4.1.2). aria-label keeps the control visually unchanged. --}}
+                <input id="truss-zoom-range" type="range" min="0.1" max="3" step="0.02" value="1"
+                       aria-label="Zoom" title="Zoom (scroll or pinch over the diagram)">
                 <span id="truss-zoom-pct">100%</span>
             </div>
         </main>

@@ -32,3 +32,10 @@ jobs:
 
       - name: Browser tests (Playwright)
         run: npm run test:e2e
+
+      # Reported as its own check so an accessibility regression is legible in the
+      # PR without reading the full browser-test log. Covers the axe-core scan of
+      # the dashboard and its overlays plus the keyboard-operation specs. The same
+      # specs run in the step above; this is about visibility, not extra coverage.
+      - name: Accessibility (axe-core + keyboard)
+        run: npm run test:a11y

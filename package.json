@@ -6,9 +6,11 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test tests/e2e/a11y.spec.js"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@playwright/test": "^1.61.1",
     "mermaid": "^11.16.0",

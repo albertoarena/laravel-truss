@@ -389,6 +389,19 @@ body {
   text-decoration: underline dotted; text-underline-offset: 3px;
 }
 
+/* WCAG 2.4.7 (Focus Visible). The three in-diagram triggers carry role="button"
+   and tabindex="0" (see truss.js), so they are reachable by Tab and need an
+   indicator that is a shape change, not a recolour: hover already uses colour,
+   and colour alone excludes anyone who cannot distinguish the two. Mermaid
+   renders these labels as HTML inside a foreignObject, so `outline` applies. */
+#truss-canvas svg .nodeLabel.truss-table-name:focus-visible,
+#truss-canvas svg .nodeLabel.truss-enum-type:focus-visible,
+#truss-canvas svg .nodeLabel.truss-health-marker:focus-visible {
+  outline: 2px solid var(--bp-focus-border);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* action menu inside the shared popover */
 .truss-menu { display: flex; flex-direction: column; gap: 2px; min-width: 150px; }
 .truss-menu button {

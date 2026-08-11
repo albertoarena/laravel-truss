@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The diagram is now operable from the keyboard. Table names, enum type labels, and health markers already carried a button role, so screen readers announced them as buttons; they now behave like one, answering Enter and Space. Escape closes the open menu and returns focus to whatever opened it, so a keyboard user is never dropped at the top of the document, and opening a menu with a key moves focus into it. Each of those triggers also has a visible focus ring, which is a shape rather than a colour change so it does not depend on distinguishing two colours.
+- The rendered diagram now names and describes itself for assistive technology (`accTitle` / `accDescr`, which Mermaid renders as `<title>` and `<desc>`). The description tracks the view you are actually looking at: the table and relationship counts, the active filter, and the focused table with its depth.
+- An accessibility check runs on every push: axe-core scans the dashboard and its overlays against WCAG 2.2 AA in the browser suite, reported as its own CI step, alongside specs covering keyboard operation. Run it locally with `npm run test:a11y`.
+
+### Fixed
+
+- The zoom slider had a tooltip but no accessible name, so screen readers announced an unlabelled slider. It now carries an explicit label; nothing changes visually.
+
 ## [1.8.4] - 2026-08-17
 
 ### Fixed

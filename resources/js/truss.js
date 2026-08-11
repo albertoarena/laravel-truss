@@ -339,6 +339,19 @@ function hidePopover() {
   el.exportBtn?.setAttribute('aria-expanded', 'false');
 }
 
+// The element to hand focus back to when the popover closes. Set only when the
+// popover was opened from the keyboard: closing on a click should not yank the
+// caret around, but closing with Escape must return a keyboard user to where
+// they were, or they are dropped at the top of the document (WCAG 2.1.2).
+let restoreFocusTo = null;
+
+function dismissPopover() {
+  const anchor = restoreFocusTo;
+  hidePopover();
+  restoreFocusTo = null;
+  anchor?.focus();
+}
+
 function downloadBlob(name, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1058,6 +1071,9 @@ async function render() {
 
   const definition = generateErDiagram(subset, {
     typeLabels: state.laravelLabels ? 'laravel' : 'native',
+    // Names the SVG for assistive technology and describes the view it is
+    // showing, so the description tracks the filter and focus (WCAG 1.1.1).
+    view: { filter: state.search, focus: state.focusRoot, depth: state.depth },
   });
   const key = subset.map((t) => t.name).join('|');
 
@@ -1251,6 +1267,33 @@ function wireEvents() {
       else showTableMenu(nameLabel, table);
     }
   });
+  // The in-diagram triggers are given role="button" and tabindex="0", which
+  // promises assistive technology a button, so they have to answer Enter and
+  // Space like one (WCAG 2.1.1). Delegated to match the click handler above and
+  // survive re-renders. Space is prevented from scrolling the page.
+  el.canvas.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    const trigger = e.target.closest('.truss-health-marker, .truss-enum-type, .truss-table-name');
+    if (!trigger) return;
+
+    e.preventDefault();
+    trigger.click();
+
+    // Opened from the keyboard: move into the menu so its actions are reachable
+    // without a mouse, and remember where to hand focus back on Escape.
+    if (!el.popover.hidden) {
+      restoreFocusTo = trigger;
+      el.popover.querySelector('button')?.focus();
+    }
+  });
+
+  // Escape closes the open popover from anywhere, including from inside it.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || el.popover.hidden) return;
+    e.preventDefault();
+    dismissPopover();
+  });
+
   el.popover.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-act]');
     if (btn) runMenuAction(btn.dataset.act);
