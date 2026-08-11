@@ -155,6 +155,38 @@ function normalizeSvg() {
   state.content = { width, height };
 }
 
+/**
+ * Re-draw each entity's outline on top of its row rects (issue #35).
+ *
+ * Mermaid draws the outer path first, then a full rect per row. Those row rects
+ * share the entity's left and right edges and are stroked in the pale hairline
+ * colour, so they repaint the outline everywhere except above the first row: the
+ * dark border survives only around the title block, on three sides. SVG has no
+ * z-index, and CSS cannot stroke two sides of a closed path, so the fix is paint
+ * order. Cloning the outline path and appending it last gives one continuous
+ * border at one width, and because the clone keeps the `outer-path` class the
+ * focused, diff and health overrides reach it with no extra rules.
+ */
+function raiseEntityBorders() {
+  const svg = el.canvas.querySelector('svg');
+  if (!svg) return;
+
+  for (const node of svg.querySelectorAll('g.node')) {
+    // Re-rendering replaces the whole SVG, but a defensive clear keeps this
+    // idempotent if it is ever called twice against the same node.
+    node.querySelectorAll('g.truss-entity-outline').forEach((old) => old.remove());
+
+    // The stroked half of the outer path (the other one only carries the fill).
+    const stroked = node.querySelector('g.outer-path path[fill="none"]');
+    if (!stroked) continue;
+
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'outer-path truss-entity-outline');
+    group.append(stroked.cloneNode(true));
+    node.append(group);
+  }
+}
+
 function zoomBy(factor, point) {
   state.view = zoomAtPoint(state.view, point, factor);
   applyTransform();
@@ -1016,6 +1048,7 @@ async function render() {
     hidePopover(); // the eye it anchored to is about to be replaced
     el.canvas.innerHTML = svg;
     normalizeSvg();
+    raiseEntityBorders();
     markFocusedTable();
     markDiffTables(); // re-tint after a re-render when the Changes view is on
     markDoctorBadges(); // re-badge after a re-render when the Health view is on
