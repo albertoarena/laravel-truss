@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The dark border around a table was only drawn on three sides of the title block, leaving the body outlined in the pale hairline colour, so the entity looked unfinished rather than deliberate. Mermaid draws each row as a full-width rect after the outer path, so the rows were repainting the shared left and right edges. The outline is now re-drawn over the rows, giving one continuous border at one width and colour, with the hairlines between rows kept. It holds for the focused, changed and health-flagged variants too, since they all restyle the same outline. Reported by Alberto Peripolli (@trippo).
+
 ## [1.8.1] - 2026-08-11
 
 ### Fixed
