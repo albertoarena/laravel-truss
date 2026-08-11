@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Filtering while a table was focused emptied the diagram with no explanation. The two selections compose, so searching for a table outside the focused neighbourhood correctly matched nothing, but the banner named neither and the search simply looked broken. The empty state now says which filter and which focus produced it, and offers a **Clear focus** action when dropping the focus would actually show something (it stays silent about the focus when the filter alone matches nothing, since clearing it would leave the diagram just as empty). Clearing keeps the filter you typed and removes `focus` from the URL. The same dead end used to appear when a deep link focused a table that config excludes on that connection; it is now explained too.
+- Filtering while a table was focused emptied the diagram with no explanation. The two selections compose, so searching for a table outside the focused neighbourhood correctly matched nothing, but the banner named neither and the search simply looked broken. The empty state now says which filter and which focus produced it, and offers a **Clear focus** action when dropping the focus would actually show something (it stays silent about the focus when the filter alone matches nothing, since clearing it would leave the diagram just as empty). Clearing keeps the filter you typed and removes `focus` from the URL. The same dead end used to appear when a deep link focused a table that config excludes on that connection; it is now explained too. Thanks to @trippo for reporting it, after spotting it in @PovilasKorop's Laravel Daily video.
 
 ### Changed
 
