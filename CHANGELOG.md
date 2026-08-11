@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A clean install could return HTTP 500 from the schema endpoint, showing "Could not load schema" over an empty diagram, on any app whose default filesystem disk is remote (for example `FILESYSTEM_DISK=s3`). The schema-diff baseline was written to the application's default disk, so reading it went through the remote adapter and threw, and nothing in the resulting error pointed at the cause. Three things change. The baseline disk now defaults to `local` rather than following the application, since it is derived tooling state and does not belong in an application bucket. Every baseline operation now degrades instead of throwing, so a disk problem costs you the Changes panel and nothing else: the diagram needs no filesystem access at all, and the same fault could previously fail `php artisan migrate` through the migration listener. And the failure is now explained rather than silent, as a dashboard notice and, in `truss:diff`, a message naming the disk and `TRUSS_DIFF_DISK`.
+
 ### Changed
 
 - A custom theme no longer flattens the table outline and the row separators into one colour. The `border` knob paints four things at once, so setting it used to give every line in a table the same weight, losing the hierarchy the shipped palette has (a strong outline against pale row separators). The row hairline is now derived as a translucent tint of the border colour, the same way the background grid follows the accent, so a few knob values keep reading as a designed table rather than a uniform grid. Existing custom themes will show lighter row separators than before. A border given as `rgb()`, `hsl()` or a colour keyword is unchanged, since tinting needs the colour channels.

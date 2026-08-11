@@ -227,7 +227,7 @@ The overrides are delivered as a same-origin stylesheet, so a strict Content-Sec
 
 ## Storage
 
-Truss keeps its schema snapshot in the cache, which is derived and disposable. The one thing it writes to disk is the **schema-diff baseline**: a structure-only JSON file (never row data) recorded after each migration so the diff can show what changed. It lives at `truss/baselines/{connection}.json` on the disk set by `truss.diff.disk` (the default disk otherwise), is safe to delete, and is worth gitignoring alongside `storage/`. To turn the feature off entirely so nothing is written to disk, set `TRUSS_DIFF_ENABLED=false` (or `truss.diff.enabled` to `false`).
+Truss keeps its schema snapshot in the cache, which is derived and disposable. The one thing it writes to disk is the **schema-diff baseline**: a structure-only JSON file (never row data) recorded after each migration so the diff can show what changed. It lives at `truss/baselines/{connection}.json` on the disk set by `truss.diff.disk` (`local` by default, deliberately not your application's default disk, since this is derived tooling state rather than application data), is safe to delete, and is worth gitignoring alongside `storage/`. If that disk is unreadable, the diff is simply unavailable: the diagram, the doctor, and the exports are untouched. To turn the feature off entirely so nothing is written to disk, set `TRUSS_DIFF_ENABLED=false` (or `truss.diff.enabled` to `false`).
 
 ## Security
 

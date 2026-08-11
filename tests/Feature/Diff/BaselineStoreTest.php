@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AlbertoArena\Truss\Diff\BaselineStore;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\UnableToCheckDirectoryExistence;
 
 function baselineSnapshot(string $connection = 'testing'): array
 {
@@ -91,4 +92,58 @@ it('uses the default disk when truss.diff.disk is null', function () {
     $store->save('testing', baselineSnapshot());
 
     expect(Storage::disk('local')->allFiles('truss/baselines'))->toHaveCount(1);
+});
+
+/*
+ * Disk resilience. The baseline is the only part of Truss that touches the
+ * filesystem, and `diff.disk` used to default to the application's own default
+ * disk. On an app with FILESYSTEM_DISK=s3 that sent the baseline through the S3
+ * adapter, which threw UnableToCheckDirectoryExistence and took the whole schema
+ * endpoint down with it: a secondary feature breaking the primary one. Losing a
+ * baseline is a missing diff, never a failure.
+ */
+
+it('defaults the baseline disk to local, not the application default disk', function () {
+    // The baseline is derived tooling state, not application data: it should not
+    // land in someone's production bucket even when writing there would succeed.
+    expect(config('truss.diff.disk'))->toBe('local');
+});
+
+it('reads as no baseline when the disk throws', function () {
+    Storage::shouldReceive('disk')
+        ->andThrow(new UnableToCheckDirectoryExistence('nope'));
+
+    $store = new BaselineStore;
+
+    expect($store->get('testing'))->toBeNull()
+        ->and($store->has('testing'))->toBeFalse();
+});
+
+it('reports a failed write instead of throwing', function () {
+    Storage::shouldReceive('disk')
+        ->andThrow(new UnableToCheckDirectoryExistence('nope'));
+
+    $store = new BaselineStore;
+
+    expect($store->save('testing', baselineSnapshot()))->toBeFalse()
+        ->and($store->lastError())->toContain('nope');
+});
+
+it('survives a disk name that has no configured driver', function () {
+    // A typo in TRUSS_DIFF_DISK is the other way this fails, and it throws a
+    // different exception type (InvalidArgumentException, not a Flysystem one).
+    config()->set('truss.diff.disk', 'not-a-real-disk');
+    $store = new BaselineStore;
+
+    expect($store->get('testing'))->toBeNull()
+        ->and($store->save('testing', baselineSnapshot()))->toBeFalse()
+        ->and($store->forget('testing'))->toBeFalse();
+});
+
+it('reports success and clears the error on a healthy disk', function () {
+    Storage::fake('local');
+    $store = new BaselineStore;
+
+    expect($store->save('testing', baselineSnapshot()))->toBeTrue()
+        ->and($store->lastError())->toBeNull();
 });

@@ -36,6 +36,9 @@ class SchemaApiController
         private readonly DoctorReport $doctor = new DoctorReport,
     ) {}
 
+    /** Whether the diff baseline could not be read (a disk problem, not an absent file). */
+    private bool $baselineUnavailable = false;
+
     public function __invoke(Request $request): JsonResponse
     {
         $requested = $request->query('connection');
@@ -49,6 +52,14 @@ class SchemaApiController
         $snapshot['tables'] = $this->withoutExcludedTables($snapshot['tables'], $connection);
         $snapshot['diff'] = $this->diffFor($connection, $snapshot);
         $snapshot['doctor'] = $this->doctorFor($connection, $snapshot);
+
+        // Signalled beside `diff` rather than inside it, so `diff` keeps its
+        // null-or-object shape and existing clients need no change. Present only
+        // when the baseline could not be read, so the dashboard can say the
+        // feature is unavailable instead of silently showing no changes.
+        if ($this->baselineUnavailable) {
+            $snapshot['diff_unavailable'] = true;
+        }
 
         return response()->json($snapshot);
     }
@@ -87,6 +98,11 @@ class SchemaApiController
         $baseline = $this->baselines->get($connection);
 
         if ($baseline === null) {
+            // A read error and "no baseline recorded yet" both land here, and only
+            // the first is worth telling anyone about: the second is the normal
+            // state of a fresh install until the next migration.
+            $this->baselineUnavailable = $this->baselines->lastError() !== null;
+
             return null;
         }
 
