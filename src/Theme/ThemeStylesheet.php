@@ -119,6 +119,18 @@ class ThemeStylesheet
             }
         }
 
+        // Row hairlines are a translucent tint of the border rather than the same
+        // colour. The `border` knob paints four tokens at once, so without this a
+        // custom theme flattens the table outline and the row separators into one
+        // value and loses the hierarchy the shipped palette has (a navy outline
+        // against pale separators). Emitted after the loop so it wins. Needs the
+        // colour channels, so a non-hex border leaves the hairline equal to it,
+        // which is the previous behaviour.
+        $border = isset($knobs['border']) ? $this->hexToRgb($this->sanitizeColor($knobs['border'])) : null;
+        if ($border !== null) {
+            $decls[] = "--bp-hair: rgba({$border}, 0.35);";
+        }
+
         // The background grid is a translucent tint of the accent, so it follows
         // a custom accent rather than staying on the shipped blue. This needs the
         // colour channels, so it applies only when the accent is a hex value; an

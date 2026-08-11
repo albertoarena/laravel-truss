@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A custom theme no longer flattens the table outline and the row separators into one colour. The `border` knob paints four things at once, so setting it used to give every line in a table the same weight, losing the hierarchy the shipped palette has (a strong outline against pale row separators). The row hairline is now derived as a translucent tint of the border colour, the same way the background grid follows the accent, so a few knob values keep reading as a designed table rather than a uniform grid. Existing custom themes will show lighter row separators than before. A border given as `rgb()`, `hsl()` or a colour keyword is unchanged, since tinting needs the colour channels.
+
 ### Fixed
 
 - The dark border around a table was only drawn on three sides of the title block, leaving the body outlined in the pale hairline colour, so the entity looked unfinished rather than deliberate. Mermaid draws each row as a full-width rect after the outer path, so the rows were repainting the shared left and right edges. The outline is now re-drawn over the rows, giving one continuous border at one width and colour, with the hairlines between rows kept. It holds for the focused, changed and health-flagged variants too, since they all restyle the same outline. Reported by Alberto Peripolli (@trippo).

@@ -173,3 +173,50 @@ it('reports whether a custom theme is configured', function () {
         ->and($sheet->isConfigured(['colors' => ['light' => ['accent' => '#000']]]))->toBeTrue()
         ->and($sheet->isConfigured(['fonts' => ['sans' => 'Inter']]))->toBeTrue();
 });
+
+it('keeps row hairlines subordinate to the entity outline in a custom theme', function () {
+    // The `border` knob paints four tokens, so a custom theme used to flatten the
+    // table outline and the row separators to one colour, losing the hierarchy a
+    // default install has (#12356b outline against a #c4d5ec hairline). The
+    // hairline is derived as a translucent tint of the border instead, the same
+    // trick the background grid uses on the accent. See issue #40.
+    $css = themeCss(['colors' => ['light' => ['border' => '#112233']]]);
+
+    expect($css)->toContain('--bp-entity-border: #112233;')
+        ->and($css)->toContain('--bp-hair: rgba(17, 34, 51, 0.35);');
+});
+
+it('leaves the panel and field chrome on the full-strength border colour', function () {
+    // Only the row hairline is subordinate: the chrome lines are what the knob is
+    // named for, and weakening them would be a different design change.
+    $css = themeCss(['colors' => ['light' => ['border' => '#112233']]]);
+
+    expect($css)->toContain('--bp-panel-line: #112233;')
+        ->and($css)->toContain('--bp-field-line: #112233;');
+});
+
+it('derives the hairline in dark mode too', function () {
+    $css = themeCss(['colors' => ['dark' => ['border' => '#aabbcc']]]);
+
+    expect($css)->toContain('--bp-hair: rgba(170, 187, 204, 0.35);');
+});
+
+it('accepts a short #rgb border for the hairline derivation', function () {
+    expect(themeCss(['colors' => ['light' => ['border' => '#abc']]]))
+        ->toContain('--bp-hair: rgba(170, 187, 204, 0.35);');
+});
+
+it('leaves the hairline on the border value when it is not a hex colour', function () {
+    // Same limitation as the grid: the tint needs colour channels. The hairline
+    // then stays equal to the border, which is exactly today's behaviour.
+    $css = themeCss(['colors' => ['light' => ['border' => 'rgb(17, 34, 51)']]]);
+
+    expect($css)->toContain('--bp-hair: rgb(17, 34, 51);')
+        ->and($css)->not->toContain('--bp-hair: rgba(');
+});
+
+it('emits no hairline override when no border knob is set', function () {
+    // A default install keeps the shipped tokens untouched.
+    expect(themeCss(['colors' => ['light' => ['accent' => '#112233']]]))
+        ->not->toContain('--bp-hair');
+});
