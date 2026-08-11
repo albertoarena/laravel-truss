@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { users, posts, categories } from '../js/fixtures.js';
+import { expectFocus } from './focus-helper.js';
 
 const base = {
   connection: 'primary',
@@ -63,7 +64,7 @@ test('clicking a table in the panel focuses it in the diagram', async ({ page })
   await page.locator('#truss-health-btn').click();
   await page.locator('#truss-health-panel [data-health-focus="posts"]').click();
 
-  await expect(page.locator('#truss-focus')).toHaveValue('posts');
+  await expectFocus(page, 'posts');
   await expect(page.locator('#truss-canvas')).toContainText('users');       // posts' FK neighbour
   await expect(page.locator('#truss-canvas')).not.toContainText('categories'); // unrelated table
 });

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { users, posts } from '../js/fixtures.js';
+import { expectFocus } from './focus-helper.js';
 
 const comments = {
   name: 'comments',
@@ -79,7 +80,7 @@ test('clicking a changed table in the panel focuses it in the diagram', async ({
   await page.locator('#truss-diff-btn').click();
   await page.locator('#truss-diff-panel [data-diff-focus="posts"]').click();
 
-  await expect(page.locator('#truss-focus')).toHaveValue('posts');
+  await expectFocus(page, 'posts');
   await expect(page.locator('#truss-canvas')).toContainText('users');     // posts' FK neighbour
   await expect(page.locator('#truss-canvas')).not.toContainText('comments'); // unrelated added table
 });
