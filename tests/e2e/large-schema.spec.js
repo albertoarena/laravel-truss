@@ -60,6 +60,22 @@ test(`renders a ${TABLE_COUNT}-table schema without hitting Mermaid limits`, asy
   // No Mermaid error text leaked into the canvas (would signal a blown guard).
   await expect(page.locator('#truss-canvas')).not.toContainText('Maximum');
   expect(Date.now() - started).toBeLessThan(25_000);
+
+  // Issue #35: every entity re-draws its outline last, at scale too. The obvious
+  // optimisation when a large diagram feels slow is to annotate only the visible
+  // nodes or to chunk the loop, and either would leave most tables with the old
+  // three-sided border while the small-fixture border spec stayed green. Counts
+  // are compared to each other, not to a literal, so changing TABLE_COUNT cannot
+  // silently weaken this.
+  const drawn = await page.evaluate(() => {
+    const svg = document.querySelector('#truss-canvas svg');
+    return {
+      nodes: svg.querySelectorAll('g.node').length,
+      outlines: svg.querySelectorAll('g.truss-entity-outline').length,
+    };
+  });
+  expect(drawn.nodes).toBe(TABLE_COUNT);
+  expect(drawn.outlines).toBe(drawn.nodes);
 });
 
 test('focus mode keeps a large schema legible by reducing to a neighbourhood', async ({ page }) => {
