@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { users, posts, roles, roleUser } from '../js/fixtures.js';
+import { selectFocus, expectFocus } from './focus-helper.js';
 
 const primary = {
   connection: 'primary',
@@ -58,7 +59,7 @@ test('the text filter reduces the diagram to matching tables', async ({ page }) 
 });
 
 test('focus mode reduces to a table and its FK neighbours', async ({ page }) => {
-  await page.selectOption('#truss-focus', 'users');
+  await selectFocus(page, 'users');
 
   // depth 1 from users → users + posts + role_user, but not roles.
   await expect(canvas(page)).toContainText('role_user');
@@ -69,7 +70,7 @@ test('focus mode reduces to a table and its FK neighbours', async ({ page }) => 
 test('searching outside the focused neighbourhood explains itself and offers a way out', async ({ page }) => {
   // Issue #34: focus a table, search for one outside it, and the diagram empties
   // with no hint that the focus is what is hiding the match.
-  await page.selectOption('#truss-focus', 'users');
+  await selectFocus(page, 'users');
   await expect(canvas(page)).toContainText('role_user');
 
   await page.fill('#truss-search', 'roles');
@@ -81,14 +82,14 @@ test('searching outside the focused neighbourhood explains itself and offers a w
 
   await expect(canvas(page)).toContainText('roles');
   await expect(banners(page)).not.toContainText('within focus');
-  await expect(page.locator('#truss-focus')).toHaveValue('');
+  await expectFocus(page, '');
   expect(new URL(page.url()).searchParams.get('focus')).toBeNull();
   // The filter the user typed survives clearing the focus.
   await expect(page.locator('#truss-search')).toHaveValue('roles');
 });
 
 test('no way out is offered when the filter alone matches nothing', async ({ page }) => {
-  await page.selectOption('#truss-focus', 'users');
+  await selectFocus(page, 'users');
   await page.fill('#truss-search', 'zzz');
 
   await expect(banners(page)).toContainText('No tables match "zzz".');
@@ -97,7 +98,7 @@ test('no way out is offered when the filter alone matches nothing', async ({ pag
 
 test('focus centres the focused table in the viewport', async ({ page }) => {
   await expect(page.locator('#truss-canvas > svg')).toBeVisible();
-  await page.selectOption('#truss-focus', 'users');
+  await selectFocus(page, 'users');
   await expect(canvas(page)).toContainText('role_user'); // wait for the re-render
 
   const offset = await page.evaluate(() => {
@@ -122,7 +123,7 @@ test('focus centres the focused table in the viewport', async ({ page }) => {
 
 test('the focused table is flagged for highlighting', async ({ page }) => {
   await expect(page.locator('#truss-canvas > svg')).toBeVisible();
-  await page.selectOption('#truss-focus', 'users');
+  await selectFocus(page, 'users');
   await expect(canvas(page)).toContainText('role_user');
 
   const flags = await page.evaluate(() => {
@@ -207,7 +208,7 @@ test('the menu Focus action focuses the table and updates the URL', async ({ pag
   await expect(page.locator('#truss-popover')).toBeHidden();
   await expect(canvas(page)).toContainText('role_user'); // users + FK neighbours
   await expect(canvas(page)).not.toContainText('roles');
-  await expect(page.locator('#truss-focus')).toHaveValue('users');
+  await expectFocus(page, 'users');
   await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBe('users');
 });
 
@@ -222,7 +223,7 @@ test('the focused table offers Unfocus instead of Focus, and it clears focus', a
 
   await pop.getByText('Unfocus this table').click();
   await expect(canvas(page)).toContainText('roles'); // full schema is back
-  await expect(page.locator('#truss-focus')).toHaveValue('');
+  await expectFocus(page, '');
   await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBeNull();
 
   // A non-focused table still offers Focus.
@@ -317,7 +318,7 @@ test('a focus in the URL is applied on load', async ({ page }) => {
   // depth 1 from users -> users + posts + role_user, not roles.
   await expect(canvas(page)).toContainText('role_user');
   await expect(canvas(page)).not.toContainText('roles');
-  await expect(page.locator('#truss-focus')).toHaveValue('users');
+  await expectFocus(page, 'users');
 });
 
 test('a filter in the URL is applied on load', async ({ page }) => {
@@ -332,11 +333,11 @@ test('a filter in the URL is applied on load', async ({ page }) => {
 test('changing focus and filter updates the URL', async ({ page }) => {
   await expect(canvas(page).locator('svg')).toBeVisible();
 
-  await page.selectOption('#truss-focus', 'users');
+  await selectFocus(page, 'users');
   await expect(canvas(page)).toContainText('role_user');
   await expect.poll(() => new URL(page.url()).searchParams.get('focus')).toBe('users');
 
-  await page.selectOption('#truss-focus', '');
+  await selectFocus(page, '');
   await page.fill('#truss-search', 'post');
   await expect(canvas(page)).toContainText('posts');
   await expect.poll(() => new URL(page.url()).searchParams.get('filter')).toBe('post');

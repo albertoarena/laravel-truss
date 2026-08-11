@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { selectFocus } from './focus-helper.js';
 
 // Step 25: a real large schema must render (Mermaid's maxTextSize/maxEdges
 // guards are raised) and focus must reduce it to a fast, legible neighbourhood.
@@ -81,7 +82,7 @@ test(`renders a ${TABLE_COUNT}-table schema without hitting Mermaid limits`, asy
 test('focus mode keeps a large schema legible by reducing to a neighbourhood', async ({ page }) => {
   await expect(page.locator('#truss-canvas > svg')).toBeVisible({ timeout: 25_000 });
 
-  await page.selectOption('#truss-focus', 'entity_50');
+  await selectFocus(page, 'entity_50');
 
   // depth 1 → entity_49, entity_50, entity_51 only.
   await expect(page.locator('#truss-canvas')).toContainText('entity_49');
