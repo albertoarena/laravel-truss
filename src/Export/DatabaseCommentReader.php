@@ -32,19 +32,26 @@ final class DatabaseCommentReader implements CommentReader
 
         $comments = [];
 
-        foreach ($builder->getTables() as $table) {
-            $name = $table['name'];
+        // Read in real database names, with the connection's table prefix
+        // suspended. getTables() reports names exactly as stored, prefix
+        // included, while getColumns() prepends the prefix again, so on a
+        // prefixed connection every column comment would silently go missing
+        // (issue #46). Mirrors SnapshotBuilder::introspect().
+        $builder->getConnection()->withoutTablePrefix(function () use ($builder, &$comments): void {
+            foreach ($builder->getTables() as $table) {
+                $name = $table['name'];
 
-            if ($this->present($table['comment'] ?? null)) {
-                $comments[$name] = (string) $table['comment'];
-            }
+                if ($this->present($table['comment'] ?? null)) {
+                    $comments[$name] = (string) $table['comment'];
+                }
 
-            foreach ($builder->getColumns($name) as $column) {
-                if ($this->present($column['comment'] ?? null)) {
-                    $comments["{$name}.{$column['name']}"] = (string) $column['comment'];
+                foreach ($builder->getColumns($name) as $column) {
+                    if ($this->present($column['comment'] ?? null)) {
+                        $comments["{$name}.{$column['name']}"] = (string) $column['comment'];
+                    }
                 }
             }
-        }
+        });
 
         return $comments;
     }
