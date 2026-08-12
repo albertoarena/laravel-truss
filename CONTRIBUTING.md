@@ -32,4 +32,4 @@ The PHP suite uses an in-memory SQLite database and Orchestra Testbench, so no e
 
 ## Reporting bugs
 
-Open an issue with a minimal reproduction. A failing test is the most helpful form a report can take. For security issues, please email me@albertoarena.it instead of opening a public issue.
+Open an issue with a minimal reproduction. A failing test is the most helpful form a report can take. For security issues, please email hello@albertoarena.it instead of opening a public issue.

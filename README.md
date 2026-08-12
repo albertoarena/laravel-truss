@@ -231,7 +231,7 @@ Truss keeps its schema snapshot in the cache, which is derived and disposable. T
 
 ## Security
 
-Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email me@albertoarena.it rather than opening a public issue.
+Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email hello@albertoarena.it rather than opening a public issue.
 
 ## Contributing
 
