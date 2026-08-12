@@ -38,7 +38,11 @@ final class DatabaseCommentReader implements CommentReader
         // prefixed connection every column comment would silently go missing
         // (issue #46). Mirrors SnapshotBuilder::introspect().
         $builder->getConnection()->withoutTablePrefix(function () use ($builder, &$comments): void {
-            foreach ($builder->getTables() as $table) {
+            // Scope to the connection's own schema, as SnapshotBuilder does. A bare
+            // getTables() lists every schema on the server (issue #3), so on a shared
+            // host an unrelated database's comments would land in the map and a
+            // same-named table there would annotate ours with another app's meaning.
+            foreach ($builder->getTables($builder->getCurrentSchemaName()) as $table) {
                 $name = $table['name'];
 
                 if ($this->present($table['comment'] ?? null)) {
