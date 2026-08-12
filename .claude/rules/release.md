@@ -41,8 +41,10 @@ Follow these steps in order. Never skip the CI gate.
    the tag message: the version, a colon, then what the release is about in a few
    words, lowercase after the colon, no em or en dashes. It is what people read in
    the releases list and in a notification, and a bare version number tells them
-   nothing. v1.8.1 shipped bare by mistake; every release since v1.8.2 uses the
-   summary. Confirm the exact title with the maintainer before publishing, along
+   nothing. v1.8.1 shipped bare by mistake and was renamed afterwards with
+   `gh release edit vX.Y.Z --title "..."`, which rewrites the title without
+   touching the tag or the notes, so a bad title is fixable but better avoided.
+   Confirm the exact title with the maintainer before publishing, along
    with the notes, since a release is outward facing and awkward to restate.
 
 7. **Post-release.** Packagist picks up the new tag on its webhook sync (its
