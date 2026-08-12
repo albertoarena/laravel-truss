@@ -37,6 +37,14 @@ Follow these steps in order. Never skip the CI gate.
    The notes mirror the changelog entry. Not a draft, not a prerelease unless
    asked. Verify with `gh release view vX.Y.Z`.
 
+   **The title always carries the summary**, never a bare `vX.Y.Z`. Same shape as
+   the tag message: the version, a colon, then what the release is about in a few
+   words, lowercase after the colon, no em or en dashes. It is what people read in
+   the releases list and in a notification, and a bare version number tells them
+   nothing. v1.8.1 shipped bare by mistake; every release since v1.8.2 uses the
+   summary. Confirm the exact title with the maintainer before publishing, along
+   with the notes, since a release is outward facing and awkward to restate.
+
 7. **Post-release.** Packagist picks up the new tag on its webhook sync (its
    "Update" button forces it); this is automatic, just verify. No manual version
    bump exists in `composer.json`; the git tag is the source of truth. The docs
