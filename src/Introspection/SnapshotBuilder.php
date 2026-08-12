@@ -161,20 +161,35 @@ class SnapshotBuilder
     {
         $builder = Schema::connection($connection);
 
-        return array_map(
-            fn (array $table): Table => new Table(
-                name: $table['name'],
-                columns: $this->columns($builder, $table['name']),
-                primaryKey: $this->primaryKey($builder, $table['name']),
-                indexes: $this->indexes($builder, $table['name']),
-                foreignKeys: $this->foreignKeys($builder, $table['name']),
+        // Introspect in real database names, with the connection's table prefix
+        // suspended for the pass. getTables() reports names exactly as the
+        // database stores them, prefix included, but the schema builder prepends
+        // the prefix again to anything handed to getColumns()/getIndexes()/
+        // getForeignKeys(). Passing the reported names straight back would look
+        // up "portal_portal_users", which exists nowhere, and every table would
+        // come back structurally empty with no error at all (issue #46).
+        //
+        // Suspending the prefix beats stripping it from each name: a prefix is
+        // often what separates two apps sharing one database, so the schema can
+        // hold tables the prefix never applied to, and those have nothing to
+        // strip. It also keeps foreign key targets in the same namespace as the
+        // table names, which is what the diagram matches edges on.
+        return $builder->getConnection()->withoutTablePrefix(
+            fn (): array => array_map(
+                fn (array $table): Table => new Table(
+                    name: $table['name'],
+                    columns: $this->columns($builder, $table['name']),
+                    primaryKey: $this->primaryKey($builder, $table['name']),
+                    indexes: $this->indexes($builder, $table['name']),
+                    foreignKeys: $this->foreignKeys($builder, $table['name']),
+                ),
+                // Scope to the connection's own schema. Since Laravel 12, a bare
+                // getTables() lists every schema on the server (issue #3), so on a
+                // shared host it would leak unrelated databases into the snapshot.
+                // getCurrentSchemaName() resolves per driver: the database name on
+                // MySQL, the search-path schema on PostgreSQL, 'main' on SQLite.
+                $builder->getTables($builder->getCurrentSchemaName()),
             ),
-            // Scope to the connection's own schema. Since Laravel 12, a bare
-            // getTables() lists every schema on the server (issue #3), so on a
-            // shared host it would leak unrelated databases into the snapshot.
-            // getCurrentSchemaName() resolves per driver: the database name on
-            // MySQL, the search-path schema on PostgreSQL, 'main' on SQLite.
-            $builder->getTables($builder->getCurrentSchemaName()),
         );
     }
 
