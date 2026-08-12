@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-08-12
+
 ### Fixed
 
 - On a connection configured with a table prefix (`'prefix' => 'portal_'`, or `DB_PREFIX`), every table rendered as an empty block: no columns, no types, no keys, and no relationship lines. Laravel reports table names exactly as the database stores them, prefix included, but prepends the prefix again to any name passed into its column, index and foreign key methods, so introspection was asking for `portal_portal_users` and getting an empty result back with no error to explain it. The prefix is now suspended for the duration of a snapshot, and introspection works in real database names throughout. Suspending it rather than trimming each name also covers a schema shared between apps, where the prefix separates the two and the other app's tables never carried it. The same fault silently dropped every native column comment from `truss:export` annotations on a prefixed connection, and is fixed with it. Reported by @locshino.
