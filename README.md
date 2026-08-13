@@ -25,7 +25,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
 - Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, DBML, or a token-trimmed `llm` format, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic.
-- Feed your real, live structure to a coding agent as grounding context: annotate it with business meaning, trim it with `--compact`, and narrow it with `--focus`, so the agent stops inventing columns. Structure only, never row data.
+- Feed your real, live structure to a coding agent as grounding context: annotate it with business meaning, trim it with `--compact`, and narrow it with `--focus`, so the agent stops inventing columns. Structure only, never data.
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
 - Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
 - Multiple connections: list them in config and switch between their diagrams with a toolbar picker, each scoped to its own database.
@@ -192,7 +192,7 @@ The server exposes five tools and one resource, all read-only and structure-only
 - `get_structural_review`: the deterministic `truss:doctor` findings.
 - Resource `truss://schema`: the whole structure as one compact document.
 
-Every tool answers with structure only, never row data, and honours the same `excluded_tables` and managed-connection safeguards as the rest of Truss. It requires Laravel 12.41.1 or newer (or Laravel 13); Truss's own minimum is unaffected. Set `truss.mcp.enabled` to `false` to turn it off. A note on safety: if you pair a schema like this with a tool that executes generated SQL, that tool needs its own read-only connection and validation; Truss produces context, it never runs a query for you.
+Every tool answers with structure only, never data, and honours the same `excluded_tables` and managed-connection safeguards as the rest of Truss. It requires Laravel 12.41.1 or newer (or Laravel 13); Truss's own minimum is unaffected. Set `truss.mcp.enabled` to `false` to turn it off. A note on safety: if you pair a schema like this with a tool that executes generated SQL, that tool needs its own read-only connection and validation; Truss produces context, it never runs a query for you.
 
 ## Theming
 
