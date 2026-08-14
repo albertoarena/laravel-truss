@@ -79,6 +79,51 @@ test.describe('keyboard operation of the diagram', () => {
     await expect(page.locator('#truss-canvas')).not.toContainText('roles');
   });
 
+  // Activating an item hides the popover, which takes the pressed button out from
+  // under focus. Without a hand-back the browser drops the user on <body> and the
+  // next Tab restarts at the top of the toolbar, several stops from where they
+  // were working (2.4.3 Focus Order). Escape already restores; so must this.
+  test('activating a menu action returns focus to what opened it', async ({ page }) => {
+    await load(page);
+    const trigger = tableName(page, 'users');
+    await trigger.press('Enter');
+
+    await popover(page).getByRole('button', { name: /Copy JSON/ }).press('Enter');
+
+    await expect(popover(page)).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
+  // Focusing a table re-renders the diagram, so the label that opened the menu is
+  // detached by the time the action finishes. The same table's new label is the
+  // equivalent place to land.
+  test('focusing a table from the menu lands focus on the re-rendered label', async ({ page }) => {
+    await load(page);
+    await tableName(page, 'users').press('Enter');
+
+    await popover(page).getByRole('button', { name: /Focus this table/ }).press('Enter');
+
+    await expect(page.locator('#truss-canvas')).not.toContainText('roles');
+    await expect(tableName(page, 'users')).toBeFocused();
+  });
+
+  // The stored anchor has to die with the popover it belonged to. Left behind, it
+  // fires on the next Escape from a menu the user opened with the mouse, throwing
+  // focus back to a table they visited earlier.
+  test('a menu opened with the mouse does not restore an earlier trigger', async ({ page }) => {
+    await load(page);
+    const earlier = tableName(page, 'users');
+    await earlier.press('Enter');
+    await popover(page).getByRole('button', { name: /Copy JSON/ }).press('Enter');
+
+    await tableName(page, 'posts').click();
+    await expect(popover(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    await expect(popover(page)).toBeHidden();
+    await expect(earlier).not.toBeFocused();
+  });
+
   test('Enter on an enum type label opens the value popover', async ({ page }) => {
     await load(page);
     await page.locator('#truss-canvas .truss-enum-type').first().press('Enter');

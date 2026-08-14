@@ -125,7 +125,9 @@ function setFocus(name, { render: shouldRender = true } = {}) {
   state.focusRoot = next;
   if (el.focus) el.focus.value = next;
   focusCombo?.close({ revert: false });
-  if (shouldRender) render();
+  // Returns the render so a caller can act once the new diagram is on the page,
+  // which is when the labels it needs to reach exist.
+  return shouldRender ? render() : Promise.resolve();
 }
 
 /** Drop the focus but keep the filter, so the search the user just typed applies. */
@@ -350,24 +352,38 @@ function showTableMenu(anchor, table) {
   positionPopover(anchor);
 }
 
-function hidePopover() {
-  if (el.popover) el.popover.hidden = true;
-  openAnchor = null;
-  menuTable = null;
-  el.exportBtn?.setAttribute('aria-expanded', 'false');
-}
-
 // The element to hand focus back to when the popover closes. Set only when the
 // popover was opened from the keyboard: closing on a click should not yank the
 // caret around, but closing with Escape must return a keyboard user to where
 // they were, or they are dropped at the top of the document (WCAG 2.1.2).
 let restoreFocusTo = null;
 
+function hidePopover() {
+  if (el.popover) el.popover.hidden = true;
+  openAnchor = null;
+  menuTable = null;
+  restoreFocusTo = null; // belongs to the popover being closed, never to the next one
+  el.exportBtn?.setAttribute('aria-expanded', 'false');
+}
+
+/**
+ * Hand focus back to the trigger a keyboard-opened popover came from. A null
+ * anchor means the mouse opened it, and moving focus then would be the yank the
+ * anchor exists to avoid.
+ */
+function refocusTrigger(anchor) {
+  if (!anchor) return;
+  if (anchor.isConnected) { anchor.focus(); return; }
+  // Focusing a table re-renders the diagram, so the label that opened the menu
+  // has been replaced. The same table's new label is the equivalent place to land.
+  const table = anchor.dataset?.table;
+  if (table) el.canvas?.querySelector(`.truss-table-name[data-table="${CSS.escape(table)}"]`)?.focus();
+}
+
 function dismissPopover() {
   const anchor = restoreFocusTo;
   hidePopover();
-  restoreFocusTo = null;
-  anchor?.focus();
+  refocusTrigger(anchor);
 }
 
 function downloadBlob(name, blob) {
@@ -409,16 +425,26 @@ async function downloadExport(format, only, baseName) {
 
 function runMenuAction(act) {
   const table = menuTable;
+  // Read before hiding: closing the popover drops the anchor with it. Activating
+  // an item takes the pressed button out from under focus just as Escape does,
+  // so it owes the keyboard user the same hand-back (WCAG 2.4.3).
+  const anchor = restoreFocusTo;
   hidePopover();
+  // Re-rendering replaces the label that opened the menu, so this one waits for
+  // the render rather than focusing a node that is about to be detached.
+  if (table && (act === 'focus' || act === 'unfocus')) {
+    Promise.resolve(setFocus(act === 'focus' ? table.name : ''))
+      .then(() => refocusTrigger(anchor));
+    return;
+  }
+  refocusTrigger(anchor);
   if (act === 'png') { exportImage('png'); return; }
   if (act === 'svg') { exportImage('svg'); return; }
   // Whole-diagram structural exports: the current (filtered/focused) subset.
   if (act === 'md') { downloadExport('markdown', subsetNames(), exportBaseName()); return; }
   if (act === 'dbml') { downloadExport('dbml', subsetNames(), exportBaseName()); return; }
   if (!table) return;
-  if (act === 'focus' || act === 'unfocus') {
-    setFocus(act === 'focus' ? table.name : '');
-  } else if (act === 'copy') {
+  if (act === 'copy') {
     fetchExport('json', [table.name]).then((json) => { if (json !== null) navigator.clipboard?.writeText(json); });
   } else if (act === 'json') {
     downloadExport('json', [table.name], table.name);
