@@ -203,3 +203,67 @@ test.describe('the picker stays in step with the rest of the dashboard', () => {
     await expect(input(page)).toHaveValue('posts');
   });
 });
+
+// Below 1024px the picker lives inside the ⋯ panel, which is a dropdown rather
+// than part of the bar. Choosing a table there is a completing action, so the
+// panel goes with it; on a phone it was left covering the diagram it had just
+// changed, along with the on-screen keyboard.
+test.describe('committing from inside the ⋯ panel', () => {
+  const more = (page) => page.locator('#truss-more');
+  const moreBtn = (page) => page.locator('#truss-more-btn');
+
+  test('closes the panel', async ({ page }) => {
+    await load(page);
+    await moreBtn(page).click();
+    await expect(more(page)).toHaveClass(/is-open/);
+
+    await input(page).click();
+    await options(page).filter({ hasText: 'posts' }).first().click();
+
+    await expect(more(page)).not.toHaveClass(/is-open/);
+    await expect(moreBtn(page)).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // Closing the panel hides the input that has focus, so without a hand-back the
+  // browser drops the user on <body>. The button that opened the panel is where
+  // they were before, and is also what makes iOS dismiss the keyboard: focus
+  // leaves the text field.
+  test('returns focus to the button that opened it', async ({ page }) => {
+    await load(page);
+    await moreBtn(page).click();
+    await input(page).click();
+
+    await options(page).filter({ hasText: 'posts' }).first().click();
+
+    await expect(moreBtn(page)).toBeFocused();
+  });
+
+  test('leaves focus in the input when the panel was never open', async ({ page }) => {
+    await load(page);
+    await input(page).click();
+
+    await options(page).filter({ hasText: 'posts' }).first().click();
+
+    // Unchanged desktop behaviour: the widget keeps DOM focus so a second click
+    // reopens the list, and a keyboard user is not thrown out of the control.
+    await expect(input(page)).toBeFocused();
+  });
+});
+
+// A tap has no visible focus to preserve, and leaving focus in the input keeps
+// the on-screen keyboard over the diagram. Read from the pointer type of the
+// interaction rather than from the device, so a mouse on a touchscreen laptop
+// still behaves like a mouse.
+test.describe('committing with a finger', () => {
+  test.use({ hasTouch: true });
+
+  test('blurs the input so the on-screen keyboard drops', async ({ page }) => {
+    await load(page);
+    await input(page).click();
+
+    await options(page).filter({ hasText: 'posts' }).first().tap();
+
+    await expect(input(page)).toHaveValue('posts');
+    await expect(input(page)).not.toBeFocused();
+  });
+});

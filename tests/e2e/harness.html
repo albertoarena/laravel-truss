@@ -16,6 +16,9 @@
         .truss-table-name { cursor: pointer; pointer-events: auto; }
         #truss-canvas svg .row-rect-odd path, #truss-canvas svg .row-rect-even path,
         #truss-canvas svg .outer-path path, #truss-canvas svg .divider path { pointer-events: none; }
+        /* Keeps the toolbar on one row, as truss.css does above 1024px, so an
+           open listbox drops over the canvas rather than over the buttons. */
+        .truss-secondary { display: inline-flex; align-items: center; gap: 10px; }
         .truss-combo { position: relative; display: inline-block; }
         .truss-combo-list { position: absolute; top: 100%; left: 0; z-index: 45; margin: 0; padding: 0; list-style: none; max-height: 240px; overflow: auto; background: #fff; border: 1px solid #ccc; min-width: 160px; }
         .truss-combo-list[hidden] { display: none; }
@@ -67,16 +70,23 @@
             <span class="truss-brand">truss</span>
             <label class="truss-field" hidden>Connection <select id="truss-connection"></select></label>
             <label class="truss-field">Filter <input id="truss-search" type="search"></label>
-            <div class="truss-field truss-combo">
-                <label class="truss-field-label" for="truss-focus">Focus</label>
-                <input id="truss-focus" type="text" role="combobox" autocomplete="off"
-                       aria-expanded="false" aria-controls="truss-focus-list"
-                       aria-autocomplete="list" placeholder="none">
-                <ul class="truss-combo-list" id="truss-focus-list" role="listbox" aria-label="Tables" hidden></ul>
-                <span class="truss-sr-only" id="truss-focus-status" role="status" aria-live="polite"></span>
+            <!-- Mirrors the real toolbar: at 1024px and under these three fold
+                 behind the ⋯ button as a dropdown panel. The harness has no
+                 media query, so the panel stays visible here and its state is
+                 the `is-open` class, which is what the specs assert on. -->
+            <button type="button" id="truss-more-btn" title="More" aria-expanded="false">⋯</button>
+            <div class="truss-secondary" id="truss-more">
+                <div class="truss-field truss-combo">
+                    <label class="truss-field-label" for="truss-focus">Focus</label>
+                    <input id="truss-focus" type="text" role="combobox" autocomplete="off"
+                           aria-expanded="false" aria-controls="truss-focus-list"
+                           aria-autocomplete="list" placeholder="none">
+                    <ul class="truss-combo-list" id="truss-focus-list" role="listbox" aria-label="Tables" hidden></ul>
+                    <span class="truss-sr-only" id="truss-focus-status" role="status" aria-live="polite"></span>
+                </div>
+                <label class="truss-field">depth <input id="truss-depth" type="number" min="0"></label>
+                <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
             </div>
-            <label class="truss-field">depth <input id="truss-depth" type="number" min="0"></label>
-            <label class="truss-field"><input id="truss-labels" type="checkbox"> Laravel types</label>
             <button type="button" id="truss-export-btn" title="Export">Export</button>
             <button type="button" id="truss-diff-btn" title="Changes" aria-expanded="false" hidden>Changes</button>
             <button type="button" id="truss-health-btn" title="Health" aria-expanded="false" hidden>
