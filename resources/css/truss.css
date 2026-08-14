@@ -172,14 +172,15 @@ body {
 }
 
 .truss-toolbar input[type="search"],
+.truss-toolbar input[type="text"],
 .truss-toolbar select,
 .truss-toolbar input[type="number"] {
   font-family: var(--bp-mono); font-size: 12.5px; letter-spacing: 0; color: var(--bp-fg);
   background: var(--bp-field); border: 1px solid var(--bp-field-line); border-radius: 2px; padding: 6px 9px;
 }
 .truss-toolbar input[type="number"] { width: 52px; }
-/* Cap the selects so a long table name (focus) or connection name cannot grow
-   the bar without bound and push the rest of the toolbar off-screen. */
+/* Cap the selects so a long connection name cannot grow the bar without bound
+   and push the rest of the toolbar off-screen. */
 .truss-toolbar select { max-width: 180px; }
 .truss-toolbar input:focus, .truss-toolbar select:focus {
   outline: none; border-color: var(--bp-ink);
@@ -190,6 +191,9 @@ body {
    The popup is absolutely positioned against the field, so the toolbar row keeps
    its height whether the list is open or shut. */
 .truss-combo { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+/* A text input sizes itself from a default character count, so the cap the
+   select it replaced carried has to be restated as a width here. */
+.truss-combo input { width: 150px; min-width: 0; }
 .truss-combo-list {
   position: absolute; top: calc(100% + 4px); left: 0; z-index: 45;
   margin: 0; padding: 4px 0; list-style: none;
