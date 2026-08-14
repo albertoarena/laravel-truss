@@ -1264,7 +1264,17 @@ function wireEvents() {
       status: el.focusStatus,
       getTables: () => state.tables,
       getFocus: () => state.focusRoot,
-      onSelect: (name) => setFocus(name),
+      onSelect: (name) => {
+        setFocus(name);
+        // Below 1024px the picker sits inside the ⋯ dropdown, where choosing a
+        // table is a completing action and the panel would otherwise stay over
+        // the diagram it just changed. Closing hides the focused input, so focus
+        // goes back to the button that opened the panel, as Escape does.
+        if (el.more?.classList.contains('is-open')) {
+          closeMore();
+          el.moreBtn?.focus();
+        }
+      },
     });
   }
 
