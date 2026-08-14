@@ -210,6 +210,11 @@ body {
 .truss-combo-opt[aria-selected="true"] { font-weight: 600; }
 .truss-combo-opt--clear { color: var(--bp-muted); border-bottom: 1px solid var(--bp-panel-line); }
 .truss-combo-opt mark { background: none; color: var(--bp-cyan); font-weight: 600; }
+/* The active row puts its own highlight under the mark, and the accent measures
+   4.10:1 on it, under the 4.5:1 that 1.4.3 asks of text. Taking the row's own
+   foreground keeps the ratio the row already guarantees; the match stays legible
+   as the only bold span in the line. */
+.truss-combo-opt.is-active mark { color: var(--bp-info-fg); }
 
 /* Available to assistive technology, absent from the visual layout: used for the
    live region that announces how many tables matched while you type. */
