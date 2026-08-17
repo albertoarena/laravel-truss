@@ -1,6 +1,8 @@
 # Plan: cache-store resilience
 
-Status: planned, not started. Discussed and locked on 2026-08-17.
+Status: **shipped in v1.8.4** on 2026-08-17 (PR #52), the same day it was discussed and
+locked. Kept as the record of why the fix is shaped this way. See "What changed during
+implementation" for the three places the build diverged from this plan.
 Owner: Alberto Arena
 Reported: [#51](https://github.com/albertoarena/laravel-truss/issues/51) by @HafizMMoaz
 Roadmap: bug fix, no roadmap card.
@@ -44,7 +46,8 @@ The triggers that do reach it:
 
 - `php artisan migrate:rollback` on a stock app, which rolls back the batch containing
   the `cache` table and then fires the event against a store that no longer exists.
-  (Deduced from the event ordering. Verify this end to end during implementation.)
+  (Deduced from the event ordering when this was written, then confirmed end to end
+  during implementation.)
 - A partial batch, `migrate --path=...`, run before the `cache` table exists.
 - Modular or multi-connection setups where the cache store's connection is not the one
   being migrated.
@@ -186,26 +189,59 @@ Every one of these must be seen failing first.
 - The docs site (`albertoarena/laravel-truss-docs`) after the release ships, since it
   reads from the latest package release.
 
+## What changed during implementation
+
+Three divergences from the plan above, all deliberate:
+
+1. **The repository is bound `scoped()`** in the service provider, which the plan had
+   ruled unnecessary. `truss:export` reads through `ExportBuilder` behind the facade but
+   prints its own notice, so the reader and the reporter have to be the same instance.
+2. **A `WarnsWhenUncached` trait** (`src/Commands/Concerns/`) rather than the same notice
+   written out in `truss:show`, `truss:doctor` and `truss:diff`.
+3. **`truss:doctor` and `truss:export` were never crashing.** Both already caught
+   `Throwable` around the read and exited 2 with "Could not load the schema", so for them
+   this is an upgrade from a clean failure to working normally, not a crash fix. The
+   earlier reply on #51 lumped them in with the uncaught surfaces and was corrected there.
+
+Three problems that only the manual verification caught, each then fixed test-first:
+
+- `truss:export` **crashed** on `OutputStyle::getErrorOutput()`, which is protected.
+  `$this->artisan()` hands a command a mocked output whose methods are all public, so the
+  first test passed straight over a fatal error. The test now uses `Artisan::call` with a
+  real output object, and the notice goes through the public `getErrorStyle()`. Keep this
+  in mind for any future notice written to the error channel.
+- A failed write echoes its own query back, and that query embeds the whole serialized
+  snapshot, so `truss:show` printed a wall of schema. Recorded messages are trimmed.
+- When both the read and the write failed, the write error masked the useful one.
+  `lastError()` keeps the read error ("no such table: cache").
+
 ## Definition of done
 
-- [ ] Both PHP lanes and the Playwright test written first, seen red, then green.
-- [ ] `composer test`, `composer lint`, `npm test` and `npx playwright test` all clean.
-- [ ] `migrate` and `migrate:rollback` verified by hand against `CACHE_STORE=database`
-      with no `cache` table, plus one run with the cache store pointed at a dead Redis.
-- [ ] All five docs surfaces above updated in the same PR (the docs site follows the
-      release).
-- [ ] Reporter answered on #51, and told again when it ships.
+- [x] Both PHP lanes and the Playwright test written first, seen red (12 PHP failures for
+      the right reasons, plus the missing banner), then green.
+- [x] `composer test` (404), `composer lint`, `npm test` (96) and `npx playwright test`
+      (74) all clean, and all 12 CI checks green on the release commit.
+- [x] `migrate` and `migrate:rollback` verified by hand against `CACHE_STORE=database`
+      with no `cache` table, plus a run against a dead Redis. `migrate` exits 0 with the
+      fix and 1 without it (confirmed by stashing), `migrate:rollback` exits 0 against a
+      file-backed database, `truss:rebuild` exits 1 with "Connection refused", and
+      `truss:export` writes valid JSON to stdout with the notice on stderr, neither
+      crossing over. The rollback trigger this plan had only deduced is now confirmed.
+- [x] All five docs surfaces updated in the same PR, and the docs site followed the
+      release (`albertoarena/laravel-truss-docs` #25, merged after the tag).
+- [x] Reporter answered on #51, and told again when it shipped.
 
 ## Release slot
 
-**v1.8.4, ahead of v1.9.0** (decided 2026-08-17). It is a crash fix that can fail a
-deploy, it is independent of the accessibility branch, and it keeps v1.9.0's notes and
-announcement single-purpose. Two releases land close together as a result, and the
-release-then-docs ordering rule applies to both: tag and publish the package first, then
-push the docs repo, or the demo re-fetches the previous release.
+**v1.8.4, shipped 2026-08-17, ahead of v1.9.0.** A crash fix that can fail a deploy,
+independent of the accessibility branch, and keeping v1.9.0's notes single-purpose. The
+release-then-docs ordering held: tag and publish the package first, then the docs repo, or
+the demo re-fetches the previous release.
 
-The version is now public: it is named in the reply on #51, so it is a commitment to the
-reporter, not just a preference.
+One wrinkle worth remembering: the docs site's version constant is asserted against the
+tag its prebuild resolved, so it cannot be bumped before the tag exists. Bumping it after
+merging the docs PR left the landing page one deploy behind. Next time, add the bump to
+the docs branch after tagging and before merging, so a single deploy carries both.
 
 ## Out of scope
 
