@@ -20,7 +20,8 @@ project's name or brand. Those are separate, and they are:
 - The names **Laravel Truss** and **Truss**, when used for database structure
   tooling.
 - The tagline **`Structure only, never data.`**
-- The logo and cover art in [`art/`](art/), in all colour variants.
+- The logo, cover art and brand marks in [`art/`](art/), in all colour variants,
+  still or animated.
 - The design, layout and written copy of [trussphp.com](https://trussphp.com).
 
 These identify this project. They are how people know that a thing came from here,
@@ -34,8 +35,9 @@ You do not need permission for any of this, and you are welcome to it:
 - Link to the repository, to [trussphp.com](https://trussphp.com), or to the demo.
 - Write articles, tutorials, videos, courses or talks about Laravel Truss, including
   paid ones, and use the name to say what they are about.
-- Use the unmodified cover art from [`art/`](art/) to illustrate an article or a talk
-  about Laravel Truss, with a link back to the project.
+- Use the unmodified art from [`art/`](art/), the cover art, the logo, or an animated
+  brand mark, to illustrate an article or a talk about Laravel Truss, with a link back
+  to the project.
 - Publish a package that extends Laravel Truss, named in the "for" or "with" form:
   `truss-postgres-driver`, `laravel-truss-themes`, `nova-truss-panel`. The name has to
   read as an add-on to this project, not as this project.
@@ -55,8 +57,8 @@ Please do not do any of this without asking first:
   project's name, and it should.
 - Use the tagline `Structure only, never data.` on your own product, in your own
   marketing, or as your own line. It is the line this project is known by.
-- Use the logo or cover art as the icon, logo, favicon or hero image of your product,
-  or change it and use the result.
+- Use the logo, cover art or brand marks as the icon, logo, favicon or hero image of
+  your product, or change it and use the result.
 - Say or imply that your work is official, endorsed, approved, certified, affiliated
   with, or built by the Laravel Truss project, when it is not.
 - Register a trademark, domain or app-store name containing "Laravel Truss", "Truss"

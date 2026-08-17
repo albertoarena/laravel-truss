@@ -1,0 +1,111 @@
+<!-- Laravel Truss animated brand mark (16:9). The lockup is static, the
+     tagline blinks. Frames are driven from the render script by setting
+     window.__frame(i), so the animation is deterministic, not timing based.
+     Fonts are the package's own IBM Plex Mono (resources/fonts). -->
+<meta charset="utf-8">
+<style>
+  @font-face{font-family:"Plex Mono";font-weight:400;font-style:normal;src:url("/resources/fonts/ibm-plex-mono-400.woff2") format("woff2");}
+  @font-face{font-family:"Plex Mono";font-weight:600;font-style:normal;src:url("/resources/fonts/ibm-plex-mono-600.woff2") format("woff2");}
+
+  :root{
+    /* --muted is #586b8a rather than the package's #5f7396: the same value at
+       this size measures 4.24:1 on --bg, just under AA for normal text, and the
+       footer is the smallest thing here. Visually indistinguishable at 4.77:1. */
+    --bg:#eef1f6; --ink:#12356b; --cyan:#0e7c9b; --fg:#132741; --muted:#586b8a;
+    --grid:rgba(18,53,107,.06); --gridB:rgba(18,53,107,.11); --glow:rgba(14,124,155,.35);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1a2b; --ink:#5fd0e6; --cyan:#7fe0f2; --fg:#d7e7f4; --muted:#7fa2c0;
+    --grid:rgba(120,200,230,.05); --gridB:rgba(120,200,230,.10); --glow:rgba(127,224,242,.45);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:1200px;height:675px;overflow:hidden;}
+  body{
+    background:var(--bg);
+    background-image:
+      linear-gradient(var(--gridB) 1px,transparent 1px) 0 0/120px 120px,
+      linear-gradient(90deg,var(--gridB) 1px,transparent 1px) 0 0/120px 120px,
+      linear-gradient(var(--grid) 1px,transparent 1px) 0 0/30px 30px,
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/30px 30px;
+    color:var(--fg);
+    font-family:"Plex Mono",monospace;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .stage{text-align:center;}
+
+  /* Static lockup: mark + wordmark with the truss chord and nodes. */
+  .lockup{display:inline-flex;align-items:center;gap:22px;color:var(--ink);}
+  .wm{position:relative;font-weight:600;font-size:82px;letter-spacing:-.05em;line-height:1;padding-bottom:20px;display:inline-block;}
+  .wm .chord{position:absolute;left:0;right:0;bottom:5px;border-top:4px solid var(--cyan);}
+  .wm .n{position:absolute;bottom:5px;width:15px;height:15px;border-radius:50%;background:var(--cyan);transform:translateY(50%);}
+  .wm .n.l{left:-2px;} .wm .n.c{left:50%;margin-left:-7.5px;} .wm .n.r{right:-2px;}
+
+  /* Blinking tagline. */
+  .tag{
+    margin-top:46px;font-weight:400;font-size:31px;letter-spacing:.06em;
+    color:var(--cyan);white-space:nowrap;
+  }
+  .tag .cursor{display:inline-block;width:.62em;height:1.02em;background:var(--cyan);
+    vertical-align:-.16em;margin-left:.34em;}
+
+  .foot{margin-top:52px;font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);}
+</style>
+
+<div class="stage">
+  <div class="lockup">
+    <svg width="96" height="96" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="miter">
+      <path d="M16 5 L27 26 H5 Z"/><path d="M16 5 V17"/><path d="M5 26 L16 17"/><path d="M27 26 L16 17"/>
+      <g fill="currentColor" stroke="none"><circle cx="16" cy="5" r="2.3"/><circle cx="5" cy="26" r="2.3"/><circle cx="27" cy="26" r="2.3"/><circle cx="16" cy="17" r="2.3"/></g>
+    </svg>
+    <span class="wm">truss<span class="chord"></span><span class="n l"></span><span class="n c"></span><span class="n r"></span></span>
+  </div>
+
+  <div class="tag" id="tag">Structure only, never data.<span class="cursor"></span></div>
+
+  <div class="foot">Laravel &middot; live schema viewer</div>
+</div>
+
+<script>
+  // One opacity value per frame. Long hold on, quick soft fade out, short off,
+  // quick fade back in, so it reads as a blink rather than a strobe.
+  window.__opacities = [
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    0.62, 0.26, 0.08, 0, 0, 0, 0.10, 0.34, 0.68, 0.92,
+  ]
+
+  // What actually blinks. Three candidates, because the trade-off is real: the
+  // tagline is the whole point of the asset, and anything that takes it to zero
+  // means a thumbnail or a paused scroll can catch the frame where the message
+  // is missing.
+  //
+  //   tagline  the whole line fades, cursor with it (the original brief)
+  //   cursor   the line stays solid and only the block cursor blinks (terminal-true)
+  //   pulse    the line dips but never below the floor, cursor goes fully off
+  //
+  window.__mode = 'tagline'
+  window.__setMode = (m) => { window.__mode = m }
+
+  const FLOOR = 0.45
+
+  window.__frame = (i) => {
+    const o = window.__opacities[i % window.__opacities.length]
+    const tag = document.getElementById('tag')
+    const cursor = tag.querySelector('.cursor')
+
+    const tagOpacity = window.__mode === 'cursor' ? 1
+      : window.__mode === 'pulse' ? FLOOR + (1 - FLOOR) * o
+        : o
+
+    tag.style.opacity = String(tagOpacity)
+    cursor.style.opacity = window.__mode === 'cursor' || window.__mode === 'pulse' ? String(o) : '1'
+
+    // Glow tracks the line's own strength, so the bloom belongs to the text
+    // rather than floating over a faded line.
+    const blur = (14 * tagOpacity).toFixed(1)
+    tag.style.textShadow = tagOpacity > 0 ? `0 0 ${blur}px var(--glow)` : 'none'
+  }
+
+  window.__frame(0)
+</script>
