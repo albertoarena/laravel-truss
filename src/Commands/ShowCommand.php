@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Commands\Concerns\WarnsWhenUncached;
 use Illuminate\Console\Command;
 
 /**
@@ -15,6 +16,8 @@ use Illuminate\Console\Command;
  */
 class ShowCommand extends Command
 {
+    use WarnsWhenUncached;
+
     protected $signature = 'truss:show {--connection= : Show this connection instead of the default}';
 
     protected $description = 'Print the database structure as a table';
@@ -23,6 +26,7 @@ class ShowCommand extends Command
     {
         $connection = $this->option('connection') ? (string) $this->option('connection') : null;
         $snapshot = $cache->get($connection);
+        $this->warnIfUncached($cache);
         $tables = $snapshot['tables'] ?? [];
 
         if ($tables === []) {

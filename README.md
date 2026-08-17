@@ -229,6 +229,8 @@ The overrides are delivered as a same-origin stylesheet, so a strict Content-Sec
 
 Truss keeps its schema snapshot in the cache, which is derived and disposable. The one thing it writes to disk is the **schema-diff baseline**: a structure-only JSON file (never row data) recorded after each migration so the diff can show what changed. It lives at `truss/baselines/{connection}.json` on the disk set by `truss.diff.disk` (`local` by default, deliberately not your application's default disk, since this is derived tooling state rather than application data), is safe to delete, and is worth gitignoring alongside `storage/`. If that disk is unreadable, the diff is simply unavailable: the diagram, the doctor, and the exports are untouched. To turn the feature off entirely so nothing is written to disk, set `TRUSS_DIFF_ENABLED=false` (or `truss.diff.enabled` to `false`).
 
+A cache store Truss cannot reach costs speed, never correctness. If the store is unusable (`CACHE_STORE=database` before the `cache` table exists, an unreachable Redis), the structure is read live instead of from the cache and the dashboard says so, the commands print a notice and still work, and `php artisan migrate` is never failed by Truss. `truss:rebuild` is the one command that reports a failed write with a non-zero exit, because storing the snapshot is all it does.
+
 ## Security
 
 Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email hello@albertoarena.it rather than opening a public issue.

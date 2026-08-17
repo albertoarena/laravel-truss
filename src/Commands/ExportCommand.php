@@ -107,6 +107,22 @@ class ExportCommand extends Command
             return 2;
         }
 
+        // Written to stderr, not stdout: without --output the export itself goes
+        // to stdout and is piped, so a notice there would corrupt the artifact.
+        // The exit code stays driven by drift alone, so an unrelated cache outage
+        // can never turn a `--check` gate in CI red.
+        $cacheError = $cache->lastError();
+
+        if ($cacheError !== null) {
+            // getErrorStyle() rather than getErrorOutput(): the latter is
+            // protected on OutputStyle, so reaching for it is a fatal error the
+            // moment the notice fires. It falls back to standard output when the
+            // console has no separate error channel.
+            $this->output->getErrorStyle()->writeln(
+                "<comment>The cache store is unavailable, so the schema was read live: {$cacheError}</comment>"
+            );
+        }
+
         $content = $builder->render($format);
 
         if ($check) {
