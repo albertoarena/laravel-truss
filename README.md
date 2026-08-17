@@ -235,7 +235,7 @@ Truss exposes structure only and never queries row data. Access is protected by 
 
 ## Contributing
 
-Contributions are welcome. Feel free to fork, improve, and open a pull request.
+Contributions are welcome. Feel free to fork, improve, and open a pull request. Forking to contribute needs no permission and keeps this project's name: [TRADEMARK.md](TRADEMARK.md) is about publishing your own distribution, not about pull requests.
 
 ## Support
 
@@ -254,3 +254,5 @@ Subscribe and get my free Spatie Event Sourcing cheat sheet (printable PDF), plu
 ## License
 
 The MIT License (MIT). See [LICENSE](LICENSE).
+
+The licence covers the code. The project name, the logo and the tagline are not part of it, and [TRADEMARK.md](TRADEMARK.md) says what you can do with them. Most things need no permission, including writing about Truss, naming an add-on package, and contributing.
