@@ -23,10 +23,30 @@ class RebuildCommand extends Command
             ? [(string) $this->option('connection')]
             : $cache->managedConnections();
 
+        $failed = false;
+
         foreach ($connections as $connection) {
             $snapshot = $cache->rebuild($connection);
+            $error = $cache->lastError();
+
+            // Everywhere else a broken cache store degrades quietly, but this
+            // command exists to write the snapshot. Saying "rebuilt" when nothing
+            // was stored would hide the one problem the user ran it to fix.
+            if ($error !== null) {
+                $this->error("Built the schema snapshot for [{$connection}] but could not cache it: {$error}");
+                $failed = true;
+
+                continue;
+            }
+
             $note = $snapshot['fallback'] ? ' <comment>(SQLite fallback)</comment>' : '';
             $this->line("Rebuilt schema snapshot for <info>{$connection}</info>{$note}.");
+        }
+
+        if ($failed) {
+            $this->line('Check your cache store (CACHE_STORE), then run this again.');
+
+            return self::FAILURE;
         }
 
         return self::SUCCESS;

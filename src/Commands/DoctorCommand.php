@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Commands\Concerns\WarnsWhenUncached;
 use AlbertoArena\Truss\Doctor\Contracts\Formatter;
 use AlbertoArena\Truss\Doctor\DoctorReport;
 use AlbertoArena\Truss\Doctor\FindingCollection;
@@ -24,6 +25,8 @@ use Throwable;
  */
 class DoctorCommand extends Command
 {
+    use WarnsWhenUncached;
+
     protected $signature = 'truss:doctor
         {--connection= : Review this connection instead of the default}
         {--table= : Review only this table}
@@ -61,6 +64,10 @@ class DoctorCommand extends Command
 
             return 2;
         }
+
+        // An unusable cache store is not a snapshot error: the review runs on a
+        // live read. It used to land in the catch above and exit 2.
+        $this->warnIfUncached($cache);
 
         $findings = (new DoctorReport)->for(
             $snapshot['connection'],

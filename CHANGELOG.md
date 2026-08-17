@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A cache store that was configured but not usable could fail `php artisan migrate` and take the dashboard down. `CACHE_STORE=database` is Laravel's own default and its `cache` table is not always there yet (a partial `migrate --path=` batch, a `migrate:rollback` past the table, a secondary connection), and a Redis or Memcached server can simply be unreachable. Two things went wrong. The rebuild that runs after a migration threw *after* every migration had already committed, so Artisan reported a failure on work that had succeeded, which can break a deploy step running `migrate --force`. And the schema endpoint returned HTTP 500, so a first visit to `/truss` on a fresh app showed "Could not load schema" over an empty diagram. Truss now treats an unreachable cache store the way it already treats an unreachable database or disk: the structure is read live and simply not cached, the dashboard says why, and the migration listener never throws. `truss:show`, `truss:doctor`, `truss:diff` and `truss:export` print a notice and keep working, with `truss:export` writing it to stderr so a piped export stays clean and `--check` still fails only on real drift. `truss:rebuild` is the deliberate exception: it reports a failed write and exits non-zero, because storing the snapshot is its only job. No configuration changes, and nothing to do on upgrade. Reported by @HafizMMoaz.
+
 ## [1.8.3] - 2026-08-12
 
 ### Fixed

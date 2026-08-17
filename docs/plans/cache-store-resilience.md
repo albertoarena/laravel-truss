@@ -122,9 +122,11 @@ distinct and keeps the work to one build. The `ttl <= 0` forever branch stays as
 Behaviour is otherwise identical, since the cached value is always an array, so a
 `Cache::get` returning `null` is unambiguously a miss.
 
-`lastError()` is per instance, and the repository is not bound as a singleton, so each
-caller must read `lastError()` from the instance it called. That is already how every
-call site is written (`$this->cache`, or the injected `$cache` in a command).
+`lastError()` is per instance, so the repository is now bound `scoped()` in the service
+provider: one instance per request or command, shared by whoever reads the snapshot and
+whoever reports on it. `truss:export` needs exactly that, since its read happens inside
+`ExportBuilder` (behind the facade) while the notice is printed by the command. Scoped
+rather than a singleton because the recorded error is per-request state.
 
 ### Per-caller posture
 

@@ -43,6 +43,7 @@ const state = {
   content: { width: 0, height: 0 }, // natural SVG size
   lastKey: null, // subset signature; drives auto-fit only on content change
   diff: null, // the schema diff from the API (null when disabled or no baseline)
+  cacheUnavailable: false, // the snapshot was read live (the cache store is broken)
   diffUnavailable: false, // the diff baseline could not be read (a disk problem)
   diffMode: false, // "Changes" view: tint changed tables and show the panel
   doctor: null, // the doctor report from the API (null when the panel is disabled)
@@ -1005,6 +1006,13 @@ function renderBanners() {
   // A baseline the server could not read is different from having none yet: the
   // panel is missing either way, but only this case is a problem the user can fix,
   // and saying nothing would let it read as "nothing has changed".
+  // The snapshot is complete either way: the server read it live instead of from
+  // the cache, which is slower on every request until the store is usable again.
+  if (state.cacheUnavailable) {
+    el.banners.append(banner('warn',
+      'The cache store is unavailable, so the structure was read live. '
+      + 'The diagram is complete, but it will stay slow until the cache store is fixed.'));
+  }
   if (state.diffUnavailable) {
     el.banners.append(banner('warn',
       'Changes is unavailable: the schema-diff baseline could not be read from disk. '
@@ -1136,6 +1144,7 @@ async function loadSchema() {
   state.fallback = Boolean(payload.fallback);
   state.generatedAt = payload.generated_at ?? null;
   state.diff = payload.diff ?? null;
+  state.cacheUnavailable = payload.cache_unavailable === true;
   state.diffUnavailable = payload.diff_unavailable === true;
   state.doctor = payload.doctor ?? null;
   // Apply a focus requested via the URL, once we can confirm the table exists.

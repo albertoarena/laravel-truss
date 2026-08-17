@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss;
 
+use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Commands\DiffCommand;
 use AlbertoArena\Truss\Commands\DoctorCommand;
 use AlbertoArena\Truss\Commands\ExportCommand;
@@ -52,6 +53,12 @@ class TrussServiceProvider extends PackageServiceProvider
         // The DB-comment source behind the export Annotator. Bound to an
         // interface so it can be faked in tests without a real connection.
         $this->app->bind(CommentReader::class, DatabaseCommentReader::class);
+
+        // One repository per request or command, so that whoever reads the
+        // snapshot and whoever reports on it (a controller, a command, the export
+        // builder behind the facade) share the same lastError(). Scoped rather
+        // than a singleton because that error is per-request state.
+        $this->app->scoped(SchemaCacheRepository::class);
 
         // The entry point behind the Truss facade (the fluent export builder).
         $this->app->singleton(TrussManager::class);

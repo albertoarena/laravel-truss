@@ -26,6 +26,10 @@ use Illuminate\Http\Request;
  * baseline is filtered through the same exclusion list before comparison, so an
  * excluded table can never surface via the diff either. `diff` is null when the
  * feature is off or no baseline has been recorded yet.
+ *
+ * A `cache_unavailable` flag is added when the snapshot had to be built live
+ * because the cache store could not be reached. The structure is complete either
+ * way, so this is a notice about speed, never a partial response.
  */
 class SchemaApiController
 {
@@ -49,6 +53,12 @@ class SchemaApiController
         abort_unless(in_array($connection, $this->cache->managedConnections(), true), 404);
 
         $snapshot = $this->cache->get($connection);
+
+        // A snapshot Truss could not cache is still a correct snapshot: it was
+        // just built live, which is slower. Flagged rather than 500ing, so the
+        // diagram works on a broken cache store and the dashboard can say why.
+        $cacheUnavailable = $this->cache->lastError() !== null;
+
         $snapshot['tables'] = $this->withoutExcludedTables($snapshot['tables'], $connection);
         $snapshot['diff'] = $this->diffFor($connection, $snapshot);
         $snapshot['doctor'] = $this->doctorFor($connection, $snapshot);
@@ -59,6 +69,12 @@ class SchemaApiController
         // feature is unavailable instead of silently showing no changes.
         if ($this->baselineUnavailable) {
             $snapshot['diff_unavailable'] = true;
+        }
+
+        // Same convention as diff_unavailable: present only when it happened, so
+        // existing clients need no change.
+        if ($cacheUnavailable) {
+            $snapshot['cache_unavailable'] = true;
         }
 
         return response()->json($snapshot);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Commands\Concerns\WarnsWhenUncached;
 use AlbertoArena\Truss\Diff\BaselineStore;
 use AlbertoArena\Truss\Diff\SchemaDiffer;
 use Illuminate\Console\Command;
@@ -17,6 +18,8 @@ use Illuminate\Console\Command;
  */
 class DiffCommand extends Command
 {
+    use WarnsWhenUncached;
+
     protected $signature = 'truss:diff {--connection= : Diff this connection instead of the default}';
 
     protected $description = 'Show what changed in the database structure since the last migration';
@@ -31,6 +34,7 @@ class DiffCommand extends Command
 
         $connection = $this->option('connection') ? (string) $this->option('connection') : null;
         $current = $cache->get($connection);
+        $this->warnIfUncached($cache);
         $name = $current['connection'];
 
         $baseline = $baselines->get($name);
