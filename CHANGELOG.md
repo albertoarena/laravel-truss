@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-08-18
+
 ### Added
 
 - The Focus picker is now searchable. It was a native dropdown with one entry per table, which is fine on a small schema and unusable on a large one: at a couple of hundred tables it is a long scrolling list whose only search is the browser's prefix jump, so `item` never reaches `order_items` and nothing shows you what matched. Type to narrow it, matching anywhere in the name, with the matched span highlighted in each row and the number of matches announced as you type. It agrees with the toolbar filter now, which has always matched substrings. Reported by Alberto Peripolli (@trippo) from a schema of roughly that size.
@@ -17,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The zoom slider had a tooltip but no accessible name, so screen readers announced an unlabelled slider. It now carries an explicit label; nothing changes visually.
+
+### Upgrading
+
+- Nothing to do, unless you have published the dashboard view with `vendor:publish --tag=truss-views`. The Focus control changed from a `<select>` to a combobox, and the frontend wires the picker only when the new markup is present, so a published copy of the old view leaves Focus inert rather than erroring. Re-publish the view to pick it up.
+- This release closes the Level A keyboard failures found in the dashboard. It is not an audit of every success criterion, so it is not a claim of WCAG conformance: what is covered and what is not is written up at https://trussphp.com/guides/accessibility/.
 
 ## [1.8.4] - 2026-08-17
 
