@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Truss now ships Laravel Boost guidelines and a skill inside the package, so an agent set up through Boost knows Truss is installed and reaches for your real schema instead of guessing at columns. Run `php artisan boost:install` and tick `albertoarena/laravel-truss (guidelines, skills)` in the third-party list; nothing third-party is selected by default, so it stays your call, and Boost remembers it for later `boost:update` runs. The guideline is short and always in context: what Truss is, the commands that ground a task in the real structure, and the boundary. The skill is longer and loads only when a task is actually about the database: read the structure, check it with `truss:doctor`, make the change, confirm it with `truss:diff`. This is additive and adds nothing to your dependencies. Boost becomes a third way in alongside the MCP server, which stays the richer surface, and `truss:export` for CI and any CLI-capable agent. Boost has no mechanism for a package to register an MCP server, so it does not install the Truss MCP server for you, and the two paths stay independent. Turn either off from your own `config/boost.php`: `guidelines.exclude` takes `albertoarena/laravel-truss/truss`, `skills.exclude` takes `truss-schema`. Prompted by the Laravel Daily video review of Truss, which made the case that Boost is where many developers now expect an agent to get its Laravel context.
+
 ## [1.9.1] - 2026-08-20
 
 ### Fixed
