@@ -212,7 +212,7 @@ Tick **`albertoarena/laravel-truss (guidelines, skills)`** in the third-party li
 
 You get two things. The **guideline** is short and always in context: what Truss is, the commands that ground a task in the real structure, and the structure-only boundary. The **skill** is longer and loaded only when a task is actually about the database: the workflow of reading the structure, checking it with `truss:doctor`, making the change, then confirming it with `truss:diff`.
 
-To turn either off later, in your own `config/boost.php` (note the two lists take different kinds of key):
+To turn either off later, in your own `config/boost.php` (Boost does not publish that file, so create it if you have not already, and note the two lists take different kinds of key):
 
 ```php
 'guidelines' => ['exclude' => ['albertoarena/laravel-truss/truss']],
