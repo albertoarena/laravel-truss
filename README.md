@@ -5,12 +5,15 @@
   <img src="art/cover-light.png" alt="Laravel Truss: see your database structure as a live, zoomable ER diagram">
 </picture>
 
-[![Documentation](https://img.shields.io/badge/docs-website-2f6feb?style=flat-square)](https://trussphp.com)
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/albertoarena/laravel-truss.svg?style=flat-square)](https://packagist.org/packages/albertoarena/laravel-truss)
-[![Total Downloads](https://img.shields.io/packagist/dt/albertoarena/laravel-truss.svg?style=flat-square)](https://packagist.org/packages/albertoarena/laravel-truss)
-[![Tests](https://img.shields.io/github/actions/workflow/status/albertoarena/laravel-truss/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/albertoarena/laravel-truss/actions/workflows/run-tests.yml)
-[![License](https://img.shields.io/badge/license-MIT-red.svg?style=flat-square)](LICENSE)
-![Repo views](https://raw.githubusercontent.com/albertoarena/laravel-truss/traffic-data/badge.svg)
+<p align="center">
+  <a href="https://trussphp.com"><img alt="Documentation" src="https://img.shields.io/badge/docs-website-2f6feb?style=flat"></a>
+  <a href="https://packagist.org/packages/albertoarena/laravel-truss"><img alt="Latest version on Packagist" src="https://img.shields.io/packagist/v/albertoarena/laravel-truss.svg?style=flat"></a>
+  <a href="https://packagist.org/packages/albertoarena/laravel-truss"><img alt="Total downloads" src="https://img.shields.io/packagist/dt/albertoarena/laravel-truss.svg?style=flat"></a>
+  <a href="https://github.com/albertoarena/laravel-truss/actions/workflows/run-tests.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/albertoarena/laravel-truss/run-tests.yml?branch=main&amp;label=tests&amp;style=flat"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/packagist/l/albertoarena/laravel-truss.svg?style=flat"></a>
+  <a href="https://whyphp.dev"><img alt="Why PHP in 2026" src="https://img.shields.io/badge/Why_PHP-in_2026-7A86E8?style=flat&amp;labelColor=18181b"></a>
+  <img alt="Repo views" src="https://raw.githubusercontent.com/albertoarena/laravel-truss/traffic-data/badge.svg">
+</p>
 
 Laravel Truss is a live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app, so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
 
