@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-08-20
+
+### Fixed
+
+- Six export actions were offered by dashboards that cannot perform them, and choosing one failed with nothing shown at all: no file, no error, nothing. The structural formats (Data dictionary and DBML on the Export view menu, and Copy JSON, Download JSON, Download CSV and Download Markdown on a table's menu) are generated server-side, so a dashboard rendered without an export endpoint, which is a static page or an install that turned the route off, has nothing to ask. It offered them anyway and threw from inside a promise, where the failure was swallowed. Unavailable items now render `aria-disabled` with a note giving the reason, and the handler ignores them. `aria-disabled` rather than the `disabled` attribute is deliberate: a disabled button leaves the tab order, so the item and its explanation would disappear for exactly the people who cannot see it dimmed, and the note carries the reason in words so the dimming is never the only signal.
+- PNG export produced nothing on a large diagram. It rasterises through a canvas at a fixed 2x with no ceiling, and past roughly 268 megapixels the browser hands back a blank canvas whose `toBlob` yields null, which the caller discarded. Measured rather than estimated: 33 tables came to 98 megapixels and worked, around 50 tables came to 384 and failed silently. The scale is now fitted to what a canvas will actually rasterise, staying at 2x where there is room, stepping towards 1x where there is not, and refusing outright when even 1x will not fit, pointing at SVG and at focusing a table instead. It never goes below 1x, because downscaling discards the pixels that make labels legible, which is the only reason to want a raster at all. The cutoff comes from the diagram's measured geometry rather than a table count, since twenty wide tables can outgrow fifty narrow ones. An empty diagram now reports as nothing to export rather than as something too large.
+
 ## [1.9.0] - 2026-08-18
 
 ### Added
