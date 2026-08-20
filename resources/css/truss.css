@@ -448,6 +448,20 @@ body {
 }
 .truss-menu button:hover, .truss-menu button:focus-visible { background: var(--bp-info-bg); color: var(--bp-info-fg); }
 
+/* An action this dashboard cannot perform: no export route, or a diagram too
+   large to rasterise. Still focusable (aria-disabled, not disabled) so it can be
+   read and its reason heard, so it needs a focus ring like any other item. The
+   note below the menu carries the reason in words: the dimming is a second
+   signal, never the only one. */
+.truss-menu button[aria-disabled='true'] { color: var(--bp-muted); cursor: not-allowed; }
+.truss-menu button[aria-disabled='true']:hover { background: none; color: var(--bp-muted); }
+.truss-menu button[aria-disabled='true']:focus-visible { background: none; color: var(--bp-muted); }
+.truss-menu-note {
+  margin: 8px 0 0; padding-top: 8px; max-width: 240px;
+  border-top: 1px solid var(--bp-panel-line);
+  font-family: var(--bp-mono); font-size: 11px; line-height: 1.5; color: var(--bp-muted);
+}
+
 /* status footer */
 .truss-footer {
   height: 28px; display: flex; align-items: center; gap: 14px; padding: 0 16px;

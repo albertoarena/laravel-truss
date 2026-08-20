@@ -12,6 +12,11 @@
  * @returns {string}
  */
 export function buildExportUrl(template, format, params = {}) {
+  // No route to call: a dashboard served as a static page, or an install that
+  // turned the export route off. Returning null lets the caller say so; throwing
+  // from in here left the menu item doing nothing visible at all.
+  if (typeof template !== 'string' || template.trim() === '') return null;
+
   const url = template.replace('__format__', format);
   const query = new URLSearchParams();
 
