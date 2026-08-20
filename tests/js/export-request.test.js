@@ -9,6 +9,16 @@ const template = '/truss/export/__format__';
 const params = (url) => new URL(url, 'http://x').searchParams;
 
 describe('buildExportUrl', () => {
+  it('returns null instead of throwing when there is no route to call', () => {
+    // A dashboard served without an export route (a static page, or an install
+    // that turned the route off) has no template. This used to throw a TypeError
+    // from inside a promise, so the menu item did nothing at all: no file, no
+    // error, nothing the person clicking it could see.
+    expect(buildExportUrl(undefined, 'markdown')).toBe(null);
+    expect(buildExportUrl(null, 'dbml')).toBe(null);
+    expect(buildExportUrl('', 'json')).toBe(null);
+  });
+
   it('substitutes the format into the template', () => {
     expect(buildExportUrl(template, 'dbml')).toBe('/truss/export/dbml');
   });
