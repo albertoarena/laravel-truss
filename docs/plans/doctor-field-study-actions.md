@@ -81,6 +81,49 @@ Already evidenced: **404 passed, 4 skipped, identical on 8.2 and 8.4.**
       was wrong and how it was found. **The field study is a better release note
       than a euphemism**, and it is checkable.
 
+## Phase 1.5: publish the compatibility table (v1.10, decided 21/08/2026)
+
+**Say it before somebody else does.** The study measured Truss against real
+applications and some of them did not work. **Publishing that is cheaper than
+receiving it as an issue**, and a table that admits two failures is more
+convincing than a page that claims none.
+
+- [ ] **A table on the docs site** listing every application tested, with the
+      result: version tested, whether Truss installed and ran, table count, and
+      the finding counts under both presets.
+- [ ] **Reference it from the README**, near the requirements line, in one
+      sentence. The README is what Packagist renders and what AI republishers
+      read, so a link there travels further than the page does.
+
+**Three columns of state, not two.** "Works" and "does not work" loses the case
+that matters most:
+
+| State | Meaning | Example |
+|---|---|---|
+| **Works** | installs, runs, findings recorded | bagisto, monica, koel, cachet |
+| **Worked after a fix** | it failed, we fixed Truss, it works now | october (Gate at boot), bookstack (php ^8.3) |
+| **Not compatible** | a real limit, with the reason | anything still failing at publication |
+
+**The middle row is the point.** It converts a bug report into evidence that
+problems get fixed, and it is the honest reading of what v1.10 actually is.
+
+**Rules for the table, so it does not become a liability.**
+
+- **Never publish a per-application finding count as a quality score.** The table
+  reports what Truss saw, not how good the application is. `bagisto` at 146
+  tables and 38 findings is a bigger schema, not a worse project. **Say that on
+  the page**, or a reader will infer a league table.
+- **Every row carries the version tested and the date**, or the table is
+  unfalsifiable and goes stale silently.
+- **A finding count is not a defect count.** Some are heuristics, and the study
+  found that some were wrong. Link the rule reference so a reader can check.
+- **Report to the project before the row is public** where a row names a real
+  problem, which is the Phase 2 rule and it applies here too.
+
+**Scope note:** the compatibility half (installs and runs) is publishable for
+every application. The findings half should wait for Phase 2 on the applications
+where a PR is going out.
+
 ## Phase 2: report to the projects
 
 Only after Phase 1 ships. Twelve findings, listed in the field study, each small
