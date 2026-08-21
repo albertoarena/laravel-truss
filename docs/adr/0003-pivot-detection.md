@@ -1,7 +1,7 @@
 # ADR 0003: Narrow pivot detection in `TRUSS-INT-007`
 
 - **Status:** Accepted 21/08/2026. Implemented on `v1.10-doctor-calibration`, unreleased and pending review.
-- **Verified against the field-study schemas, not only fixtures:** `TRUSS-INT-007` 69 -> 14 findings, exactly the 14 tables predicted below. No other rule's count changed.
+- **Verified against the field-study schemas, not only fixtures:** `TRUSS-INT-007` 69 -> 14 findings, exactly the 14 tables predicted below. No other rule's count changed. **Measured on the same sixteen applications the thresholds were fitted to, so it is in-sample.**
 - **Evidence:** [field study](../research/2026-08-doctor-field-study.md)
 
 ## Context
@@ -94,9 +94,21 @@ The kept list reads as what it should: Laravel-convention join tables, mostly
 
 ## Consequences
 
-**`recommended` output drops by roughly 47% across the study set**, and what
-remains is defensible. This is the single largest quality change available to the
-doctor, because it affects **every user's first run**, not an edge case.
+**On the sixteen applications the thresholds were fitted to, `recommended`
+output drops by roughly 47%**, and what remains is defensible. This is the single
+largest quality change available to the doctor, because it affects **every user's
+first run**, not an edge case.
+
+**That 47% is an in-sample figure and should be quoted as one.** The same
+schemas suggested the thresholds and then measured them, so it describes this
+set rather than predicting the next one. **What it does not depend on is the
+fitting**: the 56 findings were judged wrong by inspecting each table, not by
+assuming the rule was noisy, so "the rule was wrong 56 times out of 69 on real
+schemas" holds however the fix is scored.
+
+**The generalisation is untested until fresh schemas are run.** Five
+applications outside the study, with the expected count written down before the
+run, would settle it. See the field study's follow-up section.
 
 **Some true positives will be lost, and that is the accepted trade.** A genuine
 pivot carrying two payload columns now escapes the rule. **Silence is the right

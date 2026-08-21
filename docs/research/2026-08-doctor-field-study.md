@@ -154,3 +154,37 @@ All high-confidence, each checkable in one `SHOW CREATE TABLE`. **Not yet sent.*
   dependency set" when the real cause was `APP_URL=null` in its own
   `.env.example` killing `package:discover`. **Both would have entered this
   document as evidence.** Neither is counted above.
+- **The fix is measured on the same schemas that shaped it.** The `TRUSS-INT-007`
+  thresholds (see [ADR 0003](../adr/0003-pivot-detection.md)) were chosen by
+  looking at these sixteen applications, and the resulting "69 to 14" and "47%"
+  were then measured on the same sixteen. **That is an in-sample figure**: it
+  describes this set and does not predict the next one. **The 56 wrong findings
+  are unaffected**, because each was judged by inspecting the table rather than
+  by assuming the rule was noisy.
+
+## Follow-up, pre-registered before it runs
+
+**Written down before the numbers exist, because a threshold checked only
+against the data that produced it proves nothing.**
+
+**Run five applications that were not in this study**, add a recipe each, and
+compare. **Pterodactyl is the first pick**: it pins `config.platform.php` the way
+BookStack does, so v1.10 is the first version that can install there at all, and
+it tests the PHP floor change and the rule in one run. FreeScout, Crater and
+Attendize are candidates if they carry a Laravel 12 or later branch.
+
+**The expectation, registered 21/08/2026.** The narrowed rule fires 14 times
+across 697 tables here, about one per fifty. On roughly 200 fresh tables:
+
+- **At most 6 findings, and at most 1 of them wrong.**
+- **Three or more wrong** means the thresholds are fitted to this study rather
+  than to Laravel schemas, and want widening before release.
+- **Zero findings** is not a pass. It would say the rule has been narrowed into
+  silence, and the same five schemas should be checked by hand for a pivot it
+  ought to have caught.
+
+**Also count what the narrowing lost.** `bin/compare.py 2026-08-20
+2026-08-21-patched --preset recommended` lists the findings that disappeared. Of
+the 13 `TRUSS-INT-007` findings not shown to be wrong, how many survived? That
+number is already in the results and turns "some true positives will be lost"
+into a figure.
