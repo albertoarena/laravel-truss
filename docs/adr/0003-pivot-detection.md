@@ -110,6 +110,16 @@ schemas" holds however the fix is scored.
 applications outside the study, with the expected count written down before the
 run, would settle it. See the field study's follow-up section.
 
+**What the change cost, now measured rather than assumed** (21/08, full diff in
+the field study). **No other rule moved by a single finding.** Every table named
+above as a false positive is gone. **`koel.genre_song` survived**, and all
+fourteen survivors are join tables by Laravel's naming convention. **The 69 and
+the 14 cover twelve applications**, not sixteen: October and BookStack could not
+run Truss before the fix, and Lunar and Snipe-IT were unrun. Across every
+application that ran afterwards the rule fires **24** times. **"Some true
+positives will be lost" is still not a count**, because the per-finding triage
+is prose rather than data.
+
 **Some true positives will be lost, and that is the accepted trade.** A genuine
 pivot carrying two payload columns now escapes the rule. **Silence is the right
 failure direction here**: a missed finding costs a user nothing, and a wrong one

@@ -183,8 +183,43 @@ across 697 tables here, about one per fifty. On roughly 200 fresh tables:
   silence, and the same five schemas should be checked by hand for a pivot it
   ought to have caught.
 
-**Also count what the narrowing lost.** `bin/compare.py 2026-08-20
-2026-08-21-patched --preset recommended` lists the findings that disappeared. Of
-the 13 `TRUSS-INT-007` findings not shown to be wrong, how many survived? That
-number is already in the results and turns "some true positives will be lost"
-into a figure.
+### What the narrowing actually lost, measured 21/08/2026
+
+`bin/compare.py 2026-08-20 2026-08-21-branch --preset recommended`.
+
+**Nothing else moved by a single finding.** `TRUSS-INT-001` 32 to 32,
+`TRUSS-IDX-003` 10 to 10, `TRUSS-IDX-004` 4 to 4, `TRUSS-IDX-002` 2 to 2,
+`TRUSS-INT-003` 2 to 2. **A rule change that moved a count it was not meant to
+touch would show up here and nowhere else**, and none did.
+
+**Every table this document names as a false positive is gone**: `bagisto.cart`,
+`bagisto.orders`, `monica.users`, `firefly-iii.attachments`,
+`firefly-iii.budgets`, `firefly-iii.budget_limits`, `firefly-iii.auto_budgets`.
+
+**`koel.genre_song` survived**, which is the one the ADR names as a genuine
+Laravel pivot and the reason the fix had to be a narrowing rather than a
+deletion.
+
+**All fourteen survivors are join tables by Laravel's own naming convention**:
+`bagisto.category_filterable_attributes`, `bagisto.compare_items`,
+`firefly-iii.budget_transaction`, `firefly-iii.category_transaction`,
+`firefly-iii.category_transaction_journal`, `koel.genre_song`,
+`monica.contact_address`, `monica.contact_label`, `monica.contact_life_metric`,
+`monica.contact_post`, `monica.life_event_participants`,
+`monica.module_template_page`, `monica.post_tag`,
+`monica.timeline_event_participants`.
+
+**Two things this does not settle, stated rather than glossed.**
+
+**The 69 and the 14 cover twelve applications, not sixteen.** October CMS and
+BookStack could not run Truss at all in the before run, which is itself the
+result, and Lunar and Snipe-IT were parked unrun. **Across every application
+that ran afterwards the narrowed rule fires 24 times**, the extra ten being
+Lunar. Both figures are right and they answer different questions, so any
+public number has to say which one it is.
+
+**How many of the 13 "not shown to be wrong" survived is still not a count.**
+The per-finding triage for the full run is prose rather than data, so the
+strongest verified claim is the naming one above, not a true-positive retention
+rate. Recording the triage as JSON alongside the findings would close this for
+the next rule change, and is cheap to do while the reasoning is fresh.
