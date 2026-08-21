@@ -70,11 +70,9 @@ state real applications sit in, not a hypothetical.
 It is also the first evidence in this file that Boost is in production use in a
 large Laravel application, rather than only widely downloaded.
 
-
-
-29.5M downloads, and **the work is integration rather than construction**: Truss
-already ships an optional read-only MCP server. Boost support was already on the
-roadmap for v1.10 before this discussion.
+**Why it ranks second on merit, not just because a branch exists.** 29.5M
+downloads, and **the work is integration rather than construction**: Truss
+already ships an optional read-only MCP server.
 
 Strategically it is the strongest of the set for a reason unrelated to size:
 **what an agent quotes about your schema becomes what the developer believes.**
