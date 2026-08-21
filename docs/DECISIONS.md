@@ -2,6 +2,8 @@
 
 One short entry per significant choice: context, decision, trade-off. Add new entries at the bottom as the project evolves.
 
+**Longer-form decisions live in [`adr/`](adr/).** A few choices need the evidence, the alternatives and the consequences written out, because the reasoning is the expensive part and a paragraph loses it. This file stays the register to read first; where both exist, the entry here links to the ADR. **Three ADRs are currently Proposed and none is approved**, so every entry below still describes shipped behaviour, including "Minimum supported versions", which [ADR 0001](adr/0001-php-82-minimum.md) proposes to change.
+
 ## Schema snapshot method
 
 **Context:** need a reliable, accurate schema representation for the running app.
