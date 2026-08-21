@@ -167,21 +167,46 @@ All high-confidence, each checkable in one `SHOW CREATE TABLE`. **Not yet sent.*
 **Written down before the numbers exist, because a threshold checked only
 against the data that produced it proves nothing.**
 
-**Run five applications that were not in this study**, add a recipe each, and
-compare. **Pterodactyl is the first pick**: it pins `config.platform.php` the way
-BookStack does, so v1.10 is the first version that can install there at all, and
-it tests the PHP floor change and the rule in one run. FreeScout, Crater and
-Attendize are candidates if they carry a Laravel 12 or later branch.
+**The five, chosen 21/08/2026 and fixed before any of them ran.** Framework
+constraints were read from each `composer.json` rather than remembered.
 
-**The expectation, registered 21/08/2026.** The narrowed rule fires 14 times
-across 697 tables here, about one per fifty. On roughly 200 fresh tables:
+| App | Laravel | PHP | Why it is in |
+|---|---|---|---|
+| **Pterodactyl** | `^12.60` | `^8.2 \|\| ^8.3` | Pins `config.platform.php` like BookStack, so v1.10 is the first Truss that can install there. Answers ADR 0001 and ADR 0003 in one run. Needs an 8.3 binary: its constraint excludes 8.4. |
+| **Coolify** | `^12.65` | `^8.4` | The largest modern schema available outside the study, and teams, servers, applications and environments are the exact shape this rule judges. |
+| **Lychee** | `^12.0` | `^8.4` | A domain unlike anything in the sixteen. Albums, photos and tags are textbook join tables, so it tests true positives rather than false ones. |
+| **InvoiceShelf** | `^13.0` | `^8.4` | The only real Laravel 13 application in the set. Crater is unmaintained; this is its successor. |
+| **Azuriom** | `^12.0` | `^8.2` | Run on 8.2 deliberately: Pterodactyl tests the pinned-platform half of ADR 0001, this tests whether Truss runs on the interpreter. |
 
-- **At most 6 findings, and at most 1 of them wrong.**
+**Reserves if one cannot install: Pelican** (`^13.26`) and **Wave** (`^12.18`).
+Pelican is out of the five on purpose, because running it beside Pterodactyl
+would spend two slots on one schema lineage, and Wave is a SaaS starter kit, so
+it is closest to the control kits already measured.
+
+**Ruled out on their own `composer.json`, recorded so they are not re-proposed:**
+laravel.io (`laravel/framework ^11.5`), FreeScout (`v5.5.40`) and Akaunting
+(`^10.0`) are all below Truss's Laravel 12 minimum.
+
+**The expectation, registered 21/08/2026, before any of the five ran.**
+
+**Stated as a rate rather than a count, on purpose.** Coolify and Pterodactyl
+may be large, and adjusting an absolute band after seeing the table counts would
+be postdiction. The narrowed rule fires 14 times across 697 tables here, about
+one per fifty.
+
+- **At most 1 finding per 25 tables, and at most 1 wrong in total.**
 - **Three or more wrong** means the thresholds are fitted to this study rather
   than to Laravel schemas, and want widening before release.
-- **Zero findings** is not a pass. It would say the rule has been narrowed into
-  silence, and the same five schemas should be checked by hand for a pivot it
-  ought to have caught.
+- **Zero findings across all five is a fail, not a pass.** It would say the rule
+  has been narrowed into silence, and those schemas then get checked by hand for
+  a pivot it should have caught.
+
+**Two things are unverified and are expected to be settled by the run rather
+than by reading**: that each installs from a plain clone, which is how Invoice
+Ninja dropped out, and that each has meaningful foreign keys, which is how
+Snipe-IT turned out to be nearly useless at one across 58 tables. **An app that
+fails either test is reported and replaced from the reserves**, not quietly
+dropped.
 
 ### What the narrowing actually lost, measured 21/08/2026
 
