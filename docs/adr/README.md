@@ -30,6 +30,6 @@ Read that first if any of these decisions look arbitrary.
 
 ## Status values
 
-- **Proposed** — written, not approved, no code changed.
-- **Accepted** — approved. Implementation may still be pending, and shipping is a separate question; the ADR says where it stands.
-- **Superseded by NNNN** — replaced. The file stays.
+- **Proposed**: written, not approved, no code changed.
+- **Accepted**: approved. Implementation may still be pending, and shipping is a separate question; the ADR says where it stands.
+- **Superseded by NNNN**: replaced. The file stays.
