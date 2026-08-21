@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!--
+    Square app icon: the Truss mark on the brand navy, for surfaces that want a
+    single avatar rather than the full lockup (Discord server icon, and any other
+    profile that crops to a circle).
+
+    The geometry is the same mark as the lockup in cover.html, unchanged: same
+    path, same 1.7 stroke, same four nodes. Colours are the dark theme's bg
+    (#0b1a2b) and ink (#5fd0e6) custom properties. Do not redraw it; edit this
+    file.
+
+    The mark is scaled to sit ~46px clear of the inscribed circle at 512, so a
+    circular crop never touches the three outer nodes. It was sized against a
+    48px render, which is what Discord shows in the server rail: smaller than
+    this and the internal spokes stop reading, which is the detail that makes it
+    a truss rather than a triangle.
+
+    Render:  rsvg-convert -w 512 -h 512 art/icon-dark.svg -o art/icon-dark-512.png
+  -->
+  <rect width="512" height="512" fill="#0b1a2b"/>
+  <g transform="translate(256,256) scale(12) translate(-16,-15.5)"
+     fill="none" stroke="#5fd0e6" stroke-width="1.7" stroke-linejoin="miter">
+    <path d="M16 5 L27 26 H5 Z"/>
+    <path d="M16 5 V17"/>
+    <path d="M5 26 L16 17"/>
+    <path d="M27 26 L16 17"/>
+    <g fill="#5fd0e6" stroke="none">
+      <circle cx="16" cy="5" r="2.3"/>
+      <circle cx="5" cy="26" r="2.3"/>
+      <circle cx="27" cy="26" r="2.3"/>
+      <circle cx="16" cy="17" r="2.3"/>
+    </g>
+  </g>
+</svg>
