@@ -49,6 +49,29 @@ rather than inheriting whatever the panel does.
 
 ### 2. Laravel Boost
 
+**A branch already exists, `feat/boost-guideline`**, cut from v1.9.0 and rebased
+onto main 21/08/2026. It ships a guideline, a skill and three test files
+including a discovery contract test. Not pushed, under test.
+
+**A real-world test case found by accident, worth trying before it ships.**
+Snipe-IT (14.8k stars) requires `laravel/boost ^2.5` and runs
+`@php artisan boost:update` in its `post-update-cmd`. In the field-study harness
+that app sat in a state where **Boost was installed but never initialised**, and
+every `composer require` failed:
+
+> `Please set up Boost with [php artisan boost:install] first.`
+> `Script @php artisan boost:update --ansi handling the post-update-cmd event returned with error code 1`
+
+Not Truss's doing, and Truss was not even involved in the failure. **But it is
+exactly the state a Truss Boost guideline would land in**, so it is worth
+knowing what the branch does there: installed-but-not-initialised is evidently a
+state real applications sit in, not a hypothetical.
+
+It is also the first evidence in this file that Boost is in production use in a
+large Laravel application, rather than only widely downloaded.
+
+
+
 29.5M downloads, and **the work is integration rather than construction**: Truss
 already ships an optional read-only MCP server. Boost support was already on the
 roadmap for v1.10 before this discussion.
