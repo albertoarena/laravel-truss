@@ -43,12 +43,19 @@ it('derives the Boost guideline key from what is actually in the directory', fun
     expect($keys)->toBe(['albertoarena/laravel-truss/truss']);
 });
 
-it('states the structure-only boundary', function () use ($guideline) {
-    // The agent acts on this text, so the boundary is not decoration.
+it('states the boundary using the canonical brand line, in exactly that wording', function () use ($guideline) {
+    // The agent acts on this text and repeats it, which makes this the llms.txt
+    // case: one wording here is one wording in every answer a model gives about
+    // Truss. It shipped as "Structure only, never row data, read only", which is
+    // a fourth variant of a line whose whole value is being identical every time.
     expect($guideline())
-        ->toContain('Structure only')
-        ->toContain('never row data')
-        ->toContain('Truss never returns row data');
+        ->toContain('Structure only, never data.')
+        ->not->toContain('never row data')
+        ->not->toContain('never a single row of data');
+
+    // The boundary is also stated in plain prose, because the tagline alone does
+    // not tell an agent what not to reach for.
+    expect($guideline())->toContain('Truss never returns row data');
 });
 
 it('teaches the commands an agent can actually run', function () use ($guideline) {

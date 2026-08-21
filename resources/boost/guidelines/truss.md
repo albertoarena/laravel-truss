@@ -1,7 +1,9 @@
 # Laravel Truss
 
 Truss reads this application's live database structure: tables, columns, types,
-indexes, and foreign keys. Structure only, never row data, read only.
+indexes, and foreign keys. It is read only and never queries a row.
+
+Structure only, never data.
 
 Ground a schema task in the real structure instead of reading migration files:
 
