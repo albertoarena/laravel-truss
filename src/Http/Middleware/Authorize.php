@@ -6,6 +6,7 @@ namespace AlbertoArena\Truss\Http\Middleware;
 
 use AlbertoArena\Truss\TrussServiceProvider;
 use Closure;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,6 +31,13 @@ class Authorize
         abort_unless((bool) config('truss.enabled'), 404);
 
         if (! app()->environment('local')) {
+            // An application that binds no Gate cannot answer "may this person
+            // view Truss", and outside local the answer has to be no. Checked
+            // rather than left to fail: resolving an unbound contract raises an
+            // error page, and an error page confirms the route exists, which is
+            // the one thing this middleware is written to avoid.
+            abort_unless(app()->bound(GateContract::class), 404);
+
             // Define it here rather than relying on boot: the provider skips
             // registration when the host binds no Gate contract, and a host may
             // bind one only once a request is being handled. By this point a
