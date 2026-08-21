@@ -248,3 +248,62 @@ The per-finding triage for the full run is prose rather than data, so the
 strongest verified claim is the naming one above, not a true-positive retention
 rate. Recording the triage as JSON alongside the findings would close this for
 the next rule change, and is cheap to do while the reasoning is fresh.
+
+### The holdout ran 21/08/2026, and the band was met
+
+Two passes over the five, released `v1.9.1` then the `v1.10` branch, so the same
+schemas are measured before and after rather than only after.
+
+**Two of the five never produced findings, and both are results.**
+
+- **Coolify is out, for a reason that has nothing to do with Truss.** Its
+  migrations fail on MySQL: `Identifier name
+  'environment_variables_key_application_id_is_build_time_is_preview_unique' is
+  too long`, at **72 characters against MySQL's limit of 64**. It is a
+  PostgreSQL-first application. It cannot be rescued by switching engines,
+  because one pinned MySQL is the first invariant of this harness.
+- **Pterodactyl and Azuriom could not install Truss v1.9 at all**, which is the
+  ADR 0001 case reproduced twice on projects that were never used to justify it.
+  Pterodactyl: `require php ^8.3 -> your php version (8.2.0; overridden via
+  config.platform, actual: 8.3.30)`. Azuriom: PHP 8.2 outright. **Both install
+  and run under v1.10**, at 35 and 28 tables. **That is the strongest evidence
+  for the PHP floor change in the file**, because neither app influenced it.
+
+**The rule, out of sample.** Across the two applications with both runs
+(InvoiceShelf 49 tables, Lychee 52), `TRUSS-INT-007` goes **10 to 1**, nine gone
+and none new. **No other rule moved by a single finding**: `TRUSS-IDX-003` 13 to
+13, `TRUSS-IDX-002` 7 to 7, `TRUSS-IDX-004` 3 to 3, `TRUSS-INT-001` 1 to 1,
+`TRUSS-INT-003` 1 to 1. The same surgical property holds on schemas the
+thresholds never saw.
+
+**Scored against the band registered before any of this ran.** Four applications
+produced findings: 164 tables, **3 `TRUSS-INT-007` findings, a rate of 1 per 55
+tables** against the registered ceiling of 1 per 25.
+
+| Survivor | Shape | Verdict |
+|---|---|---|
+| `azuriom.page_role` | `page_id`, `role_id`, **no primary key at all** | Textbook. Exactly what the rule exists for |
+| `azuriom.likes` | `id`, `post_id`, `author_id`, no payload | Correct: an author should like a post once |
+| `invoiceshelf.user_company` | `id`, `user_id`, `company_id`, timestamps only | Correct: a Laravel `withTimestamps()` pivot |
+
+**Zero wrong out of three**, against a ceiling of one. **And not zero findings**,
+so the rule has not been narrowed into silence.
+
+**The nine dropped were checked against `information_schema`, not assumed.**
+`users` (18 columns), `faces` (14), `custom_field_values` (14), `transactions`
+(10), `persons` (9) and `impersonation_logs` (8) are entities with surrogate keys
+and real payload. Three are worth naming:
+
+- **`lychee.tag_albums`** is a subtype table: its `id` is both the primary key
+  and a foreign key to `base_albums`. A unique constraint on the pair would have
+  been meaningless, since `id` is already unique.
+- **`lychee.album_user_thumbs`** carries a generated `user_id_unique_key`
+  column, so **the maintainers had already solved the uniqueness problem their
+  own way**. The rule was telling them to do something they had done.
+- **`lychee.purchasable_pixel_sizes`** carries `price_cents` and `license_type`,
+  so it is a priced offer rather than a join.
+
+**What this does and does not license.** It licenses saying the narrowing was
+tested on schemas it was not fitted to, and held. It does not license a
+percentage: two applications is a small before-and-after, and the band was about
+the rate and the error count rather than a proportion.
