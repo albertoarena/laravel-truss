@@ -1,6 +1,7 @@
 # ADR 0002: Do not resolve the Gate contract at boot
 
-- **Status:** Proposed (21/08/2026)
+- **Status:** Accepted 21/08/2026. Implemented on `v1.10-doctor-calibration`, unreleased and pending review.
+- **Verified:** October CMS now runs `artisan` (211 commands), `october:migrate` and `truss:doctor`, where previously every command died.
 - **Evidence:** [field study](../research/2026-08-doctor-field-study.md)
 
 ## Context

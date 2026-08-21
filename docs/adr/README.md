@@ -19,9 +19,9 @@ outlive the session that produced it.
 
 | ADR | Title | Status |
 |---|---|---|
-| [0001](0001-php-82-minimum.md) | Lower the PHP floor to 8.2 | Proposed |
-| [0002](0002-defer-gate-registration.md) | Do not resolve the Gate contract at boot | Proposed |
-| [0003](0003-pivot-detection.md) | Narrow pivot detection in `TRUSS-INT-007` | Proposed |
+| [0001](0001-php-82-minimum.md) | Lower the PHP floor to 8.2 | Accepted, implemented |
+| [0002](0002-defer-gate-registration.md) | Do not resolve the Gate contract at boot | Accepted, implemented |
+| [0003](0003-pivot-detection.md) | Narrow pivot detection in `TRUSS-INT-007` | Accepted, implemented |
 
 All three come from the same source: the field study in
 [`../research/2026-08-doctor-field-study.md`](../research/2026-08-doctor-field-study.md),
@@ -31,5 +31,5 @@ Read that first if any of these decisions look arbitrary.
 ## Status values
 
 - **Proposed** — written, not approved, no code changed.
-- **Accepted** — approved. Implementation may still be pending; the ADR says so.
+- **Accepted** — approved. Implementation may still be pending, and shipping is a separate question; the ADR says where it stands.
 - **Superseded by NNNN** — replaced. The file stays.

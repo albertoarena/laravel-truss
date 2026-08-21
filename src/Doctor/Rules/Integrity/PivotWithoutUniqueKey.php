@@ -29,6 +29,7 @@ final class PivotWithoutUniqueKey implements Rule
      * conventional surrogate key and Laravel's timestamps.
      */
     private const NON_PAYLOAD = ['id', 'created_at', 'updated_at', 'deleted_at'];
+
     public function code(): string
     {
         return 'TRUSS-INT-007';

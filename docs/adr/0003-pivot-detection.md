@@ -1,6 +1,7 @@
 # ADR 0003: Narrow pivot detection in `TRUSS-INT-007`
 
-- **Status:** Proposed (21/08/2026)
+- **Status:** Accepted 21/08/2026. Implemented on `v1.10-doctor-calibration`, unreleased and pending review.
+- **Verified against the field-study schemas, not only fixtures:** `TRUSS-INT-007` 69 -> 14 findings, exactly the 14 tables predicted below. No other rule's count changed.
 - **Evidence:** [field study](../research/2026-08-doctor-field-study.md)
 
 ## Context

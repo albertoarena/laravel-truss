@@ -1,6 +1,7 @@
 # ADR 0001: Lower the PHP floor to 8.2
 
-- **Status:** Proposed (21/08/2026)
+- **Status:** Accepted 21/08/2026. Implemented on `v1.10-doctor-calibration`, unreleased and pending review.
+- **Verified:** suite green on PHP 8.2.30 and 8.4.19 with the branch code, 412 passed / 4 skipped on both.
 - **Supersedes:** the "Minimum supported versions" entry in [`../DECISIONS.md`](../DECISIONS.md), in part
 - **Evidence:** [field study](../research/2026-08-doctor-field-study.md)
 

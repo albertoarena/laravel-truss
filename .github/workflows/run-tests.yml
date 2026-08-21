@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        php: ['8.3', '8.4', '8.5']
+        php: ['8.2', '8.3', '8.4', '8.5']
         laravel: ['12.*', '13.*']
         stability: [prefer-stable]
         include:
@@ -21,6 +21,12 @@ jobs:
             testbench: '10.*'
           - laravel: '13.*'
             testbench: '11.*'
+        exclude:
+          # Laravel 13 and Testbench 11 both require PHP ^8.3, so this pair
+          # cannot resolve. PHP 8.2 is supported via the Laravel 12 lane, which
+          # is the combination a host on 8.2 actually runs.
+          - php: '8.2'
+            laravel: '13.*'
 
     name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
 

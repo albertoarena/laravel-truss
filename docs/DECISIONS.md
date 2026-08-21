@@ -2,7 +2,7 @@
 
 One short entry per significant choice: context, decision, trade-off. Add new entries at the bottom as the project evolves.
 
-**Longer-form decisions live in [`adr/`](adr/).** A few choices need the evidence, the alternatives and the consequences written out, because the reasoning is the expensive part and a paragraph loses it. This file stays the register to read first; where both exist, the entry here links to the ADR. **Three ADRs are currently Proposed and none is approved**, so every entry below still describes shipped behaviour, including "Minimum supported versions", which [ADR 0001](adr/0001-php-82-minimum.md) proposes to change.
+**Longer-form decisions live in [`adr/`](adr/).** A few choices need the evidence, the alternatives and the consequences written out, because the reasoning is the expensive part and a paragraph loses it. This file stays the register to read first; where both exist, the entry here links to the ADR. **The three current ADRs are implemented on the `v1.10-doctor-calibration` branch and are not released**, so entries below describe the branch rather than the last tag where they differ.
 
 ## Schema snapshot method
 
@@ -33,8 +33,10 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 ## Minimum supported versions
 
 **Context:** how wide a compatibility matrix to support.
-**Decision:** Laravel 12+, PHP 8.3+, latest only.
-**Trade-off:** simpler CI matrix and code (can use newer language features freely), at the cost of excluding users on older LTS Laravel versions.
+**Decision:** Laravel 12+, **PHP 8.2+**, latest only. See [ADR 0001](adr/0001-php-82-minimum.md).
+**Trade-off:** simpler CI matrix and code, at the cost of excluding users on older LTS Laravel versions.
+
+**Amended 21/08/2026, from PHP 8.3+ to 8.2+.** Laravel 12 supports PHP 8.2, so the old floor excluded part of a framework version Truss claims to support, and it did so **invisibly**: a project that pins `config.platform.php` to `8.2.0`, which is careful practice rather than neglect, simply could not install Truss. BookStack and Invoice Ninja were both found blocked that way. Nothing in `src/` used a PHP 8.3 feature, and the suite passes identically on 8.2 and 8.4 (404 passed, 4 skipped, both). PHP 8.2 loses security support on 31/12/2026, which is the accepted cost.
 
 ## Config scope
 
