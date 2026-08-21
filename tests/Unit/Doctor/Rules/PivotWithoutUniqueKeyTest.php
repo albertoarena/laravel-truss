@@ -53,3 +53,88 @@ it('ignores tables that are not two-foreign-key pivots', function () {
 
     expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))->toBeClean();
 });
+
+/*
+ * Narrowing from ADR 0003. The field study found this rule wrong 56 times out of
+ * 69 because "two single-column foreign keys" was its whole definition of a
+ * pivot. These cases are the shapes that actually broke it.
+ */
+
+it('does not call a wide entity table a pivot', function () {
+    // bagisto.cart: 36 columns, its own key, two foreign keys. Making
+    // (channel_id, customer_id) unique would cap a customer at one cart forever.
+    $snapshot = SchemaBuilder::make()
+        ->table('channels', fn ($t) => $t->id())
+        ->table('customers', fn ($t) => $t->id())
+        ->table('cart', fn ($t) => $t->id()
+            ->foreignId('channel_id')->on('channels')
+            ->foreignId('customer_id')->on('customers')
+            ->string('coupon_code')
+            ->integer('items_count')
+            ->integer('items_qty')
+            ->string('currency_code')
+            ->integer('grand_total'))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))->toBeClean();
+});
+
+it('does not call an entity with its own key and one payload column a pivot', function () {
+    // koel.playlist_folders: an id, two foreign keys, and a name. A folder is a
+    // thing, not a relationship, and its name is what proves it.
+    $snapshot = SchemaBuilder::make()
+        ->table('users', fn ($t) => $t->id())
+        ->table('playlist_folders', fn ($t) => $t->id()
+            ->foreignId('user_id')->on('users')
+            ->foreignId('parent_id')->on('users')
+            ->string('name'))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))->toBeClean();
+});
+
+it('still flags a pivot that carries a surrogate key and nothing else', function () {
+    // koel.genre_song: an id primary key does not stop duplicate pairs, so this
+    // is a real finding and the narrowing must not lose it.
+    $snapshot = SchemaBuilder::make()
+        ->table('genres', fn ($t) => $t->id())
+        ->table('songs', fn ($t) => $t->id())
+        ->table('genre_song', fn ($t) => $t->id()
+            ->foreignId('genre_id')->on('genres')
+            ->foreignId('song_id')->on('songs'))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
+        ->toHaveFinding('TRUSS-INT-007', table: 'genre_song');
+});
+
+it('does not count timestamps against a pivot', function () {
+    $snapshot = SchemaBuilder::make()
+        ->table('posts', fn ($t) => $t->id())
+        ->table('tags', fn ($t) => $t->id())
+        ->table('post_tag', fn ($t) => $t
+            ->foreignId('post_id')->on('posts')
+            ->foreignId('tag_id')->on('tags')
+            ->column('created_at', 'timestamp', true)
+            ->column('updated_at', 'timestamp', true))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
+        ->toHaveFinding('TRUSS-INT-007', table: 'post_tag');
+});
+
+it('allows a key-less join table one payload column', function () {
+    // monica.contact_address: no primary key at all, so it is unambiguously a
+    // join table even though it carries a flag of its own.
+    $snapshot = SchemaBuilder::make()
+        ->table('contacts', fn ($t) => $t->id())
+        ->table('addresses', fn ($t) => $t->id())
+        ->table('contact_address', fn ($t) => $t
+            ->foreignId('contact_id')->on('contacts')
+            ->foreignId('address_id')->on('addresses')
+            ->column('is_active', 'tinyint', true))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
+        ->toHaveFinding('TRUSS-INT-007', table: 'contact_address');
+});
