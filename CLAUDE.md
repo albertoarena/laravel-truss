@@ -9,7 +9,7 @@
 
 ## Stack
 
-- PHP 8.3+
+- PHP 8.2+ (lowered from 8.3 in v1.10, matching what Laravel 12 requires; see `docs/adr/0001-php-82-minimum.md`)
 - Laravel 12+
 - Pest for testing
 - Laravel native schema introspection (`Schema::getTables/getColumns/getIndexes/getForeignKeys`) — no Doctrine DBAL
