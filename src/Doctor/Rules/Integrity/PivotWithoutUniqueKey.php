@@ -21,6 +21,12 @@ use AlbertoArena\Truss\Doctor\Severity;
  * 36-column shopping cart a pivot and advised a unique constraint that would have
  * capped a customer at one cart. See docs/adr/0003-pivot-detection.md; the
  * thresholds below are fitted to real schemas and are not arbitrary.
+ *
+ * A unique index over PART of the pair also satisfies the rule, because it
+ * already makes the whole pair unique. That is arithmetic rather than a
+ * heuristic, so unlike the thresholds above it cannot cost a true positive.
+ * Reported in issue #58 against a one-to-one profile table whose user_id was
+ * unique: the message claimed duplicate pairs were possible when they were not.
  */
 final class PivotWithoutUniqueKey implements Rule
 {
@@ -150,12 +156,40 @@ final class PivotWithoutUniqueKey implements Rule
         }
 
         foreach ($table['indexes'] ?? [] as $index) {
-            if (($index['unique'] ?? false) && $this->sameSet($index['columns'] ?? [], $pair)) {
+            if (! ($index['unique'] ?? false)) {
+                continue;
+            }
+
+            $columns = $index['columns'] ?? [];
+
+            if ($this->sameSet($columns, $pair)) {
+                return true;
+            }
+
+            // A unique index over part of the pair already makes the whole pair
+            // unique, so duplicate pairs are impossible. Nullable columns are
+            // excluded: most engines allow repeated NULLs in a unique index.
+            if ($columns !== [] && array_diff($columns, $pair) === [] && $this->allNonNullable($table, $columns)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $table
+     * @param  list<string>  $columns
+     */
+    private function allNonNullable(array $table, array $columns): bool
+    {
+        foreach ($table['columns'] ?? [] as $column) {
+            if (in_array($column['name'], $columns, true) && ($column['nullable'] ?? false)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

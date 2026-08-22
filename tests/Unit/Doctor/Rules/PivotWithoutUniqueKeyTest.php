@@ -138,3 +138,67 @@ it('allows a key-less join table one payload column', function () {
     expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
         ->toHaveFinding('TRUSS-INT-007', table: 'contact_address');
 });
+
+/*
+ * Issue #58. A one-to-one profile table with a unique user_id and an optional
+ * belongs-to lookup, reported as a pivot on v1.9.1. Two faults on one table:
+ * it is not a join table, and its pair cannot repeat anyway.
+ */
+
+it('does not call a one-to-one profile table a pivot', function () {
+    // The schema exactly as reported in issue #58.
+    $snapshot = SchemaBuilder::make()
+        ->table('users', fn ($t) => $t->id())
+        ->table('insurance_plans', fn ($t) => $t->id())
+        ->table('patient_profiles', fn ($t) => $t->id()
+            ->foreignId('user_id')->on('users')
+            ->foreignId('insurance_plan_id')->on('insurance_plans')
+            ->unique('user_id')
+            ->string('full_name')
+            ->string('gender')
+            ->string('phone_number')
+            ->column('address', 'text', true)
+            ->string('emergency_contact_name')
+            ->string('emergency_contact_phone')
+            ->column('profile_completed_at', 'timestamp', true)
+            ->index('profile_completed_at')
+            ->column('created_at', 'timestamp', true)
+            ->column('updated_at', 'timestamp', true))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))->toBeClean();
+});
+
+it('is clean when a unique index covers only part of the key pair', function () {
+    // The same one-to-one shape with no payload at all, so the column count
+    // cannot save it. A unique user_id already makes (user_id, team_id) unique,
+    // so "duplicate pairs are possible" would be false whatever else is decided.
+    $snapshot = SchemaBuilder::make()
+        ->table('users', fn ($t) => $t->id())
+        ->table('teams', fn ($t) => $t->id())
+        ->table('user_settings', fn ($t) => $t->id()
+            ->foreignId('user_id')->on('users')
+            ->foreignId('team_id')->on('teams')
+            ->unique('user_id'))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))->toBeClean();
+});
+
+it('still flags a pivot whose unique column is nullable', function () {
+    // Most engines allow repeated NULLs in a unique index, so a nullable unique
+    // column does not prove the pair cannot repeat.
+    $snapshot = SchemaBuilder::make()
+        ->table('users', fn ($t) => $t->id())
+        ->table('teams', fn ($t) => $t->id())
+        ->table('invites', fn ($t) => $t->id()
+            ->column('user_id', 'bigint unsigned', nullable: true)
+            ->column('team_id', 'bigint unsigned', nullable: true)
+            ->foreign('user_id', 'users')
+            ->foreign('team_id', 'teams')
+            ->unique('user_id'))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
+        ->toHaveFinding('TRUSS-INT-007', table: 'invites');
+});

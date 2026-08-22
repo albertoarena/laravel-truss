@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TRUSS-INT-002` asked for a foreign key on polymorphic columns, contradicting `TRUSS-INT-009` inside the same report. Morph columns are now excluded.
 - Truss no longer resolves the `Gate` contract while booting. An application that ships its own authentication and binds no `Gate`, as October CMS does, could not run **any** artisan command with Truss installed, including `truss:doctor`, which never consults the gate and is documented as safe for CI. The gate is now defined when a request needs it. See `docs/adr/0002-defer-gate-registration.md`.
 - The dashboard returns 404 rather than an error when the host application binds no `Gate` at all, so a route that cannot be authorised stays invisible instead of confirming it exists.
+- `TRUSS-INT-007` claimed that duplicate pairs were possible on a table where one of the two foreign keys already carried a single-column unique index. A unique `user_id` makes `(user_id, insurance_plan_id)` unique by itself, so the finding was not merely noisy, it was false, and the composite unique key it recommended would have been redundant. The rule now accepts a unique index over any part of the pair, provided those columns are `NOT NULL`, since most engines allow repeated `NULL`s in a unique index. Unlike the narrowing above, this cannot cost a true positive: it is arithmetic rather than a heuristic. Reported by @belabiedredouane.
 
 ## [1.9.1] - 2026-08-20
 
