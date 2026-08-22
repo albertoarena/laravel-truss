@@ -27,6 +27,9 @@ use AlbertoArena\Truss\Doctor\Severity;
  * heuristic, so unlike the thresholds above it cannot cost a true positive.
  * Reported in issue #58 against a one-to-one profile table whose user_id was
  * unique: the message claimed duplicate pairs were possible when they were not.
+ * See the 22/08/2026 addendum to docs/adr/0003-pivot-detection.md, which records
+ * why this half needed no threshold and measures that it drops no true positive
+ * across the twenty applications the thresholds were checked against.
  */
 final class PivotWithoutUniqueKey implements Rule
 {

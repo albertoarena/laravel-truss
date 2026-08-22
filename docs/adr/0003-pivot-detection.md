@@ -154,3 +154,58 @@ rather than being excluded outright.
 signal in this data. Rejected as a primary test: it is a convention rather than a
 guarantee, it fails for any non-English or legacy schema, and structure is
 available and objective. Reasonable as a future tie-breaker, not as the rule.
+
+## Addendum, 22/08/2026: a unique index over part of the pair
+
+**The decision above is unchanged and this does not supersede it.** It is
+recorded here rather than as its own ADR because it is a second change to the
+same rule, and a reader who follows the docblock's pointer to this file has to
+find both or they have an incomplete description of what the rule does.
+
+**Everything above is about `pivotPair()`, deciding whether a table is a join
+table at all. This is about `hasUniqueOnPair()`, deciding whether the pair can
+repeat**, which the narrowing never touched.
+
+**The fault.** The uniqueness test accepted a composite primary key over the pair,
+or a unique index covering exactly the pair, and nothing else. **A unique index
+over part of the pair already makes the whole pair unique**, so on a table with a
+unique `user_id` the message *"duplicate pairs are possible"* was not merely
+noisy, it was **false**, and the composite unique key it recommended would have
+been redundant. Reported from outside as
+[issue #58](https://github.com/albertoarena/laravel-truss/issues/58), against a
+one-to-one profile table with a unique `user_id` and an optional
+`insurance_plan_id`.
+
+**The decision.** Accept a unique index whose columns are a subset of the pair,
+**provided every one of those columns is `NOT NULL`**. Most engines allow
+repeated `NULL`s in a unique index, so a nullable unique column proves nothing
+about the pair.
+
+**This is a different kind of change from the narrowing, and the difference is
+the point.** The thresholds above are **fitted to a sample** and therefore
+**cost true positives on purpose**, which is why they need this ADR and why they
+are stated as an accepted trade. **A unique subset implies a unique superset is
+arithmetic**, so it can produce no false negative at all, needs no threshold, and
+has no alternative worth recording. **When a rule can be proved, prove it; when
+it can only be fitted, say that it is fitted.**
+
+**"Keeps 14, drops 55" survives this change, measured rather than assumed.**
+`information_schema` across all **22 experiment databases** (the twenty tested
+applications plus Coolify and Invoice Ninja) was asked for every table with
+exactly two single-column foreign keys **and** a single-column unique index on
+one of them. **Two tables in the entire corpus match, and neither is a survivor**:
+`lychee.persons`, already dropped by the payload count at nine columns, and
+`lychee.tag_albums`, the subtype table whose `id` is both primary key and foreign
+key. **So none of the fourteen, and none of the three holdout survivors, is
+touched.** That is the expected result rather than a lucky one: **a table where
+one foreign key is unique on its own is not many-to-many**, so a genuine join
+table cannot be in range.
+
+**The nullable gate is not hypothetical.** `lychee.persons.user_id` is a nullable
+unique column, so without that gate the change would have reached a real table in
+this corpus rather than a constructed one.
+
+**Covered by three regression tests, each checked to fail without the code it
+guards**, which is the discipline the Consequences section above asks for: the
+reported schema in the shape it was reported, the zero-payload case the narrowing
+cannot reach, and a nullable case that dies if the `NOT NULL` gate is removed.
