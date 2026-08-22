@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss\Http\Middleware;
 
+use AlbertoArena\Truss\TrussServiceProvider;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -29,6 +30,13 @@ class Authorize
         abort_unless((bool) config('truss.enabled'), 404);
 
         if (! app()->environment('local')) {
+            // Define it here rather than relying on boot: the provider skips
+            // registration when the host binds no Gate contract, and a host may
+            // bind one only once a request is being handled. By this point a
+            // request exists, so this is the first moment the gate is genuinely
+            // needed. See docs/adr/0002-defer-gate-registration.md.
+            TrussServiceProvider::defineGate();
+
             abort_unless(Gate::allows('viewTruss'), 404);
         }
 

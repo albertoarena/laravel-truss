@@ -47,3 +47,35 @@ it('matches a singular table name too', function () {
 it('is heuristic, so it stays off the recommended default', function () {
     expect((new LikelyMissingForeignKey)->confidence()->value)->toBe('heuristic');
 });
+
+/*
+ * From the field study: nine of this rule's forty-five findings sat on
+ * polymorphic columns, where a foreign key is not merely absent but impossible.
+ * Truss contradicted itself in a single report, since TRUSS-INT-009 identified
+ * the same columns as polymorphic.
+ */
+
+it('does not ask for a foreign key on a polymorphic column', function () {
+    // cachet.taggables: taggable_id can point at any taggable model, so no
+    // single foreign key can exist. The sibling taggable_type column says so.
+    $snapshot = SchemaBuilder::make()
+        ->table('taggables', fn ($t) => $t->morphs('taggable'))
+        ->table('tags', fn ($t) => $t->id())
+        ->build();
+
+    expect(doctorCheck(new LikelyMissingForeignKey, $snapshot))->toBeClean();
+});
+
+it('still flags a plain column even when the table has an unrelated morph', function () {
+    // The exemption is per column pair, not per table: user_id here is a real
+    // reference and keeps its finding.
+    $snapshot = SchemaBuilder::make()
+        ->table('users', fn ($t) => $t->id())
+        ->table('activities', fn ($t) => $t->id()
+            ->morphs('subject')
+            ->foreignId('user_id'))
+        ->build();
+
+    expect(doctorCheck(new LikelyMissingForeignKey, $snapshot))
+        ->toHaveFinding('TRUSS-INT-002', table: 'activities', column: 'user_id');
+});
