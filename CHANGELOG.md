@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Every label in the diagram lost its last character in Firefox on Windows: table names, column names and column types alike, cut in proportion to their length. Reported by [@diboma](https://github.com/diboma) in [#59](https://github.com/albertoarena/laravel-truss/issues/59). Mermaid sizes each label box to the text it measures and leaves no slack at all (measured: about 0.002px), so the box is only ever correct for the face it was measured in. The diagram was rendered without waiting for IBM Plex Mono, so with `font-display: swap` the labels could be measured in the system fallback and then repainted in the real face. Where that fallback is metric-compatible nothing shows, which is why macOS, Linux and CI never saw it and why Chrome on the same Windows machine was fine: it won the race. Windows falls back to Consolas at roughly 0.55em against IBM Plex Mono's 0.60em, so every label painted about 9 percent wider than its box. Measured on the reporter's machine at 78 of 78 labels clipped, median ratio 1.0904, against 1.0909 predicted from the two advance widths. The render now waits for the two weights the diagram actually paints before measuring, and the Blade shell preloads the face so that wait is usually over before it starts. A slow connection is not made to stare at a blank canvas: the diagram is drawn in the fallback after a short timeout and redrawn once the real face arrives. The label-geometry spec now runs in Firefox as well as Chromium, since no other engine reproduced this.
+
 ## [1.9.1] - 2026-08-20
 
 ### Fixed

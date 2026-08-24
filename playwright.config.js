@@ -19,5 +19,14 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Firefox runs one spec, not the suite. Issue #59 was a Firefox-only
+    // clipping bug that no other engine reproduced, so label geometry earns a
+    // second engine; the interaction specs would only be re-verifying logic
+    // that is not engine-specific, at roughly double the frontend CI time.
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+      testMatch: /label-clipping\.spec\.js/,
+    },
   ],
 });

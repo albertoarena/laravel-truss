@@ -8,6 +8,16 @@
     {{-- Node-triad mark as an inline SVG favicon; themes with the browser chrome. --}}
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cstyle%3E*%7Bstroke:%2312356b;fill:none;stroke-width:1.7%7Dcircle%7Bfill:%2312356b;stroke:none%7D@media(prefers-color-scheme:dark)%7B*%7Bstroke:%235fd0e6%7Dcircle%7Bfill:%235fd0e6%7D%7D%3C/style%3E%3Cpath d='M16 5 L27 26 H5 Z'/%3E%3Cpath d='M16 5 V17'/%3E%3Cpath d='M5 26 L16 17'/%3E%3Cpath d='M27 26 L16 17'/%3E%3Ccircle cx='16' cy='5' r='2.4'/%3E%3Ccircle cx='5' cy='26' r='2.4'/%3E%3Ccircle cx='27' cy='26' r='2.4'/%3E%3Ccircle cx='16' cy='17' r='2.4'/%3E%3C/svg%3E">
 
+    {{-- The diagram's label boxes are sized to the text Mermaid measures, with
+         no slack, so a face arriving after that measurement repaints wider
+         glyphs into boxes sized for the fallback and clips the last character
+         (issue #59). The client waits for this face before measuring; the hint
+         starts the fetch with the document instead of when the stylesheet is
+         parsed, so that wait is usually over before it begins. crossorigin is
+         required even same-origin, or the preload is not reused. --}}
+    <link rel="preload" as="font" type="font/woff2"
+          href="{{ route('truss.asset', 'ibm-plex-mono-400.woff2') }}" crossorigin>
+
     <link rel="stylesheet" href="{{ route('truss.asset', 'truss.css') }}">
 
     {{-- Optional custom-theme overrides, generated from truss.theme. Linked after
