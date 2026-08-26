@@ -62,7 +62,7 @@ To run Truss gated on staging or production, install it as a **regular dependenc
 composer require albertoarena/laravel-truss
 ```
 
-Requires **PHP 8.3+** and **Laravel 12+**. The service provider is auto-discovered, so there is nothing to publish to get started.
+Requires **PHP 8.2+** and **Laravel 12+**. The service provider is auto-discovered, so there is nothing to publish to get started.
 
 ## Quick start
 

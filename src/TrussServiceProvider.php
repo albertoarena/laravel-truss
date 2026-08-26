@@ -21,6 +21,7 @@ use AlbertoArena\Truss\Http\Controllers\ThemeController;
 use AlbertoArena\Truss\Http\Middleware\Authorize;
 use AlbertoArena\Truss\Listeners\RebuildOnMigrationsEnded;
 use AlbertoArena\Truss\Mcp\TrussSchemaServer;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -116,6 +117,26 @@ class TrussServiceProvider extends PackageServiceProvider
      * the callback varies, and that lives in the app.
      */
     private function registerGate(): void
+    {
+        // An application that does not bind Laravel's Gate must still boot.
+        // October CMS ships its own authentication and binds no Gate contract,
+        // and resolving it here took down every artisan command, including
+        // truss:doctor, which is documented as safe for CI and never consults
+        // the gate. See docs/adr/0002-defer-gate-registration.md.
+        if (! $this->app->bound(GateContract::class)) {
+            return;
+        }
+
+        self::defineGate();
+    }
+
+    /**
+     * Define `viewTruss` unless the host application already has, leaving its
+     * definition in charge. Public and idempotent because the Authorize
+     * middleware calls it too: that is the path that matters when the host binds
+     * its Gate after Truss has booted, or not at all until a request arrives.
+     */
+    public static function defineGate(): void
     {
         if (! Gate::has('viewTruss')) {
             Gate::define('viewTruss', fn ($user = null): bool => $user !== null

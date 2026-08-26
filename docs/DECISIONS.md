@@ -2,6 +2,8 @@
 
 One short entry per significant choice: context, decision, trade-off. Add new entries at the bottom as the project evolves.
 
+**Longer-form decisions live in [`adr/`](adr/).** A few choices need the evidence, the alternatives and the consequences written out, because the reasoning is the expensive part and a paragraph loses it. This file stays the register to read first; where both exist, the entry here links to the ADR. **The three current ADRs are implemented on the `v1.10-doctor-calibration` branch and are not released**, so entries below describe the branch rather than the last tag where they differ.
+
 ## Schema snapshot method
 
 **Context:** need a reliable, accurate schema representation for the running app.
@@ -31,8 +33,10 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 ## Minimum supported versions
 
 **Context:** how wide a compatibility matrix to support.
-**Decision:** Laravel 12+, PHP 8.3+, latest only.
-**Trade-off:** simpler CI matrix and code (can use newer language features freely), at the cost of excluding users on older LTS Laravel versions.
+**Decision:** Laravel 12+, **PHP 8.2+**, latest only. See [ADR 0001](adr/0001-php-82-minimum.md).
+**Trade-off:** simpler CI matrix and code, at the cost of excluding users on older LTS Laravel versions.
+
+**Amended 21/08/2026, from PHP 8.3+ to 8.2+.** Laravel 12 supports PHP 8.2, so the old floor excluded part of a framework version Truss claims to support, and it did so **invisibly**: a project that pins `config.platform.php` to `8.2.0`, which is careful practice rather than neglect, simply could not install Truss. BookStack and Invoice Ninja were both found blocked that way. Nothing in `src/` used a PHP 8.3 feature, and the suite passes identically on 8.2 and 8.4 (404 passed, 4 skipped, both). PHP 8.2 loses security support on 31/12/2026, which is the accepted cost.
 
 ## Config scope
 
@@ -98,6 +102,16 @@ One short entry per significant choice: context, decision, trade-off. Add new en
 **Decision — a configurable auth-context middleware stack (`truss.middleware`, default `['web']`).** The gate can only identify the viewer if the request first passed through session/auth middleware. Without `web` (or an equivalent), `$request->user()` is `null` in production and the default gate denies everyone — including legitimate admins. So the stack is load-bearing. It is config-driven for apps that authenticate via a custom guard or Sanctum. The fixed `viewTruss` guard is always appended after the configured stack and cannot be configured away — the config controls the auth *context*, not whether authorization runs.
 **Trade-off:** more moving parts than a single gate closure (a middleware key, an allow-list key, two failure layers), but each earns its place for the production-gated use case, and every misconfiguration fails *closed* (locks down), never *open*. Guests resolve to a `null` user and are denied; the shipped default uses a nullable `$user = null` so it can still be evaluated for a guest rather than being skipped.
 **Registration order:** the package defines the default only `if (! Gate::has('viewTruss'))`, but a host definition wins regardless of order — package providers boot before app providers, so a host `Gate::define('viewTruss', …)` overrides the default; the guard only avoids clobbering a host that defined it earlier (e.g. in `register()`).
+
+**Amended 21/08/2026: there are two registration paths now, not one.** See [ADR 0002](adr/0002-defer-gate-registration.md). The paragraph above describes the boot path, which still behaves exactly as written, but it is no longer the only one and it no longer always runs. The provider **returns early without defining anything when the host binds no `Gate` contract at all**, because resolving it at boot took down every artisan command in October CMS, including `truss:doctor`, which never consults the gate. The `Authorize` middleware then calls the same idempotent `defineGate()` when a request arrives: that is the first moment the gate is genuinely needed, and the point by which a host binding its `Gate` late has done so. Outside `local`, a request with no `Gate` bound **404s rather than erroring**, since an error page confirms the route exists and that is the one thing this middleware exists to prevent.
+
+## Doctor: what counts as a pivot table
+
+**Context:** `TRUSS-INT-007` is high-confidence, so it runs in the default `recommended` preset, and its whole test for "is this a pivot" was "the table has exactly two single-column foreign keys". Pointed at real applications it fired 69 times and **56 of those were wrong**, which was 47% of everything the default preset reported. The composite unique key it recommended would in several cases have **destroyed data**: on one budgeting app it meant a user could have exactly one budget.
+**Decision:** two single-column foreign keys is necessary but not sufficient. A join table must also carry its key pair and little else, counted as the columns that are not the pair, not `id`, and not the timestamps: none at all when the table has its own `id` primary key, at most one when the primary key is the pair or absent, never otherwise. Separately, a unique index over **any part** of the pair satisfies the uniqueness test, because it already makes the pair unique. See [ADR 0003](adr/0003-pivot-detection.md).
+**Trade-off:** a genuine pivot carrying two payload columns now escapes the rule, accepted deliberately. **Silence is the right failure direction here**: a missed finding costs a user nothing, a wrong one costs them a destructive migration and their trust in every other rule. The thresholds are fitted to real schemas rather than derived, so they live in the rule's docblock with a pointer to the ADR, or the next reader simplifies them back.
+
+**Amended 22/08/2026, and it is a different kind of change from the thresholds.** The subset-unique half was added after [issue #58](https://github.com/albertoarena/laravel-truss/issues/58) reported the rule claiming duplicate pairs were possible on a table whose `user_id` was already unique, which made the message false rather than merely noisy. **Unlike the thresholds it costs no true positives at all**, because a unique subset implies a unique superset: that is arithmetic, not a fit to a sample. Gated on those columns being `NOT NULL`, since most engines allow repeated `NULL`s in a unique index.
 
 ## Schema data model: composite-first keys, explicit primary key
 

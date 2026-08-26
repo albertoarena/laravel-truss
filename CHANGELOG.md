@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `TRUSS-INT-007` no longer calls every table with two foreign keys a pivot. Two single-column foreign keys is now necessary but not sufficient: the table must also carry its key pair and little else. Pointed at sixteen real Laravel applications, the old rule fired 69 times and 56 of those were wrong, which was 47% of everything the default `recommended` preset reported. One of them advised a unique constraint that would have limited a user to a single budget. It now fires 14 times on the same schemas. **Some true positives are lost on purpose**: a genuine pivot carrying two payload columns escapes, because a missed finding costs you nothing and a wrong one costs you a destructive migration. See `docs/adr/0003-pivot-detection.md`.
+- **This changes the default preset's output**, so a CI job running `truss:doctor --fail-on=error` may see a different result on an unchanged schema. That is why this is a minor release rather than a patch.
+- The minimum PHP version is now **8.2**, down from 8.3, which is what Laravel 12 itself requires. Truss previously excluded projects that pin `config.platform.php` to `8.2.0`, which is careful practice rather than a mistake, and BookStack could not install Truss for exactly that reason. See `docs/adr/0001-php-82-minimum.md`.
+
+### Fixed
+
+- `TRUSS-INT-002` asked for a foreign key on polymorphic columns, contradicting `TRUSS-INT-009` inside the same report. Morph columns are now excluded.
+- Truss no longer resolves the `Gate` contract while booting. An application that ships its own authentication and binds no `Gate`, as October CMS does, could not run **any** artisan command with Truss installed, including `truss:doctor`, which never consults the gate and is documented as safe for CI. The gate is now defined when a request needs it. See `docs/adr/0002-defer-gate-registration.md`.
+- The dashboard returns 404 rather than an error when the host application binds no `Gate` at all, so a route that cannot be authorised stays invisible instead of confirming it exists.
+- `TRUSS-INT-007` claimed that duplicate pairs were possible on a table where one of the two foreign keys already carried a single-column unique index. A unique `user_id` makes `(user_id, insurance_plan_id)` unique by itself, so the finding was not merely noisy, it was false, and the composite unique key it recommended would have been redundant. The rule now accepts a unique index over any part of the pair, provided those columns are `NOT NULL`, since most engines allow repeated `NULL`s in a unique index. Unlike the narrowing above, this cannot cost a true positive: it is arithmetic rather than a heuristic. Reported by @belabiedredouane.
+
 ## [1.9.1] - 2026-08-20
 
 ### Fixed
