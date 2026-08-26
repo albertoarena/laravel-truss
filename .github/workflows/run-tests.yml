@@ -186,3 +186,37 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: password
         run: vendor/bin/pest --coverage --min=94
+
+  # Dedicated Boost lane. Boost is deliberately not a dependency of this package
+  # (Truss must install, boot and test identically in an app that has never heard
+  # of it), so tests/Feature/Boost/DiscoveryContractTest.php skips itself
+  # everywhere else. This lane is the only place it runs, and it is the only
+  # thing that catches Boost changing its undocumented discovery convention: the
+  # content tests would stay green while the integration was dead in the field.
+  # This lane is allowed to be the first thing that breaks when Boost moves.
+  #
+  # `-W` is required: a current Laravel app resolves Guzzle 8, Boost requires
+  # ^7.9, and a plain require fails outright rather than downgrading.
+  test-boost:
+    runs-on: ubuntu-latest
+    name: Boost discovery contract - PHP 8.4 - Laravel 12
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+          composer require --dev laravel/boost -W --no-interaction
+
+      - name: Run the Boost tests
+        run: vendor/bin/pest tests/Feature/Boost
