@@ -34,6 +34,12 @@ Tables and columns may carry business meaning, declared in config or read from
 database comments. It arrives with the export, and it is often the difference
 between a plausible column name and the right one.
 
+The `llm` format is for your own reading. When the export is for something
+else, `--format=dbml|json|csv|markdown|mermaid` writes it in a form that tool
+understands. Send it to a file with `--output=`, and `--check` writes nothing
+and exits non-zero when that file is out of date, which is how a CI job catches
+a schema that has drifted from its committed export.
+
 ## 2. Check the ground before you build on it
 
     php artisan truss:doctor
@@ -43,9 +49,10 @@ key, a foreign key with no index behind it, a type mismatch across a foreign
 key, money stored as a float. Read it before writing the migration, not after.
 
 Two things to do with the output. If a finding sits on a table you are about to
-change, fix it in the same migration, because you are already there and the
-next person will not be. If a finding sits elsewhere, leave it alone and say so
-rather than widening the change unasked.
+change, say so, and offer to fix it in the same migration. Do not fold it in
+unasked: one column was asked for, a migration is hard to walk back, and the
+person who asked is the one who gets to widen the change. If a finding sits
+elsewhere, leave it alone and say so.
 
 ## 3. Write the migration
 

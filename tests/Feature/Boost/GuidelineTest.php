@@ -65,12 +65,26 @@ it('teaches the commands an agent can actually run', function () use ($guideline
         ->toContain('truss:diff');
 });
 
-it('mentions the MCP server only as optional', function () use ($guideline) {
-    // Boost cannot register a third-party MCP server, so presenting ours as a
-    // prerequisite would be false. It is one path among three.
+it('keeps the MCP server out of standing context', function () use ($guideline) {
+    // The MCP server was named here as an optional third path, and it earned
+    // nothing. If laravel/mcp is absent the agent cannot act on the mention; if
+    // it is present the agent already sees the tools and does not need telling.
+    // Either way it spent tokens on every request in someone else's project to
+    // advertise a second Truss surface, which is the README's job. Asserted as
+    // an absence so re-adding it has to be a decision rather than a drift.
     expect($guideline())
-        ->toContain('optionally available')
-        ->toContain('It is not required');
+        ->not->toContain('mcp')
+        ->not->toContain('MCP');
+});
+
+it('keeps the flags that narrow a large schema', function () use ($guideline) {
+    // The format list and --check moved to the skill, which loads on demand.
+    // These three stayed, because choosing the right slice of a large schema is
+    // a decision the agent makes mid-task, when only standing context is loaded.
+    expect($guideline())
+        ->toContain('--connection=')
+        ->toContain('--tables=')
+        ->toContain('--exclude=');
 });
 
 it('names only flags that exist on the export command', function () use ($guideline) {
@@ -91,8 +105,12 @@ it('names only flags that exist on the export command', function () use ($guidel
 it('stays inside the standing-context token budget', function () use ($guidelinePath) {
     // Boost injects guidelines into the agent's context for every request, so
     // size is a feature. Bytes are a deterministic, dependency-free proxy for
-    // the 500-token hard cap at roughly 3.6 bytes per token.
-    expect(filesize($guidelinePath))->toBeLessThan(1800);
+    // the token cap at roughly 3.6 bytes per token.
+    //
+    // Tightened from 1800 when the MCP paragraph and the format list came out,
+    // taking the file from ~393 tokens to ~290. The budget follows the cut, or
+    // the space just fills again with whatever seemed worth saying next.
+    expect(filesize($guidelinePath))->toBeLessThan(1300);
 });
 
 it('ships as plain Markdown, not Blade', function () use ($guideline) {

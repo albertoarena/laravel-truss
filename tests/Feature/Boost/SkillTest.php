@@ -86,6 +86,36 @@ it('teaches the workflow in order', function () use ($skill) {
         ->toContain('truss:diff');
 });
 
+it('offers a doctor fix rather than folding it in unasked', function () use ($skill) {
+    // The skill told the agent to fix any finding on a table it was already
+    // touching, in the same migration. Asked for one column, an agent would
+    // ship an index and a column-type change too, against a real database,
+    // with "you are already there" as the reasoning. Scope creep that feels
+    // responsible is still scope creep, and a migration is hard to walk back.
+    // Reporting is the agent's job here; deciding is the user's.
+    // Matched against whitespace-normalised prose: these are sentences, and a
+    // sentence that reflows across a line break is the same instruction. A test
+    // that fails on rewrapping teaches you to stop rewrapping.
+    $prose = (string) preg_replace('/\s+/', ' ', $skill());
+
+    expect($prose)
+        ->toContain('Do not fold it in unasked')
+        ->not->toContain('because you are already there');
+
+    // The other half was always right: a finding elsewhere is not this task.
+    expect($prose)->toContain('leave it alone and say so');
+});
+
+it('carries the reference detail that left standing context', function () use ($skill) {
+    // The formats and --check moved here from the guideline. The skill loads
+    // only when a task is about the database, so this costs nothing per
+    // request, but it has to actually land somewhere or the cut lost it.
+    expect($skill())
+        ->toContain('--format=dbml')
+        ->toContain('--output=')
+        ->toContain('--check');
+});
+
 it('names only flags that exist on the export command', function () use ($skill) {
     $signature = (new ReflectionClass(ExportCommand::class))
         ->getDefaultProperties()['signature'];
