@@ -69,3 +69,23 @@ it('honours a custom route prefix', function () {
     // The default prefix is registered at boot; the named route reflects it.
     expect(route('truss.index', absolute: false))->toBe('/truss');
 });
+
+it('preloads the label font so the diagram is not measured in a fallback', function () {
+    // Mermaid sizes every label box to the text it measures and leaves no
+    // slack, so a face that arrives afterwards repaints wider glyphs into
+    // boxes sized for the fallback and the last character is clipped
+    // (issue #59). The client waits for the face before measuring; this hint
+    // starts the fetch with the document rather than when the stylesheet is
+    // parsed, so that wait is usually over before it begins.
+    config()->set('truss.enabled', true);
+    Gate::define('viewTruss', fn ($user = null) => true);
+
+    $this->get('/truss')
+        ->assertOk()
+        ->assertSee('rel="preload"', false)
+        ->assertSee('ibm-plex-mono-400.woff2', false)
+        ->assertSee('as="font"', false)
+        // Required even same-origin, or the preload is fetched a second time
+        // rather than reused.
+        ->assertSee('crossorigin', false);
+});

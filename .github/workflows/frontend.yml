@@ -27,8 +27,11 @@ jobs:
       - name: Unit tests (Vitest)
         run: npm test
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      # Firefox is scoped by testMatch to the label-geometry spec alone. Issue
+      # #59 was a Firefox-only clipping bug that Chromium could not reproduce,
+      # so that one spec earns a second engine without doubling the run.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox
 
       - name: Browser tests (Playwright)
         run: npm run test:e2e

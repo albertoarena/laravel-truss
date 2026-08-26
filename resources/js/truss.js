@@ -10,6 +10,7 @@ import { buildExportUrl } from './export-request.js';
 import { hasDiff, changeList, tableStatuses } from './diff-view.js';
 import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups, columnMarkers } from './doctor-view.js';
 import { createFocusCombobox } from './focus-combobox.js';
+import { labelFaceGate } from './label-face-gate.js';
 import { serverExportsAvailable, pngAvailability } from './export-menu.js';
 
 const app = document.getElementById('truss-app');
@@ -1147,6 +1148,19 @@ function syncUrl() {
   window.history.replaceState(null, '', qs || window.location.pathname);
 }
 
+/* ---- webfont gate ------------------------------------------------------ */
+
+// The diagram cannot be measured in one face and painted in another, or every
+// label loses its last character (issue #59). Only the two weights the diagram
+// paints are loaded; nothing uses the 500. See label-face-gate.js for why this
+// waits on fonts.load() rather than fonts.ready, and why a late face triggers a
+// redraw rather than a longer wait.
+const faceGate = labelFaceGate({
+  fonts: document.fonts,
+  faces: ['13px "IBM Plex Mono"', '600 13px "IBM Plex Mono"'],
+  timeoutMs: 1500,
+});
+
 async function render() {
   const subset = currentSubset();
   syncUrl();
@@ -1164,6 +1178,9 @@ async function render() {
     view: { filter: state.search, focus: state.focusRoot, depth: state.depth },
   });
   const key = subset.map((t) => t.name).join('|');
+
+  // Everything below measures text, so the face has to be settled first.
+  const measuredWithFace = await faceGate.settled();
 
   try {
     const { svg } = await mermaid.render('truss-graph', definition);
@@ -1189,6 +1206,7 @@ async function render() {
       applyTransform();
     }
     state.lastKey = key;
+    if (!measuredWithFace) faceGate.whenLate(render);
   } catch (error) {
     el.canvas.replaceChildren(banner('error', `Diagram failed to render: ${error?.message ?? error}`));
   }
