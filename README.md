@@ -19,7 +19,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 
 **[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed, then build a palette in the **[theme builder](https://trussphp.com/theme-builder/)** and copy the config. See what has shipped and what is next on the **[roadmap](https://trussphp.com/roadmap/)**.
 
-> **Stay updated:** click **Watch > Custom > Releases** to hear about new features, or follow along in [Discussions](https://github.com/albertoarena/laravel-truss/discussions).
+> **Stay updated:** click **Watch > Custom > Releases** to hear about new features, follow along in [Discussions](https://github.com/albertoarena/laravel-truss/discussions), or join the [Discord](https://discord.gg/x3Qt9CJkcE).
 
 ## Features
 
