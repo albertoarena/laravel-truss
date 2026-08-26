@@ -1,6 +1,6 @@
 ---
 name: truss-schema
-description: Ground a database schema change in this application's real structure using Laravel Truss. Use when adding or altering tables, columns, indexes, or foreign keys, when a migration needs to match what is already there, or when you need to know what a migration actually changed. Structure only, never row data.
+description: Ground a database schema change in this application's real structure using Laravel Truss. Use when adding or altering tables, columns, indexes, or foreign keys, when a migration needs to match what is already there, or when you need to know what a migration actually changed. Structure only, never data.
 ---
 
 # Grounding a schema change with Truss

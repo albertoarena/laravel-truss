@@ -74,7 +74,17 @@ it('carries a description that says when to reach for it', function () use ($fro
 });
 
 it('states the structure-only boundary', function () use ($skill) {
-    expect($skill())->toContain('never row data');
+    // Same rule as the guideline: the description is the text an agent matches
+    // against and then repeats, so it closes on the canonical brand line rather
+    // than a near-miss of it. "Structure only, never row data" shipped here
+    // after the guideline had already been corrected off exactly that variant.
+    expect($skill())
+        ->toContain('Structure only, never data.')
+        ->not->toContain('never row data');
+
+    // And in plain prose too, because the tagline alone does not tell an agent
+    // what not to reach for.
+    expect($skill())->toContain('It never returns row data');
 });
 
 it('teaches the workflow in order', function () use ($skill) {
