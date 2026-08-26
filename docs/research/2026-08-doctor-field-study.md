@@ -126,16 +126,18 @@ targeting one engine is a different population and this study cannot see one.**
 
 ## Findings worth reporting to the projects
 
-All high-confidence, each checkable in one `SHOW CREATE TABLE`. **Not yet sent.**
+Twelve findings across four of these applications are high-confidence, each
+checkable in a single `SHOW CREATE TABLE`, and they are **not listed here on
+purpose**.
 
-| App | Code | Table |
-|---|---|---|
-| cachet | `TRUSS-IDX-003` | `incident_components`, index is a left prefix of the composite unique |
-| firefly-iii | `TRUSS-IDX-003` | `transactions` |
-| bagisto | `TRUSS-IDX-003` | `product_grouped_products`, `product_inventory_indices`, `product_price_indices`, `agent_conversation_messages` |
-| bagisto | `TRUSS-IDX-002` | `attributes`, `product_channels`, two indexes on identical columns |
-| bagisto | `TRUSS-IDX-004` | `channel_currencies`, `channel_locales`, an index duplicating the primary key |
-| koel | `TRUSS-INT-003` | `duplicate_uploads`, `transcodes` |
+Every project hears about its own schema from us first, as an issue or a pull
+request, before anything is written publicly. Publishing a table of unreported
+defects in somebody else's database, alongside a release that advertises the
+tool which found them, would make that project's maintainers an exhibit rather
+than the people being helped. The counts above are a size; a named defect is a
+report, and a report has an owner who should read it first.
+
+This section will carry the list once those reports have been sent.
 
 ## Limitations, stated rather than buried
 
