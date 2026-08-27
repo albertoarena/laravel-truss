@@ -15,13 +15,21 @@ const TYPES = {
   '.css': 'text/css',
   '.json': 'application/json',
   '.map': 'application/json',
+  '.woff2': 'font/woff2',
 };
 
 createServer(async (req, res) => {
   try {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     const safe = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');
-    const body = await readFile(join(root, safe));
+    // truss.css asks for its faces with bare relative URLs, which resolve
+    // against the stylesheet's own directory. In production that is the asset
+    // route, where the CSS and the woff2 sit together; here they do not, so
+    // point every font request at resources/fonts and keep the CSS unmodified.
+    const path = safe.endsWith('.woff2')
+      ? join('resources/fonts', safe.split('/').pop())
+      : safe;
+    const body = await readFile(join(root, path));
     res.writeHead(200, { 'content-type': TYPES[extname(safe)] || 'application/octet-stream' });
     res.end(body);
   } catch {

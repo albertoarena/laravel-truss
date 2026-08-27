@@ -13,11 +13,32 @@ use AlbertoArena\Truss\Doctor\Severity;
 /**
  * TRUSS-INT-007: a two-foreign-key pivot table with no unique constraint on the
  * key pair, so the same relationship can be stored twice. A composite primary
- * key on the pair, or a unique index over it, satisfies the rule. Only tables
- * with exactly two single-column foreign keys are considered.
+ * key on the pair, or a unique index over it, satisfies the rule.
+ *
+ * Two single-column foreign keys is necessary but NOT sufficient: a join table
+ * carries its key pair and almost nothing else. That extra test exists because
+ * "exactly two foreign keys" was once the whole definition, which made a
+ * 36-column shopping cart a pivot and advised a unique constraint that would have
+ * capped a customer at one cart. See docs/adr/0003-pivot-detection.md; the
+ * thresholds below are fitted to real schemas and are not arbitrary.
+ *
+ * A unique index over PART of the pair also satisfies the rule, because it
+ * already makes the whole pair unique. That is arithmetic rather than a
+ * heuristic, so unlike the thresholds above it cannot cost a true positive.
+ * Reported in issue #58 against a one-to-one profile table whose user_id was
+ * unique: the message claimed duplicate pairs were possible when they were not.
+ * See the 22/08/2026 addendum to docs/adr/0003-pivot-detection.md, which records
+ * why this half needed no threshold and measures that it drops no true positive
+ * across the twenty applications the thresholds were checked against.
  */
 final class PivotWithoutUniqueKey implements Rule
 {
+    /**
+     * Columns that never count against a table looking like a join table: the
+     * conventional surrogate key and Laravel's timestamps.
+     */
+    private const NON_PAYLOAD = ['id', 'created_at', 'updated_at', 'deleted_at'];
+
     public function code(): string
     {
         return 'TRUSS-INT-007';
@@ -88,7 +109,43 @@ final class PivotWithoutUniqueKey implements Rule
             $columns[] = $foreignKey['columns'][0];
         }
 
+        if (! $this->looksLikeJoinTable($table, $columns)) {
+            return null;
+        }
+
         return $columns;
+    }
+
+    /**
+     * Whether the table carries its key pair and little else, which is what
+     * separates a join table from an entity that happens to have two foreign
+     * keys.
+     *
+     * The surrogate-key case is deliberately stricter. A table with its own
+     * identity is presumed an entity unless it carries nothing at all beyond the
+     * pair, which is what distinguishes `genre_song` (an id, two keys, a real
+     * pivot) from `playlist_folders` (an id, two keys, and a name, an entity).
+     * A table with no primary key, or whose primary key *is* the pair, is
+     * unambiguously a join table and gets one payload column of latitude.
+     *
+     * @param  array<string, mixed>  $table
+     * @param  list<string>  $pair
+     */
+    private function looksLikeJoinTable(array $table, array $pair): bool
+    {
+        $names = array_column($table['columns'] ?? [], 'name');
+        $payload = count(array_diff($names, $pair, self::NON_PAYLOAD));
+        $primaryKey = $table['primary_key'] ?? [];
+
+        if ($primaryKey === [] || $this->sameSet($primaryKey, $pair)) {
+            return $payload <= 1;
+        }
+
+        if ($primaryKey === ['id']) {
+            return $payload === 0;
+        }
+
+        return false;
     }
 
     /**
@@ -102,12 +159,40 @@ final class PivotWithoutUniqueKey implements Rule
         }
 
         foreach ($table['indexes'] ?? [] as $index) {
-            if (($index['unique'] ?? false) && $this->sameSet($index['columns'] ?? [], $pair)) {
+            if (! ($index['unique'] ?? false)) {
+                continue;
+            }
+
+            $columns = $index['columns'] ?? [];
+
+            if ($this->sameSet($columns, $pair)) {
+                return true;
+            }
+
+            // A unique index over part of the pair already makes the whole pair
+            // unique, so duplicate pairs are impossible. Nullable columns are
+            // excluded: most engines allow repeated NULLs in a unique index.
+            if ($columns !== [] && array_diff($columns, $pair) === [] && $this->allNonNullable($table, $columns)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $table
+     * @param  list<string>  $columns
+     */
+    private function allNonNullable(array $table, array $columns): bool
+    {
+        foreach ($table['columns'] ?? [] as $column) {
+            if (in_array($column['name'], $columns, true) && ($column['nullable'] ?? false)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

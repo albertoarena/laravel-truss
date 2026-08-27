@@ -35,6 +35,7 @@ class AssetController
         'table-match.js' => 'js/table-match.js',
         'focus-combobox.js' => 'js/focus-combobox.js',
         'export-menu.js' => 'js/export-menu.js',
+        'label-face-gate.js' => 'js/label-face-gate.js',
         'mermaid.min.js' => 'js/vendor/mermaid.min.js',
         'truss.css' => 'css/truss.css',
         'ibm-plex-mono-400.woff2' => 'fonts/ibm-plex-mono-400.woff2',

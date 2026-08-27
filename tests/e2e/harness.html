@@ -5,6 +5,17 @@
     <title>Truss harness</title>
     <!-- The vendored Mermaid we actually ship (served same-origin by serve.mjs). -->
     <script src="/resources/js/vendor/mermaid.min.js"></script>
+    <script>
+      // Opt-in with ?css=1: load the real stylesheet, so a spec can see the
+      // @font-face and the paint-side font stack that users actually get.
+      // Off by default and deliberately so. The webfont changes text metrics,
+      // and the other specs assert on layout, so loading it everywhere would
+      // move goalposts unrelated to what those specs are testing.
+      if (new URLSearchParams(location.search).has('css')) {
+        document.head.insertAdjacentHTML(
+          'beforeend', '<link rel="stylesheet" href="/resources/css/truss.css">');
+      }
+    </script>
     <style>
         body { margin: 0; }
         .truss-field[hidden] { display: none; }

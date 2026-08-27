@@ -19,7 +19,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 
 **[Try the live demo](https://trussphp.com/demo/)** to pan, zoom, focus, and export a sample schema in your browser, no install needed, then build a palette in the **[theme builder](https://trussphp.com/theme-builder/)** and copy the config. See what has shipped and what is next on the **[roadmap](https://trussphp.com/roadmap/)**.
 
-> **Stay updated:** click **Watch > Custom > Releases** to hear about new features, or follow along in [Discussions](https://github.com/albertoarena/laravel-truss/discussions).
+> **Stay updated:** click **Watch > Custom > Releases** to hear about new features, follow along in [Discussions](https://github.com/albertoarena/laravel-truss/discussions), or join the [Discord](https://discord.gg/x3Qt9CJkcE).
 
 ## Features
 
@@ -62,7 +62,7 @@ To run Truss gated on staging or production, install it as a **regular dependenc
 composer require albertoarena/laravel-truss
 ```
 
-Requires **PHP 8.3+** and **Laravel 12+**. The service provider is auto-discovered, so there is nothing to publish to get started.
+Requires **PHP 8.2+** and **Laravel 12+**. The service provider is auto-discovered, so there is nothing to publish to get started.
 
 ## Quick start
 
@@ -197,6 +197,41 @@ The server exposes five tools and one resource, all read-only and structure-only
 - Resource `truss://schema`: the whole structure as one compact document.
 
 Every tool answers with structure only, never data, and honours the same `excluded_tables` and managed-connection safeguards as the rest of Truss. It requires Laravel 12.41.1 or newer (or Laravel 13); Truss's own minimum is unaffected. Set `truss.mcp.enabled` to `false` to turn it off. A note on safety: if you pair a schema like this with a tool that executes generated SQL, that tool needs its own read-only connection and validation; Truss produces context, it never runs a query for you.
+
+### Laravel Boost
+
+If your project uses [Laravel Boost](https://github.com/laravel/boost), Truss ships guidelines and a skill that Boost finds on its own, so an agent set up through Boost knows Truss is installed and reaches for your real schema. There is no MCP server to wire up by hand for this path.
+
+One step, and Boost prompts you for it:
+
+```bash
+php artisan boost:install
+```
+
+Tick **`albertoarena/laravel-truss (guidelines, skills)`** in the third-party list. Nothing third-party is selected by default, so this is your call, not something Truss imposes on your agent's context. Boost remembers the choice for later `boost:update` runs.
+
+You get two things. The **guideline** is short and always in context: what Truss is, the commands that ground a task in the real structure, and the structure-only boundary. The **skill** is longer and loaded only when a task is actually about the database: the workflow of reading the structure, checking it with `truss:doctor`, making the change, then confirming it with `truss:diff`.
+
+To turn either off later, in your own `config/boost.php` (Boost does not publish that file, so create it if you have not already, and note the two lists take different kinds of key):
+
+```php
+'guidelines' => ['exclude' => ['albertoarena/laravel-truss/truss']],
+'skills' => ['exclude' => ['truss-schema']],
+```
+
+This adds nothing to your dependencies: the shipped files are inert Markdown, and Truss is not aware of Boost at runtime. If Boost is not installed, nothing reads them and nothing changes.
+
+### Three ways an agent reaches your schema
+
+They are additive, and nobody has to choose just one:
+
+| Path | Best for | Setup |
+| --- | --- | --- |
+| **MCP server** | The richest surface: five tools and a resource, queried on demand, always current | `composer require laravel/mcp`, then point your client at `php artisan mcp:start truss` |
+| **Laravel Boost** | The lowest friction if you already use Boost, across every agent Boost configures | `php artisan boost:install`, tick Truss |
+| **`truss:export`** | CI, scripts, and any CLI-capable agent; no optional dependency at all | None, it ships with Truss |
+
+Boost cannot install or register the Truss MCP server for you (Boost writes only its own MCP entries), so the two paths stay independent. All three are read-only and structure only.
 
 ## Theming
 

@@ -51,6 +51,7 @@ final class LikelyMissingForeignKey implements Rule
 
         foreach ($tables as $table) {
             $constrained = $this->constrainedColumns($table);
+            $columnNames = array_column($table['columns'] ?? [], 'name');
 
             foreach ($table['columns'] ?? [] as $column) {
                 $name = $column['name'];
@@ -60,6 +61,15 @@ final class LikelyMissingForeignKey implements Rule
                 }
 
                 $base = substr($name, 0, -3);
+
+                // A morph target cannot carry a foreign key at all: the value
+                // points at whichever table the sibling `_type` column names.
+                // This rule used to ask for one anyway, contradicting
+                // TRUSS-INT-009 within the same report.
+                if (in_array($base.'_type', $columnNames, true)) {
+                    continue;
+                }
+
                 $target = $this->matchingTable($base, $tableNames);
 
                 if ($target === null) {

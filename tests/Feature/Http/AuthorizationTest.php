@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use AlbertoArena\Truss\Http\Middleware\Authorize;
+use Illuminate\Contracts\Auth\Access\Gate as GateContract;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * A minimal authenticatable whose `email` the shipped default gate inspects.
@@ -95,4 +99,26 @@ it('registers the configured auth middleware ahead of the Authorize guard', func
     $middleware = app('router')->getRoutes()->getByName('truss.index')->gatherMiddleware();
 
     expect($middleware)->toContain('web')->toContain(Authorize::class);
+});
+
+it('404s rather than erroring when the host binds no Gate at all', function () {
+    // October CMS ships its own authentication and binds no Gate contract.
+    // Resolving one raises BindingResolutionException, and an error page
+    // confirms the dashboard exists to somebody who may not view it, which is
+    // the single thing this middleware is written to avoid. Driven directly
+    // rather than through $this->get(), because a test request rebuilds the
+    // container and puts the binding back.
+    config()->set('truss.enabled', true);
+    app()->detectEnvironment(fn () => 'production');
+
+    unset(app()[GateContract::class]);
+    // The facade caches what it resolved earlier in this file, so removing the
+    // binding alone leaves a working Gate behind and the test would pass with
+    // or without the guard.
+    Gate::clearResolvedInstances();
+
+    expect(fn () => (new Authorize)->handle(
+        Request::create('/truss'),
+        fn ($request) => new Response,
+    ))->toThrow(NotFoundHttpException::class);
 });
