@@ -141,10 +141,15 @@ This section will carry the list once those reports have been sent.
 
 ## Limitations, stated rather than buried
 
-- **Five applications of seventeen were not measured**: October and BookStack
-  could not run Truss (which is itself the result), and snipe-it, invoiceninja,
-  pixelfed and lunar were parked unrun. Snipe-IT is the notable gap: it predates
-  Laravel 5 and is the maximum migration-debt case in the set.
+- **Four applications of sixteen were not measured**, leaving the twelve every
+  count in this document rests on: October and BookStack could not run Truss
+  (which is itself the result), and Lunar and Snipe-IT were parked unrun.
+  Snipe-IT is the notable gap: it predates Laravel 5 and is the maximum
+  migration-debt case in the set. **Invoice Ninja and Pixelfed are not in this
+  number and never were**: neither was ever a candidate, the first because its
+  `composer.json` points at a path repository outside the clone and the second
+  because it publishes on a `dev` branch that moves daily. They are listed as
+  untestable on `/reference/tested-applications/`, not as parked.
 - **81% is a floor, not an estimate.** The 13 `TRUSS-INT-007` findings not shown
   to be wrong were not shown to be right either.
 - **The triage is one person's judgement.** "Entity table, not a pivot" is a
