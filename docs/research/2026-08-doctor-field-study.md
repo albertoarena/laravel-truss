@@ -159,7 +159,8 @@ This section will carry the list once those reports have been sent.
 - **The fix is measured on the same schemas that shaped it.** The `TRUSS-INT-007`
   thresholds (see [ADR 0003](../adr/0003-pivot-detection.md)) were chosen by
   looking at these sixteen applications, and the resulting "69 to 14" and "47%"
-  were then measured on the same sixteen. **That is an in-sample figure**: it
+  were then measured on the twelve of them that ran both versions, which is the
+  bullet above this one. **That is an in-sample figure**: it
   describes this set and does not predict the next one. **The 56 wrong findings
   are unaffected**, because each was judged by inspecting the table rather than
   by assuming the rule was noisy.
