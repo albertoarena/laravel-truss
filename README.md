@@ -12,7 +12,6 @@
   <a href="https://github.com/albertoarena/laravel-truss/actions/workflows/run-tests.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/albertoarena/laravel-truss/run-tests.yml?branch=main&amp;label=tests&amp;style=flat"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/packagist/l/albertoarena/laravel-truss.svg?style=flat"></a>
   <a href="https://whyphp.dev"><img alt="Why PHP in 2026" src="https://img.shields.io/badge/Why_PHP-in_2026-7A86E8?style=flat&amp;labelColor=18181b"></a>
-  <img alt="Repo views" src="https://raw.githubusercontent.com/albertoarena/laravel-truss/traffic-data/badge.svg">
 </p>
 
 Laravel Truss is a live database structure viewer. It scans your live schema and renders it as a scrollable, zoomable ER diagram right inside your app, so you can see how the tables actually connect without opening a DB client. It reads **structure only** (tables, columns, keys, indexes); row data is never queried or exposed.
