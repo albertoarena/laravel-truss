@@ -55,6 +55,27 @@ Follow these steps in order. Never skip the CI gate.
    tag, so trigger a docs rebuild there (push or dispatch its Publish workflow)
    to pull the newly released frontend into the demo.
 
+8. **Bump the docs site's version constant, every single release.** In
+   `albertoarena/laravel-truss-docs`, `src/config/package.js` holds
+   `PACKAGE_VERSION` as a hand-maintained literal, and the landing page badge
+   and the structured data both render from it. It does **not** follow the tag.
+   Leave it and trussphp.com advertises the previous release to every visitor.
+
+   **This has now happened twice**, at v1.10.0 and again at v1.11.0, so treat it
+   as part of the release rather than as tidying afterwards. The release is not
+   done until that constant matches the tag you just pushed.
+
+   The repo does guard it: `tests/structured-data.test.js` compares the constant
+   against `.demo-asset-version`, the tag the prebuild resolved from
+   `releases/latest`, and fails loudly. **Do not rely on the guard to stop a bad
+   deploy.** Its `CI` job and its `Publish` job are independent, so on v1.11.0 CI
+   went red while Publish succeeded and the stale badge shipped anyway. The guard
+   tells you afterwards; only doing the bump prevents it.
+
+   Order matters, for the reason in step 7: publish the package release first, so
+   the docs prebuild resolves the new tag, then bump the constant and let the
+   rebuild carry both.
+
 Conventions that always apply: commit subjects `type: short subject` (max 50
 chars) with a why-not-how body; no "Generated with Claude Code" or
 "Co-Authored-By: Claude"; no em or en dashes anywhere (see the root `CLAUDE.md`
