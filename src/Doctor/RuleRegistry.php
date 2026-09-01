@@ -11,6 +11,7 @@ use AlbertoArena\Truss\Doctor\Rules\Index\IndexDuplicatingPrimaryKey;
 use AlbertoArena\Truss\Doctor\Rules\Index\MissingUniqueConstraint;
 use AlbertoArena\Truss\Doctor\Rules\Index\RedundantPrefixIndex;
 use AlbertoArena\Truss\Doctor\Rules\Index\UnindexedSoftDelete;
+use AlbertoArena\Truss\Doctor\Rules\Integrity\ForeignKeyPointsAtWrongTable;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\ForeignKeyTypeMismatch;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\LikelyMissingForeignKey;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\MissingPrimaryKey;
@@ -44,6 +45,7 @@ final class RuleRegistry
             new MissingPrimaryKey,
             new LikelyMissingForeignKey,
             new ForeignKeyTypeMismatch,
+            new ForeignKeyPointsAtWrongTable,
             new PivotWithoutUniqueKey,
             new PolymorphicWithoutIndex,
             new ForeignKeyWithoutIndex,

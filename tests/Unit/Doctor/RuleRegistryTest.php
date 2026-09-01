@@ -12,7 +12,7 @@ function ruleCodes(array $rules): array
 }
 
 it('registers the phase 1 rules by default', function () {
-    expect(RuleRegistry::default()->all())->toHaveCount(13);
+    expect(RuleRegistry::default()->all())->toHaveCount(14);
 });
 
 it('recommended runs high-confidence rules only', function () {
@@ -26,7 +26,7 @@ it('recommended runs high-confidence rules only', function () {
 });
 
 it('strict runs every rule and none runs nothing', function () {
-    expect(RuleRegistry::default()->resolve('strict'))->toHaveCount(13);
+    expect(RuleRegistry::default()->resolve('strict'))->toHaveCount(14);
     expect(RuleRegistry::default()->resolve('none'))->toBe([]);
 });
 

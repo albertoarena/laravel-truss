@@ -24,6 +24,9 @@ final class TableDraft
     /** @var list<array{column: string, table: string, column_ref: string}> */
     private array $fkDrafts = [];
 
+    /** @var list<array{columns: list<string>, table: string, columns_ref: list<string>}> */
+    private array $compositeFkDrafts = [];
+
     private ?string $pendingFk = null;
 
     /** An auto-incrementing bigint primary key. */
@@ -75,6 +78,25 @@ final class TableDraft
     public function foreign(string $column, string $table, string $referencedColumn = 'id'): self
     {
         $this->fkDrafts[] = ['column' => $column, 'table' => $table, 'column_ref' => $referencedColumn];
+
+        return $this;
+    }
+
+    /**
+     * Add a multi-column foreign key. Separate from foreign() because a rule
+     * that reads a key's name has to be able to prove it skips one that does
+     * not have a single column to read.
+     *
+     * @param  list<string>  $columns
+     * @param  list<string>|null  $referencedColumns  defaults to `id` per column
+     */
+    public function compositeForeign(array $columns, string $table, ?array $referencedColumns = null): self
+    {
+        $this->compositeFkDrafts[] = [
+            'columns' => $columns,
+            'table' => $table,
+            'columns_ref' => $referencedColumns ?? array_fill(0, count($columns), 'id'),
+        ];
 
         return $this;
     }
@@ -137,17 +159,30 @@ final class TableDraft
             'columns' => $this->columns,
             'primary_key' => $this->primaryKey,
             'indexes' => $this->indexes,
-            'foreign_keys' => array_map(
-                fn (array $fk): array => [
-                    'name' => "{$name}_{$fk['column']}_foreign",
-                    'columns' => [$fk['column']],
-                    'references_table' => $fk['table'],
-                    'references_columns' => [$fk['column_ref']],
-                    'on_update' => null,
-                    'on_delete' => null,
-                ],
-                $this->fkDrafts,
-            ),
+            'foreign_keys' => [
+                ...array_map(
+                    fn (array $fk): array => [
+                        'name' => "{$name}_{$fk['column']}_foreign",
+                        'columns' => [$fk['column']],
+                        'references_table' => $fk['table'],
+                        'references_columns' => [$fk['column_ref']],
+                        'on_update' => null,
+                        'on_delete' => null,
+                    ],
+                    $this->fkDrafts,
+                ),
+                ...array_map(
+                    fn (array $fk): array => [
+                        'name' => "{$name}_".implode('_', $fk['columns']).'_foreign',
+                        'columns' => $fk['columns'],
+                        'references_table' => $fk['table'],
+                        'references_columns' => $fk['columns_ref'],
+                        'on_update' => null,
+                        'on_delete' => null,
+                    ],
+                    $this->compositeFkDrafts,
+                ),
+            ],
         ];
     }
 }
