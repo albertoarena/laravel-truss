@@ -17,7 +17,7 @@ it('flags a foreign key that points at a different table from the one its name n
         ->build();
 
     expect(doctorCheck(new ForeignKeyPointsAtWrongTable, $snapshot))
-        ->toHaveFinding('TRUSS-INT-004', table: 'cart_line_discount', column: 'cart_line_id');
+        ->toHaveFinding('TRUSS-INT-010', table: 'cart_line_discount', column: 'cart_line_id');
 });
 
 it('is clean when the foreign key points at the table its name names', function () {
@@ -38,7 +38,7 @@ it('matches a singular table name as well as a plural one', function () {
         ->build();
 
     expect(doctorCheck(new ForeignKeyPointsAtWrongTable, $snapshot))
-        ->toHaveFinding('TRUSS-INT-004', table: 'cart_line_discount', column: 'cart_line_id');
+        ->toHaveFinding('TRUSS-INT-010', table: 'cart_line_discount', column: 'cart_line_id');
 });
 
 // The false positives this rule exists to avoid. Six of the seven column/table
@@ -90,7 +90,7 @@ it('finds the table through a shared prefix', function () {
         ->build();
 
     expect(doctorCheck(new ForeignKeyPointsAtWrongTable, $snapshot))
-        ->toHaveFinding('TRUSS-INT-004', table: 'lunar_cart_line_discount', column: 'cart_line_id');
+        ->toHaveFinding('TRUSS-INT-010', table: 'lunar_cart_line_discount', column: 'cart_line_id');
 });
 
 it('does not match across different prefixes', function () {

@@ -12,7 +12,7 @@ use AlbertoArena\Truss\Doctor\Severity;
 use Illuminate\Support\Str;
 
 /**
- * TRUSS-INT-004: a single-column `*_id` foreign key that references one table
+ * TRUSS-INT-010: a single-column `*_id` foreign key that references one table
  * while a table named after the column exists and is a different one. The
  * constraint then validates against the wrong parent, so a valid id is rejected
  * unless it happens to exist in both tables, and `ON DELETE CASCADE` deletes
@@ -20,7 +20,8 @@ use Illuminate\Support\Str;
  *
  * This is the sibling of TRUSS-INT-002. That rule asks why a foreign-key-shaped
  * column has no constraint; this one asks why the constraint it has disagrees
- * with its name.
+ * with its name. The code skips to 010 because INT-004 to INT-009 are already
+ * spoken for by planned rules, and a code is permanent once it is released.
  *
  * THE WHOLE DIFFICULTY IS THAT MOST NAME MISMATCHES ARE DELIBERATE. Aliases are
  * ordinary and correct: `author_id` referencing `users`, `merged_id` referencing
@@ -40,7 +41,7 @@ final class ForeignKeyPointsAtWrongTable implements Rule
 {
     public function code(): string
     {
-        return 'TRUSS-INT-004';
+        return 'TRUSS-INT-010';
     }
 
     public function category(): Category

@@ -174,7 +174,7 @@ Type `TRUSS-TYP-*`
   (name-based; negative tests for legitimately-float columns like ratios).
 - TYP-002 `is_*` / `has_*` column stored as `varchar`. warning. **H**
 
-Later phases keep the rest of the original catalogue (INT-004/005/006/008/010, IDX-007
+Later phases keep the rest of the original catalogue (INT-004/005/006/008, IDX-007
 to 010, TYP-003 to 008, all NAM-*, all LRV-*), the `laravel` preset, GitHub/JUnit
 formatters, suppression workflow, `--since-baseline`, dashboard panel + table badges
 (Phase 4, `doctor` key on the existing JSON endpoint, reuse focus/URL state), and
