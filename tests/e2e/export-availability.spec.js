@@ -25,7 +25,7 @@ const base = {
  * @param {import('@playwright/test').Page} page
  * @param {{ server?: boolean }} options
  */
-async function load(page, { server = true } = {}) {
+async function load(page, { server = true, css = false } = {}) {
   await page.route('**/api/schema**', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify(base) }));
 
@@ -33,14 +33,20 @@ async function load(page, { server = true } = {}) {
     // Served without the attribute at all, which is what a static page does.
     // It cannot be stripped from a script: truss.js reads its config once, at
     // module evaluation, and a deferred module runs before DOMContentLoaded.
-    await page.route('**/harness.html', async (route) => {
+    // The glob keeps the trailing * so it still matches with ?css=1 appended.
+    await page.route('**/harness.html*', async (route) => {
       const response = await route.fetch();
       const html = (await response.text()).replace(/\s*data-export-endpoint="[^"]*"/, '');
       await route.fulfill({ response, body: html, contentType: 'text/html' });
     });
   }
 
-  await page.goto('/tests/e2e/harness.html');
+  // ?css=1 loads the real stylesheet. Off by default here, as everywhere else,
+  // because the webfont moves text metrics and these specs assert on the DOM.
+  // The two size assertions below are about the stylesheet itself, so they are
+  // the ones that need it: without it the popover has no max-height at all and
+  // measures 898px wide, which cannot show a cap being too small.
+  await page.goto(`/tests/e2e/harness.html${css ? '?css=1' : ''}`);
   await expect(page.locator('#truss-canvas > svg')).toBeVisible();
 }
 
@@ -119,4 +125,98 @@ test('the table menu marks its server-backed actions too', async ({ page }) => {
   // Focus needs nothing from a server and must survive.
   await expect(page.locator('#truss-popover button[data-act="focus"]'))
     .not.toHaveAttribute('aria-disabled', 'true');
+});
+
+// The note explaining why four items are unavailable is 92px of text, and the
+// popover was capped at a flat 280px. On trussphp.com's demo the menu measures
+// 294 with the note in it, so the explanation was the part that fell off the
+// bottom: the reader saw four dimmed items and had to scroll a menu to find out
+// why, on a page whose whole job is to be tried by somebody who has installed
+// nothing.
+//
+// This asserts headroom rather than "does not scroll", and the difference
+// matters. The same menu measures 264 under Playwright's Chromium and 294 in
+// the Chrome it was reported from, against a byte-identical stylesheet: a 30px
+// spread. Font substitution is not the cause, since serve.mjs points every
+// woff2 request at resources/fonts and both are measuring the real face; the
+// cause is unidentified and the fix does not depend on knowing it. What matters
+// is the size of the spread, because a spec that only checked for a scrollbar
+// would pass in this harness while the shipped page clipped. The cap has to
+// clear its own content by more than the spread, or whether it clips is decided
+// by which browser is looking.
+//
+// Only reachable without an export route, which is why it lives in this file:
+// with one there is no note and the menu measures 194.
+const METRIC_SPREAD = 48;
+
+test('caps the table menu well clear of its own content', async ({ page }) => {
+  // Explicit, because the assertion reads the computed max-height and that
+  // resolves the min(). Anywhere shorter than about 376px it would resolve to
+  // the viewport term instead, and the test would start failing for a reason
+  // that has nothing to do with the cap this is about.
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await load(page, { server: false, css: true });
+
+  await page.locator('#truss-canvas [role="button"]').first().click();
+  await expect(page.locator('#truss-popover')).toBeVisible();
+  await expect(page.locator('#truss-popover .truss-menu-note')).toBeVisible();
+
+  const box = await page.locator('#truss-popover').evaluate((el) => ({
+    content: el.scrollHeight,
+    cap: parseFloat(getComputedStyle(el).maxHeight),
+  }));
+
+  expect(box.cap - box.content,
+    `the cap is ${box.cap}px against ${box.content}px of content, and the same menu `
+    + 'has been measured 30px taller in another browser')
+    .toBeGreaterThanOrEqual(METRIC_SPREAD);
+});
+
+// Guards the fix rather than driving it: raising a flat cap is how you trade a
+// clipped menu for one that runs off the bottom of a short window, since
+// placePopover pins to 8px from the top when it flips above and cannot shrink
+// what it is given. 240px is below the menu's own 294, so an unclamped cap
+// fails here while the clamped one shrinks and scrolls inside itself.
+test('caps the Export view menu clear of its content too', async ({ page }) => {
+  // The same note fills this menu on the same `server` condition
+  // (truss.js:648), so the reported defect had two entry points and only one of
+  // them was covered. One element and one cap fixes both, which is an argument
+  // for the shared cap, but it should be asserted rather than assumed.
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await load(page, { server: false, css: true });
+
+  // dispatchEvent rather than click, and only here. This harness puts
+  // .truss-zoom inside the toolbar, where the shipped views put it inside
+  // #truss-viewport, so once the real stylesheet applies position: absolute it
+  // lands on top of the export button and swallows the pointer. That is a
+  // divergence in the harness markup and not something a user meets, so the
+  // handler is invoked directly rather than asserting around a fake obstacle.
+  await page.locator('#truss-export-btn').dispatchEvent('click');
+
+  await expect(page.locator('#truss-popover .truss-menu-note')).toBeVisible();
+
+  const box = await page.locator('#truss-popover').evaluate((el) => ({
+    content: el.scrollHeight,
+    cap: parseFloat(getComputedStyle(el).maxHeight),
+  }));
+
+  expect(box.cap - box.content, `the cap is ${box.cap}px against ${box.content}px of content`)
+    .toBeGreaterThanOrEqual(METRIC_SPREAD);
+});
+
+test('never grows taller than the window it is placed in', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 240 });
+  await load(page, { server: false, css: true });
+
+  await page.locator('#truss-canvas [role="button"]').first().click();
+  await expect(page.locator('#truss-popover')).toBeVisible();
+
+  const fits = await page.locator('#truss-popover').evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { top: Math.round(r.top), bottom: Math.round(r.bottom), windowH: window.innerHeight };
+  });
+
+  expect(fits.top, 'the menu starts above the top of the window').toBeGreaterThanOrEqual(0);
+  expect(fits.bottom, `the menu ends ${fits.bottom - fits.windowH}px below the bottom of the window`)
+    .toBeLessThanOrEqual(fits.windowH);
 });

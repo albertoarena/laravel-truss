@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The details popover no longer clips its own content. Its height cap sat inside
+  the range two browsers disagree by when measuring the same menu, so the note
+  explaining why the server-backed exports are unavailable could scroll out of
+  sight in one and not the other. The cap now clears the tallest content the
+  popover carries, and can no longer exceed the window it is placed in.
+
 ## [1.11.0] - 2026-09-01
 
 ### Added

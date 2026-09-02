@@ -36,7 +36,21 @@
         .truss-combo-opt { padding: 3px 8px; cursor: pointer; }
         .truss-combo-opt.is-active { background: #dbeafe; }
         .truss-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-        .truss-popover { position: fixed; z-index: 40; background: #fff; border: 1px solid #ccc; padding: 8px; }
+        /* :where() so this stands in only when the real stylesheet is absent.
+           It is a stub for the specs that run without ?css=1, but it was
+           winning the cascade even with it, because it is declared after the
+           injected link and matches at the same specificity. That made the
+           popover's real box invisible to every spec: a shipped max-height too
+           small for its own content measured correct in here.
+
+           Zero specificity rather than reordering the head, and the reason is
+           correctness rather than a smaller diff. :where(.truss-popover) is
+           0,0,0 against truss.css's 0,1,0, so it loses whatever the source
+           order is. Moving the injected link would work only while that order
+           held, and the next person to add a <style> or reorder the head would
+           silently re-mask the popover, which is the bug this exists to have
+           caught. */
+        :where(.truss-popover) { position: fixed; z-index: 40; background: #fff; border: 1px solid #ccc; padding: 8px; }
         .truss-popover[hidden] { display: none; }
         #truss-diff-btn[hidden] { display: none; }
         .truss-diff-panel { position: absolute; top: 40px; right: 14px; z-index: 30; background: #fff; border: 1px solid #ccc; padding: 8px; }

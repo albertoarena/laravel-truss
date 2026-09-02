@@ -405,8 +405,40 @@ body {
 #truss-canvas svg .nodeLabel.truss-enum-type:hover,
 #truss-canvas svg .nodeLabel.truss-enum-type:hover p { color: var(--bp-ink) !important; }
 
+/* One cap, and it governs one shared element with four different contents: the
+   enum value list (truss.js:331), the table menu (:376), the Export view menu
+   (:640) and the column detail (:980). Raising it therefore reaches real
+   installations and not only the server-less demo, which is a decision rather
+   than a side effect. It is a safe one because the change is monotone: every
+   content shows more before it scrolls and none shows less. The only content
+   with no natural bound is the enum list, one row per value, which scrolled at
+   280 and simply scrolls later now. Scoping per content would need :has(),
+   which costs more browser floor than the whole fix.
+
+   The size clears the tallest thing the popover ships: a menu carrying the "no
+   export route" note, which measures 264px under Playwright's Chromium and 294
+   under Chrome against this same stylesheet, a 30px spread from text metrics.
+   A flat 280 sat inside that spread, so the note explaining why four items were
+   dimmed scrolled off the bottom in some browsers and not others. Both the
+   table menu and the Export view menu carry that note (truss.js:384 and :648),
+   so the defect had two entry points.
+
+   The viewport term is not belt and braces. placePopover flips the menu above
+   its anchor when it will not fit below and pins it to 8px, so it cannot shrink
+   what it is given, and a taller flat cap would trade a clipped menu for one
+   running off the bottom of a short window. dvh is declared second because on
+   iOS Safari 100vh is the toolbars-retracted height, which would reintroduce
+   exactly that failure on the device a demo link is most often opened on; a
+   browser that does not know dvh keeps the vh line above it.
+
+   min() needs no fallback. A browser that cannot parse it drops the whole
+   declaration, which leaves no cap at all: nothing clips, and the only cost is
+   the short-window overrun that this change removes. The degradation is
+   benign, which is why the older syntax is not worth carrying. */
 .truss-popover {
-  position: fixed; z-index: 40; min-width: 120px; max-width: 260px; max-height: 280px; overflow: auto;
+  position: fixed; z-index: 40; min-width: 120px; max-width: 260px;
+  max-height: min(360px, calc(100vh - 16px));
+  max-height: min(360px, calc(100dvh - 16px)); overflow: auto;
   background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, .2); padding: 10px 12px;
   font-family: var(--bp-mono); font-size: 12px; color: var(--bp-fg);
