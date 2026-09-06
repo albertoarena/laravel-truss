@@ -15,8 +15,11 @@ composer.lock
 /build/
 /coverage/
 
-# Private/local docs (note: the tracked docs/ folder is NOT ignored)
-/.docs/
+# Private/local docs (note: the tracked docs/ folder is NOT ignored).
+# No trailing slash on purpose: a trailing slash matches directories only, so
+# the entry would not cover a symlink of the same name, and git records a
+# symlink as a file. Without the slash it covers both.
+/.docs
 
 # IDE files
 /.idea/
