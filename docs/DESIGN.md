@@ -76,6 +76,8 @@ Two routes, matching the "index page + JSON endpoint" pattern used by in-app adm
 - `GET {route_prefix}` — renders the Blade shell (layout, connection switcher, container for the diagram).
 - `GET {route_prefix}/api/schema?connection=...` — returns the cached schema JSON for the requested connection, with config `excluded_tables` filtered out **server-side** so they never reach the client. The response also carries a `diff` field (the structural diff against the recorded baseline, or `null` when the feature is off or no baseline exists yet), plus a `diff_unavailable` flag when the baseline could not be read at all, which is a distinct case from having none and is surfaced as a dashboard notice, and a `cache_unavailable` flag when the snapshot had to be read live because the cache store could not be reached (also a notice; the structure itself is complete); the baseline is filtered through the same exclusion list, so an excluded table never surfaces via the diff either. The frontend fetches from this endpoint and builds the Mermaid `erDiagram` definition client-side, applying interactive filter/focus to what it received.
 
+The endpoint assembles none of that itself: `Dashboard/DashboardPayload` does, and `Truss::payload(?string $connection = null)` returns the same array in-process, so code that renders this structure somewhere else (an admin panel page, a Livewire component, an internal tool) needs no HTTP request to the app it is already running in. The controller keeps only the 404 for an unmanaged connection; the service throws an `InvalidArgumentException` for it. The facade method runs no authorization of its own, so an in-app caller owns its own check (see the authorization model below for what the route's middleware does, which is more than the gate).
+
 Both routes sit behind a **fixed `viewTruss` gate** (a fixed ability name). The package ships a default definition that allows access in `local` only; the host app customizes *who* may view by redefining the `viewTruss` gate in its own service provider. The ability name is not configurable — only its callback is, and that lives in the app, not in config.
 
 #### Authorization model
@@ -208,6 +210,8 @@ Post-v1 ideas, not yet scheduled:
 │   ├── Diff/                        # pure schema diff + baseline persistence
 │   │   ├── SchemaDiffer.php         # pure: two snapshots → structural diff
 │   │   └── BaselineStore.php        # structure-only baseline file on a disk
+│   ├── Dashboard/
+│   │   └── DashboardPayload.php     # snapshot + diff + doctor + flags; one producer, HTTP or not
 │   ├── Commands/
 │   │   ├── RebuildCommand.php       # truss:rebuild
 │   │   └── DiffCommand.php          # truss:diff
