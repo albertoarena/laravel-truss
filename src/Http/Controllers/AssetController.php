@@ -25,6 +25,7 @@ class AssetController
     private const ASSETS = [
         'truss.js' => 'js/truss.js',
         'selection.js' => 'js/selection.js',
+        'schema-source.js' => 'js/schema-source.js',
         'mermaid-definition.js' => 'js/mermaid-definition.js',
         'export-request.js' => 'js/export-request.js',
         'diff-view.js' => 'js/diff-view.js',

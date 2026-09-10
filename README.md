@@ -182,6 +182,19 @@ You get the same array `GET {prefix}/api/schema` serves: the cached snapshot wit
 
 Two things it deliberately does not do. It never returns row data, like everything else here. And it does not consult the `viewTruss` gate: authorization belongs to whatever exposes the data, so a page of your own must run its own check. Truss's route does that in middleware, which also honours `truss.enabled` and leaves `local` open, and a caller that wants the dashboard's behaviour should reproduce all of it rather than only the gate.
 
+To render that payload with Truss's own diagram, embed it in your page and the frontend will use it instead of fetching:
+
+```blade
+<div id="truss-app" data-type-labels="native" data-focus-depth="1">
+    <script type="application/json" data-truss-payload>@json(Truss::payload())</script>
+    {{-- the same toolbar, banner and viewport markup the dashboard uses --}}
+</div>
+```
+
+With a payload embedded there is no request to `{prefix}/api/schema` at all, and no schema endpoint is needed. Filter, focus and the type-label toggle still run client-side against what you handed it, so the diagram stays interactive rather than becoming a picture. A `<script type="application/json">` block rather than an attribute, because a schema is large and the browser never executes one, so this stays safe under the same strict CSP the package is built for.
+
+The embedded payload is read once, on first load. A connection switcher on a page of your own is yours to handle, since only your page can produce the other connection's payload.
+
 ### MCP server
 
 For coding agents that speak the Model Context Protocol (Claude Code, Cursor, and others), Truss ships an optional read-only, structure-only MCP server, so the agent queries your current schema on demand instead of working from a paste that goes stale. It is opt-in and adds no required dependency:

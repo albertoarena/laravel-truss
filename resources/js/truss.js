@@ -3,6 +3,7 @@
 // step: native ES module; Mermaid is a global from a <script> tag.
 
 import { selectTables, emptySelectionNotice } from './selection.js';
+import { readPayload, inlinePayload } from './schema-source.js';
 import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 import { buildQuery, parseQuery } from './url-state.js';
@@ -1249,7 +1250,24 @@ function populateConnectionOptions() {
   el.connection.closest('.truss-field')?.toggleAttribute('hidden', config.connections.length < 2);
 }
 
-async function loadSchema() {
+/**
+ * The payload, from the page when it carries one and from the endpoint
+ * otherwise. Null means the load already failed and said so in a banner.
+ *
+ * A page that embeds its own payload is a host rendering the diagram itself (an
+ * admin panel, a Livewire component) with `Truss::payload()` already in hand.
+ * Fetching there would mean the application making an HTTP request to itself for
+ * data it is holding. The embedded payload is read once, on the first load: a
+ * connection switch on such a page is the host's to handle, because only the
+ * host can produce the other connection's payload.
+ */
+async function fetchPayload() {
+  const embedded = inlinePayload(app);
+
+  if (embedded) {
+    return embedded;
+  }
+
   const url = new URL(config.endpoint, window.location.origin);
   if (state.connection) url.searchParams.set('connection', state.connection);
 
@@ -1258,17 +1276,17 @@ async function loadSchema() {
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!response.ok) {
     el.banners.replaceChildren(banner('error', `Could not load schema (HTTP ${response.status}).`));
-    return;
+    return null;
   }
 
-  const payload = await response.json();
-  state.tables = payload.tables ?? [];
-  state.fallback = Boolean(payload.fallback);
-  state.generatedAt = payload.generated_at ?? null;
-  state.diff = payload.diff ?? null;
-  state.cacheUnavailable = payload.cache_unavailable === true;
-  state.diffUnavailable = payload.diff_unavailable === true;
-  state.doctor = payload.doctor ?? null;
+  return response.json();
+}
+
+async function loadSchema() {
+  const payload = await fetchPayload();
+  if (payload === null) return;
+
+  Object.assign(state, readPayload(payload));
   state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
   // Apply a focus requested via the URL, once we can confirm the table exists.
