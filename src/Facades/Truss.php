@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Facade;
  * The public Truss facade.
  *
  * @method static \AlbertoArena\Truss\Export\ExportBuilder snapshot()
+ * @method static array<string, mixed> payload(?string $connection = null)
  *
  * @see TrussManager
  */

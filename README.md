@@ -167,6 +167,21 @@ The builder is immutable (each filter returns a new instance, so a base builder 
 
 The dashboard's structural downloads (DBML, Markdown, JSON, CSV) are served by the same pipeline over a gated `GET {prefix}/export/{format}` route (behind the `viewTruss` gate), which accepts the same filters as query parameters (`only`, `except`, `focus`, `depth`, `compact`, `connection`). The command, the facade, and the dashboard therefore share one source of truth. PNG and SVG stay in the browser (they are rendered from the live diagram).
 
+### Building your own view
+
+If you are rendering the structure somewhere Truss's own page cannot go (an admin panel, a Livewire component, an internal tool), `Truss::payload()` returns exactly what the dashboard runs on, without an HTTP request:
+
+```php
+use AlbertoArena\Truss\Facades\Truss;
+
+$payload = Truss::payload();              // the app's default connection
+$payload = Truss::payload('reporting');   // or a specific managed one
+```
+
+You get the same array `GET {prefix}/api/schema` serves: the cached snapshot with `excluded_tables` already filtered out, the structural `diff` against the recorded baseline, the embedded `doctor` report, and the `cache_unavailable` / `diff_unavailable` flags when a subsystem was not reachable. Asking for a connection Truss does not manage throws an `InvalidArgumentException` (the route answers the same case with a 404).
+
+Two things it deliberately does not do. It never returns row data, like everything else here. And it does not consult the `viewTruss` gate: authorization belongs to whatever exposes the data, so a page of your own must run its own check. Truss's route does that in middleware, which also honours `truss.enabled` and leaves `local` open, and a caller that wants the dashboard's behaviour should reproduce all of it rather than only the gate.
+
 ### MCP server
 
 For coding agents that speak the Model Context Protocol (Claude Code, Cursor, and others), Truss ships an optional read-only, structure-only MCP server, so the agent queries your current schema on demand instead of working from a paste that goes stale. It is opt-in and adds no required dependency:
