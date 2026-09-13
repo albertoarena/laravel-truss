@@ -10,6 +10,8 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-09-13
+
 ### Added
 
 - `Truss::payload(?string $connection = null)` returns the array the dashboard runs on, in process and with no HTTP request: the exclusion-filtered snapshot plus the schema diff, the doctor report and the cache and baseline unavailability flags, none of which `Truss::snapshot()` carries. It runs no authorization, which belongs to whatever exposes the data.
