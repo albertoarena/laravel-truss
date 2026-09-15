@@ -8,6 +8,26 @@ paths:
 Loaded when `CHANGELOG.md` is touched, which is the anchor of cutting a release.
 Follow these steps in order. Never skip the CI gate.
 
+## Before any of this: the docs gate at merge time
+
+**A pull request that changes user-facing behaviour does not merge until its
+documentation is written.** Either a PR is open against
+`albertoarena/laravel-truss-docs` covering the change, or the PR body says in one
+line why the docs site needs nothing.
+
+Checking that box at release time is too late. The tag is usually being cut under
+time pressure, and writing a guide is exactly what gets dropped to get it out.
+Opening the docs PR alongside the code PR also means the two can be reviewed
+against each other, while the behaviour is still fresh.
+
+User-facing means anything a reader of the site could notice: a new or changed
+command, a config key, a payload or API shape, a route, or a visible change to
+what the dashboard shows. A refactor, an internal rename or a test-only change
+needs nothing.
+
+The steps below then only have to confirm the docs PR merged, which is a yes or
+no question rather than a writing task.
+
 1. **CI and tests must pass first.** Run the full local suite and confirm green:
    `composer test`, `composer lint`, `npm test`, `npx playwright test`. Then
    confirm the GitHub CI checks are green on the commit being released:
@@ -75,6 +95,23 @@ Follow these steps in order. Never skip the CI gate.
    Order matters, for the reason in step 7: publish the package release first, so
    the docs prebuild resolves the new tag, then bump the constant and let the
    rebuild carry both.
+
+9. **Confirm the site documents what shipped, not just which version.** Step 8 is
+   a constant; this is the content. Walk the release's changelog entries and
+   check each user-facing one has somewhere on trussphp.com that says so: the
+   configuration reference for a config key, the command reference for a command,
+   the relevant guide for behaviour a reader would notice. Where the docs gate
+   above was honoured this is a five-minute read. Where it was not, this is where
+   the release stops rather than where the writing starts.
+
+   Review the built site, not only the diff. The two layout paths mean a page can
+   read correctly in source and render wrong.
+
+10. **Update the public roadmap.** In the docs repo, `src/data/roadmap.ts` moves
+    whatever the release delivered into Shipped with its version, splitting a
+    partially delivered item rather than moving it whole. This is in the root
+    `CLAUDE.md` too; it is repeated here because it is part of finishing a
+    release rather than a separate chore.
 
 Conventions that always apply: commit subjects `type: short subject` (max 50
 chars) with a why-not-how body; no "Generated with Claude Code" or
