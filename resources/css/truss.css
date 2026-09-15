@@ -23,6 +23,11 @@
 }
 
 :root {
+  /* Auto: the OS decides, and the palette below follows through the media query.
+     The two forced themes override this, because a checkbox, a scrollbar and a
+     focus ring are painted by the browser from `color-scheme` alone: leaving it
+     at `light dark` made a page forced to light keep dark controls on a machine
+     set to dark, which is a black checkbox in a white toolbar. */
   color-scheme: light dark;
 
   --bp-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -92,7 +97,11 @@
     --bp-error-bg: #40201f; --bp-error-fg: #f0a0a0;
   }
 }
+:root[data-theme="light"] { color-scheme: light; }
+
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --bp-bg: #0b1a2b;
   --bp-grid: rgba(120, 200, 230, .055);
   --bp-grid-strong: rgba(120, 200, 230, .11);

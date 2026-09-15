@@ -10,6 +10,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Native controls follow the chosen theme instead of the operating system. On a machine set to dark, forcing the dashboard to light left every unchecked checkbox painted black in a white toolbar, and the same mismatch reached selects, scrollbars and focus rings. `color-scheme` was declared once as `light dark`, which means "ask the OS", and that is right only while the theme is on auto.
+
 ## [1.12.0] - 2026-09-13
 
 ### Added
