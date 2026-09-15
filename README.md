@@ -178,7 +178,7 @@ $payload = Truss::payload();              // the app's default connection
 $payload = Truss::payload('reporting');   // or a specific managed one
 ```
 
-You get the same array `GET {prefix}/api/schema` serves: the cached snapshot with `excluded_tables` already filtered out, the structural `diff` against the recorded baseline, the embedded `doctor` report, and the `cache_unavailable` / `diff_unavailable` flags when a subsystem was not reachable. Asking for a connection Truss does not manage throws an `InvalidArgumentException` (the route answers the same case with a 404).
+You get the same array `GET {prefix}/api/schema` serves: the cached snapshot with `excluded_tables` already filtered out, the structural `diff` against the recorded baseline, the embedded `doctor` report, an `excluded.count` of how many tables the exclusion list removed (a count, never the names, and always present even at zero), and the `cache_unavailable` / `diff_unavailable` flags when a subsystem was not reachable. Asking for a connection Truss does not manage throws an `InvalidArgumentException` (the route answers the same case with a 404).
 
 Two things it deliberately does not do. It never returns row data, like everything else here. And it does not consult the `viewTruss` gate: authorization belongs to whatever exposes the data, so a page of your own must run its own check. Truss's route does that in middleware, which also honours `truss.enabled` and leaves `local` open, and a caller that wants the dashboard's behaviour should reproduce all of it rather than only the gate.
 

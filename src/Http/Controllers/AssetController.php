@@ -34,6 +34,7 @@ class AssetController
         'viewport.js' => 'js/viewport.js',
         'url-state.js' => 'js/url-state.js',
         'table-match.js' => 'js/table-match.js',
+        'table-count.js' => 'js/table-count.js',
         'focus-combobox.js' => 'js/focus-combobox.js',
         'export-menu.js' => 'js/export-menu.js',
         'label-face-gate.js' => 'js/label-face-gate.js',

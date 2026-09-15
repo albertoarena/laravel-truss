@@ -4,6 +4,7 @@
 
 import { selectTables, emptySelectionNotice } from './selection.js';
 import { readPayload, inlinePayload } from './schema-source.js';
+import { tableCountLabel } from './table-count.js';
 import { generateErDiagram } from './mermaid-definition.js';
 import { clamp, fitTransform, zoomAtPoint, ZOOM_LIMITS } from './viewport.js';
 import { buildQuery, parseQuery } from './url-state.js';
@@ -52,6 +53,7 @@ const state = {
   diffMode: false, // "Changes" view: tint changed tables and show the panel
   doctor: null, // the doctor report from the API (null when the panel is disabled)
   doctorMode: false, // "Health" view: badge tables with findings and show the panel
+  excludedCount: 0, // tables config removed from the payload (names never sent)
 };
 
 const el = {
@@ -1166,6 +1168,9 @@ async function render() {
   const subset = currentSubset();
   syncUrl();
   renderBanners();
+  // Here rather than only on load: the filter and the focus change what is
+  // drawn, and for a long time the footer went on reporting the whole schema.
+  updateFooter();
 
   if (subset.length === 0) {
     el.canvas.replaceChildren();
@@ -1227,8 +1232,13 @@ function timeAgo(iso) {
 }
 
 function updateFooter() {
-  const n = state.tables.length;
-  if (el.statTables) el.statTables.textContent = `${n} ${n === 1 ? 'table' : 'tables'}`;
+  // The excluded tables are not in `state.tables` at all, so they widen the
+  // total only when nothing else is narrowing the view: a filtered diagram reads
+  // "1 of 4", not "1 of 6". Two numbers, never three.
+  const scoped = Boolean(state.search || state.focusRoot);
+  const known = state.tables.length + (scoped ? 0 : state.excludedCount);
+
+  if (el.statTables) el.statTables.textContent = tableCountLabel(currentSubset().length, known);
   if (el.statConn) el.statConn.textContent = state.connection ?? '';
   if (el.statFallback) el.statFallback.toggleAttribute('hidden', !state.fallback);
   if (el.statUpdated) el.statUpdated.textContent = state.generatedAt ? `updated ${timeAgo(state.generatedAt)}` : '';

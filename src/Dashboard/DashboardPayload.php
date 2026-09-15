@@ -28,7 +28,9 @@ use InvalidArgumentException;
  *     reaches a caller and toggling exclusions needs no rebuild. This is the
  *     server-side half of the "no data exposed" promise, and it is applied
  *     before the diff and the doctor run, so an excluded table cannot surface
- *     through either of them.
+ *     through either of them. What does survive is `excluded.count`, the number
+ *     of tables removed from this connection's snapshot: always present, zero
+ *     included, and never the names.
  *   - `diff` keeps its null-or-object shape; `diff_unavailable` is signalled
  *     beside it, and only when the baseline could not be read (a disk problem,
  *     never "no baseline recorded yet").
@@ -65,7 +67,14 @@ final class DashboardPayload
         // diagram works on a broken cache store and the caller can say why.
         $cacheUnavailable = $this->cache->lastError() !== null;
 
+        $knownTables = count($snapshot['tables']);
         $snapshot['tables'] = $this->withoutExcludedTables($snapshot['tables'], $connection);
+
+        // How many tables the filter removed, never which ones. A diagram that
+        // presents itself as the whole schema when it is not is what turns a
+        // configured exclusion into a bug report about schema reading, and a
+        // count is enough for a caller to say the view is partial.
+        $snapshot['excluded'] = ['count' => $knownTables - count($snapshot['tables'])];
 
         [$diff, $baselineUnavailable] = $this->diffFor($connection, $snapshot);
 

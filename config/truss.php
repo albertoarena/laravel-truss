@@ -115,7 +115,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Tables hidden from the diagram by default (framework/infrastructure noise).
-    | Applied server-side: excluded tables never appear in the API response.
+    | Applied server-side: excluded tables never appear in the API response. The
+    | response does report how many were removed, so the dashboard footer can say
+    | "32 of 40 tables" instead of presenting a filtered diagram as the whole
+    | schema. A count only, never the names.
     |
     */
 

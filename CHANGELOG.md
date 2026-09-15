@@ -10,6 +10,16 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Added
+
+- The dashboard payload reports how many tables the exclusion list removed, as `excluded.count`. A count only, never the names, and always present even at zero. Without it there was nothing to tell a filtered diagram apart from one that had failed to see the missing tables.
+- The footer says how much of the schema is on screen: `32 of 40 tables` when `excluded_tables` hides some, and a plain `32 tables` when it is drawing everything it knows about.
+
+### Fixed
+
+- `truss:show` applies `excluded_tables` like every other surface. It printed the tables the diagram hides, while its own documentation said it filtered them, so the terminal and the dashboard disagreed about the same connection. It now prints `1 of 2 tables on <connection>` when config hid some, and says so plainly when a connection is excluded down to nothing.
+- The footer no longer reports the whole schema while the diagram draws a narrowed view. Filtering or focusing now updates the count (`2 of 4 tables`), where before it was written once per schema load and never again.
+
 ## [1.12.0] - 2026-09-13
 
 ### Added

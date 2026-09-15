@@ -141,6 +141,52 @@ it('applies per-connection exclusions on top of the global list', function () {
         ->and(collect($built['tables'])->pluck('name'))->not->toContain('secret_audit');
 });
 
+it('reports how many tables the exclusion list removed', function () {
+    config()->set('truss.excluded_tables', ['sessions', 'audit_trail']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+    Schema::create('audit_trail', fn ($table) => $table->id());
+
+    [$served, $built] = bothPayloads();
+
+    // A count, never the names. It is enough for the dashboard to say the view
+    // is partial, and it betrays nothing about what was hidden.
+    expect($built)->toEqual($served)
+        ->and($built['excluded']['count'])->toBe(2)
+        ->and(json_encode($built))->not->toContain('sessions');
+});
+
+it('counts what it actually removed, not the configured list length', function () {
+    config()->set('truss.excluded_tables', ['sessions', 'no_such_table']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+
+    // A configured name matching nothing must not inflate the count, or the
+    // footer claims tables are hidden that never existed.
+    expect(Truss::payload()['excluded']['count'])->toBe(1);
+});
+
+it('counts per-connection exclusions together with the global ones', function () {
+    config()->set('truss.excluded_tables', ['sessions']);
+    config()->set('truss.connections', ['testing' => ['excluded_tables' => ['secret_audit']]]);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+    Schema::create('secret_audit', fn ($table) => $table->id());
+
+    expect(Truss::payload('testing')['excluded']['count'])->toBe(2);
+});
+
+it('reports a zero count rather than omitting it when nothing was excluded', function () {
+    config()->set('truss.excluded_tables', []);
+    Schema::create('posts', fn ($table) => $table->id());
+
+    // Present at zero on purpose. The two `*_unavailable` keys appear only when
+    // true because they are notices; a count is data, and a client should not
+    // have to tell "nothing hidden" from "a payload that predates this".
+    expect(Truss::payload())->toHaveKey('excluded.count')
+        ->and(Truss::payload()['excluded']['count'])->toBe(0);
+});
+
 it('defaults to the application default connection, as the route does', function () {
     Schema::create('posts', fn ($table) => $table->id());
 
