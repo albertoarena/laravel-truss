@@ -10,6 +10,8 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-09-15
+
 ### Added
 
 - The dashboard payload reports how many tables the exclusion list removed, as `excluded.count`. A count only, never the names, and always present even at zero. Without it there was nothing to tell a filtered diagram apart from one that had failed to see the missing tables.
@@ -21,7 +23,6 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 - `truss:show` applies `excluded_tables` like every other surface. It printed the tables the diagram hides, while its own documentation said it filtered them, so the terminal and the dashboard disagreed about the same connection. It now prints `1 of 2 tables on <connection>` when config hid some, and says so plainly when a connection is excluded down to nothing.
 - The footer no longer reports the whole schema while the diagram draws a narrowed view. Filtering or focusing now updates the count (`2 of 4 tables`), where before it was written once per schema load and never again.
 - Native controls follow the chosen theme instead of the operating system. On a machine set to dark, forcing the dashboard to light left every unchecked checkbox painted black in a white toolbar, and the same mismatch reached selects, scrollbars and focus rings. `color-scheme` was declared once as `light dark`, which means "ask the OS", and that is right only while the theme is on auto.
-
 
 ## [1.12.0] - 2026-09-13
 
