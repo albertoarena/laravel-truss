@@ -187,6 +187,79 @@ it('reports a zero count rather than omitting it when nothing was excluded', fun
         ->and(Truss::payload()['excluded']['count'])->toBe(0);
 });
 
+it('keeps excluded tables out of the payload when revealing is off', function () {
+    config()->set('truss.reveal_excluded', false);
+    config()->set('truss.excluded_tables', ['sessions']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+
+    [$served, $built] = bothPayloads();
+
+    expect($built)->toEqual($served)
+        ->and(json_encode($built))->not->toContain('sessions');
+});
+
+it('carries excluded tables marked, rather than removed, when revealing is on', function () {
+    config()->set('truss.reveal_excluded', true);
+    config()->set('truss.excluded_tables', ['sessions']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+
+    [$served, $built] = bothPayloads();
+
+    $sessions = collect($built['tables'])->firstWhere('name', 'sessions');
+
+    // Marked, not removed: the client decides whether to draw them, and the
+    // count still reports how many the config list matched.
+    expect($built)->toEqual($served)
+        ->and($sessions)->not->toBeNull()
+        ->and($sessions['excluded'])->toBeTrue()
+        ->and(collect($built['tables'])->firstWhere('name', 'posts'))->not->toHaveKey('excluded')
+        ->and($built['excluded']['count'])->toBe(1);
+});
+
+it('keeps the diff on the filtered set while revealing', function () {
+    config()->set('truss.reveal_excluded', true);
+    config()->set('truss.excluded_tables', ['sessions']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+    payloadBaseline([['name' => 'posts', 'columns' => [], 'primary_key' => [], 'indexes' => [], 'foreign_keys' => []]]);
+
+    $built = Truss::payload();
+
+    // The baseline is filtered, so a revealed table diffed against it would be
+    // reported as newly added on every single load. Revealing changes what is
+    // drawn, never what is said to have changed.
+    expect(json_encode($built['diff']))->not->toContain('sessions');
+});
+
+it('keeps the doctor on the filtered set while revealing', function () {
+    config()->set('truss.reveal_excluded', true);
+    config()->set('truss.excluded_tables', ['sessions']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->text('payload'));
+
+    $built = Truss::payload();
+
+    // A revealed table carries no findings: the doctor's scope is a
+    // configuration question nobody has reopened.
+    expect(json_encode($built['doctor']))->not->toContain('sessions');
+});
+
+it('reveals nothing extra over HTTP when asked by query parameter', function () {
+    config()->set('truss.reveal_excluded', false);
+    config()->set('truss.excluded_tables', ['sessions']);
+    Schema::create('posts', fn ($table) => $table->id());
+    Schema::create('sessions', fn ($table) => $table->string('id')->primary());
+
+    // The gate is the operator's, and a query string is the viewer's. If this
+    // ever passes, config exclusions have become advisory for anyone who can
+    // reach the dashboard.
+    $served = test()->getJson('/truss/api/schema?include_excluded=1')->assertOk()->json();
+
+    expect(json_encode($served))->not->toContain('sessions');
+});
+
 it('defaults to the application default connection, as the route does', function () {
     Schema::create('posts', fn ($table) => $table->id());
 

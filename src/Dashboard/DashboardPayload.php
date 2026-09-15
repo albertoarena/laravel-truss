@@ -30,7 +30,10 @@ use InvalidArgumentException;
  *     before the diff and the doctor run, so an excluded table cannot surface
  *     through either of them. What does survive is `excluded.count`, the number
  *     of tables removed from this connection's snapshot: always present, zero
- *     included, and never the names.
+ *     included, and never the names. Config `reveal_excluded` (on in local, off
+ *     elsewhere) puts them back as marked entries for a client that offers to
+ *     show them, and that is the only thing it changes: the diff and the doctor
+ *     have already run on the filtered set by then.
  *   - `diff` keeps its null-or-object shape; `diff_unavailable` is signalled
  *     beside it, and only when the baseline could not be read (a disk problem,
  *     never "no baseline recorded yet").
@@ -67,19 +70,28 @@ final class DashboardPayload
         // diagram works on a broken cache store and the caller can say why.
         $cacheUnavailable = $this->cache->lastError() !== null;
 
-        $knownTables = count($snapshot['tables']);
-        $snapshot['tables'] = $this->withoutExcludedTables($snapshot['tables'], $connection);
+        $everyTable = $snapshot['tables'];
+        $snapshot['tables'] = $this->withoutExcludedTables($everyTable, $connection);
 
         // How many tables the filter removed, never which ones. A diagram that
         // presents itself as the whole schema when it is not is what turns a
         // configured exclusion into a bug report about schema reading, and a
         // count is enough for a caller to say the view is partial.
-        $snapshot['excluded'] = ['count' => $knownTables - count($snapshot['tables'])];
+        $snapshot['excluded'] = ['count' => count($everyTable) - count($snapshot['tables'])];
 
         [$diff, $baselineUnavailable] = $this->diffFor($connection, $snapshot);
 
         $snapshot['diff'] = $diff;
         $snapshot['doctor'] = $this->doctorFor($connection, $snapshot);
+
+        // Only now, once the diff and the doctor have had the filtered set. The
+        // recorded baseline is filtered too, so diffing a revealed table against
+        // it would report every excluded table as newly added on every load, and
+        // the doctor's scope is a question nobody has reopened. Revealing changes
+        // what may be drawn, never what is said to have changed or to be wrong.
+        if ($this->revealsExcluded()) {
+            $snapshot['tables'] = $this->markExcluded($everyTable, $connection);
+        }
 
         // Both flags are present only when the thing they describe happened, so
         // an existing client needs no change to keep working.
@@ -167,6 +179,44 @@ final class DashboardPayload
         $baseline['tables'] = $this->withoutExcludedTables($baseline['tables'] ?? [], $connection);
 
         return [$this->differ->diff($baseline, $snapshot), false];
+    }
+
+    /**
+     * Whether excluded tables may leave the server at all, marked for a client
+     * that offers to show them.
+     *
+     * The operator's switch, never the viewer's: there is deliberately no query
+     * parameter for it. Someone who excluded a table to keep it off a shared
+     * panel has to stay able to rely on that, and a URL anyone can edit would
+     * make config exclusions advisory. Defaults to on in local, where the
+     * dashboard is already open and the only viewer is the developer, and off
+     * everywhere else, matching `truss.enabled` and the `viewTruss` gate.
+     */
+    private function revealsExcluded(): bool
+    {
+        return (bool) config('truss.reveal_excluded', false);
+    }
+
+    /**
+     * Every table, with the excluded ones flagged rather than dropped.
+     *
+     * The flag is only on the tables that carry it, so an ordinary table's shape
+     * is unchanged and a client that knows nothing about this sees the schema it
+     * always saw, plus some extra tables it will simply draw.
+     *
+     * @param  list<array<string, mixed>>  $tables
+     * @return list<array<string, mixed>>
+     */
+    private function markExcluded(array $tables, string $connection): array
+    {
+        $excluded = $this->excludedTablesFor($connection);
+
+        return array_map(
+            fn (array $table): array => in_array($table['name'], $excluded, true)
+                ? [...$table, 'excluded' => true]
+                : $table,
+            $tables,
+        );
     }
 
     /**

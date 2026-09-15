@@ -14,6 +14,7 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 - The dashboard payload reports how many tables the exclusion list removed, as `excluded.count`. A count only, never the names, and always present even at zero. Without it there was nothing to tell a filtered diagram apart from one that had failed to see the missing tables.
 - The footer says how much of the schema is on screen: `32 of 40 tables` when `excluded_tables` hides some, and a plain `32 tables` when it is drawing everything it knows about.
+- A **Show hidden tables** toggle draws the tables `excluded_tables` hides, muted, and takes them away again. New config `reveal_excluded` (`TRUSS_REVEAL_EXCLUDED`) decides whether they reach the browser at all: on by default in local, off everywhere else, matching `enabled` and the `viewTruss` gate. Off, they never leave the server and only the count does, so hiding a table to keep it off a shared dashboard still works; there is deliberately no query parameter, so the decision stays the operator's and never the viewer's. The diff and the doctor always run on the filtered set, so a revealed table carries no change marks and no findings, which is why it is drawn muted.
 
 ### Fixed
 

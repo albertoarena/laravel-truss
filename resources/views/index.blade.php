@@ -81,6 +81,9 @@
                 <label class="truss-field truss-field--check">
                     <input id="truss-labels" type="checkbox"> <span class="truss-field-label">Laravel types</span>
                 </label>
+                <label class="truss-field truss-field--check" id="truss-show-excluded-field" hidden>
+                    <input id="truss-show-excluded" type="checkbox"> <span class="truss-field-label">Show hidden tables</span>
+                </label>
             </div>
 
             <div class="truss-utils">

@@ -61,7 +61,25 @@ describe('readPayload — the API envelope into dashboard state', () => {
       cacheUnavailable: false,
       diffUnavailable: false,
       excludedCount: 0,
+      excludedTables: [],
     });
+  });
+
+  it('holds tables the server marked as excluded apart from the rest', () => {
+    // Marked rather than removed means the client owns the decision to draw
+    // them, so they must not land in the drawn set by default.
+    const state = readPayload({
+      tables: [{ name: 'posts' }, { name: 'sessions', excluded: true }],
+      excluded: { count: 1 },
+    });
+
+    expect(state.tables.map((t) => t.name)).toEqual(['posts']);
+    expect(state.excludedTables.map((t) => t.name)).toEqual(['sessions']);
+    expect(state.excludedCount).toBe(1);
+  });
+
+  it('has no excluded tables to reveal when the server sent none', () => {
+    expect(readPayload({ tables: [{ name: 'posts' }], excluded: { count: 3 } }).excludedTables).toEqual([]);
   });
 
   it('reads how many tables the server excluded', () => {

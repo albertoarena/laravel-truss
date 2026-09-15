@@ -54,6 +54,9 @@ const state = {
   doctor: null, // the doctor report from the API (null when the panel is disabled)
   doctorMode: false, // "Health" view: badge tables with findings and show the panel
   excludedCount: 0, // tables config removed from the payload (names never sent)
+  excludedTables: [], // arrived marked and undrawn; only when config allows revealing
+  drawableTables: [], // the tables the payload drew on, before any reveal
+  showExcluded: false, // the viewer asked to see the hidden ones
 };
 
 const el = {
@@ -64,6 +67,8 @@ const el = {
   focusStatus: document.getElementById('truss-focus-status'),
   depth: document.getElementById('truss-depth'),
   labels: document.getElementById('truss-labels'),
+  showExcluded: document.getElementById('truss-show-excluded'),
+  showExcludedField: document.getElementById('truss-show-excluded-field'),
   banners: document.getElementById('truss-banners'),
   viewport: document.getElementById('truss-viewport'),
   canvas: document.getElementById('truss-canvas'),
@@ -737,6 +742,17 @@ function markDiffTables() {
   }
 }
 
+// Revealed tables are drawn muted on purpose. The diff and the doctor run on the
+// filtered set, so these carry no change marks and no health badges, and an
+// ordinary-looking table with no badges reads as a table with nothing wrong
+// rather than as one nobody checked.
+function markExcludedTables() {
+  if (!state.showExcluded) return;
+  for (const table of state.excludedTables) {
+    findTableNode(table.name)?.classList.add('truss-excluded');
+  }
+}
+
 function renderDiffPanel() {
   const body = el.diffPanel?.querySelector('.truss-diff-body');
   if (!body) return;
@@ -1195,6 +1211,7 @@ async function render() {
     normalizeSvg();
     raiseEntityBorders();
     markFocusedTable();
+    markExcludedTables(); // revealed tables read as guests, not as ordinary tables
     markDiffTables(); // re-tint after a re-render when the Changes view is on
     markDoctorBadges(); // re-badge after a re-render when the Health view is on
     markPassiveHealth(subset); // always-on flags on tables with findings (config-gated)
@@ -1231,12 +1248,35 @@ function timeAgo(iso) {
   return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
 }
 
+/**
+ * Fold the revealed tables into the drawn set, or take them back out.
+ *
+ * `state.tables` stays the one set everything downstream reads (the focus
+ * picker, the export subset, the selection), so a revealed table behaves like
+ * any other table for as long as it is on screen, and nothing else in here
+ * needs to know that revealing exists.
+ */
+function syncExcludedVisibility() {
+  state.tables = state.showExcluded
+    ? [...state.drawableTables, ...state.excludedTables]
+    : state.drawableTables;
+}
+
+// The control appears only when the server actually sent tables to reveal.
+// Config may hide eight tables and forbid revealing them, and a toggle then
+// promises something the page has no data for.
+function updateExcludedControl() {
+  el.showExcludedField?.toggleAttribute('hidden', state.excludedTables.length === 0);
+  if (el.showExcluded) el.showExcluded.checked = state.showExcluded;
+}
+
 function updateFooter() {
   // The excluded tables are not in `state.tables` at all, so they widen the
   // total only when nothing else is narrowing the view: a filtered diagram reads
   // "1 of 4", not "1 of 6". Two numbers, never three.
   const scoped = Boolean(state.search || state.focusRoot);
-  const known = state.tables.length + (scoped ? 0 : state.excludedCount);
+  const hidden = state.showExcluded ? 0 : state.excludedCount;
+  const known = state.tables.length + (scoped ? 0 : hidden);
 
   if (el.statTables) el.statTables.textContent = tableCountLabel(currentSubset().length, known);
   if (el.statConn) el.statConn.textContent = state.connection ?? '';
@@ -1297,6 +1337,9 @@ async function loadSchema() {
   if (payload === null) return;
 
   Object.assign(state, readPayload(payload));
+  state.drawableTables = state.tables;
+  syncExcludedVisibility();
+  updateExcludedControl();
   state.lastKey = null; // force an auto-fit for the new schema
   populateFocusOptions();
   // Apply a focus requested via the URL, once we can confirm the table exists.
@@ -1380,6 +1423,13 @@ function wireEvents() {
 
   el.labels?.addEventListener('change', (e) => {
     state.laravelLabels = e.target.checked;
+    render();
+  });
+
+  el.showExcluded?.addEventListener('change', (e) => {
+    state.showExcluded = e.target.checked;
+    syncExcludedVisibility();
+    populateFocusOptions(); // the picker reads the drawn set, which just changed
     render();
   });
 
