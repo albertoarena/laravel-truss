@@ -115,7 +115,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Tables hidden from the diagram by default (framework/infrastructure noise).
-    | Applied server-side: excluded tables never appear in the API response.
+    | Applied server-side: excluded tables never appear in the API response. The
+    | response does report how many were removed, so the dashboard footer can say
+    | "32 of 40 tables" instead of presenting a filtered diagram as the whole
+    | schema. A count only, never the names.
     |
     */
 
@@ -129,6 +132,30 @@ return [
         'job_batches',
         'failed_jobs',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reveal excluded tables
+    |--------------------------------------------------------------------------
+    |
+    | Whether excluded tables may reach the browser at all, marked so the
+    | dashboard can offer to show them. Off, they are removed server-side and the
+    | response reports only how many there were. On, they are sent flagged and
+    | hidden until the viewer asks, which is what the "Show hidden tables" toggle
+    | needs to exist.
+    |
+    | This is the operator's switch and never the viewer's: there is no query
+    | parameter for it, so excluding a table to keep it off a shared panel keeps
+    | working. It defaults to on in local, where the dashboard is already open
+    | and the only person looking is the developer, and off everywhere else,
+    | matching `enabled` above and the `viewTruss` gate.
+    |
+    | It never changes the diff or the doctor, which always run on the filtered
+    | set, so a revealed table carries no change marks and no findings.
+    |
+    */
+
+    'reveal_excluded' => env('TRUSS_REVEAL_EXCLUDED', env('APP_ENV', 'production') === 'local'),
 
     /*
     |--------------------------------------------------------------------------

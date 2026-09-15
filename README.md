@@ -89,6 +89,19 @@ When two or more connections are configured, a connection picker appears in the 
 
 The keys are Laravel connection names from `config/database.php`. Per-connection options mirror the global ones (such as `excluded_tables`), so you can hide different tables on each connection.
 
+## Hidden tables
+
+Framework and infrastructure tables (`migrations`, `sessions`, `cache`, `jobs`, and the rest) are hidden by default through `excluded_tables`. The footer says how much of the connection is on screen, `24 of 32 tables`, so a filtered diagram never presents itself as the whole schema, and `truss:show` reports the same way in the terminal.
+
+A **Show hidden tables** toggle draws them on request, muted, since they carry no change marks and no health findings. Whether the browser receives them at all is the operator's decision, not the viewer's:
+
+```php
+// config/truss.php
+'reveal_excluded' => env('TRUSS_REVEAL_EXCLUDED', env('APP_ENV', 'production') === 'local'),
+```
+
+On (the default in local, where the dashboard is already open to whoever is looking) they are sent flagged and undrawn, and the toggle appears. Off, they never leave the server and only the count does, so hiding a table to keep it off a shared dashboard keeps working. There is no query parameter for this, by design.
+
 ## Schema doctor
 
 `php artisan truss:doctor` (aliased `truss:check`) reviews your database structure for problems visible from structure alone: a table with no primary key, a foreign key with no index, duplicate indexes, money stored as a float, and more. It is deterministic and structure-only, with no AI and no network call, so it is safe to run in CI.
@@ -178,7 +191,7 @@ $payload = Truss::payload();              // the app's default connection
 $payload = Truss::payload('reporting');   // or a specific managed one
 ```
 
-You get the same array `GET {prefix}/api/schema` serves: the cached snapshot with `excluded_tables` already filtered out, the structural `diff` against the recorded baseline, the embedded `doctor` report, and the `cache_unavailable` / `diff_unavailable` flags when a subsystem was not reachable. Asking for a connection Truss does not manage throws an `InvalidArgumentException` (the route answers the same case with a 404).
+You get the same array `GET {prefix}/api/schema` serves: the cached snapshot with `excluded_tables` already filtered out, the structural `diff` against the recorded baseline, the embedded `doctor` report, an `excluded.count` of how many tables the exclusion list removed (a count, never the names, and always present even at zero; with `reveal_excluded` on, those tables are present too, each flagged `"excluded": true` and left for the client to draw or not), and the `cache_unavailable` / `diff_unavailable` flags when a subsystem was not reachable. Asking for a connection Truss does not manage throws an `InvalidArgumentException` (the route answers the same case with a 404).
 
 Two things it deliberately does not do. It never returns row data, like everything else here. And it does not consult the `viewTruss` gate: authorization belongs to whatever exposes the data, so a page of your own must run its own check. Truss's route does that in middleware, which also honours `truss.enabled` and leaves `local` open, and a caller that wants the dashboard's behaviour should reproduce all of it rather than only the gate.
 

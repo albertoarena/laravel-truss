@@ -20,6 +20,14 @@ it('merges the truss config under the "truss" key with expected defaults', funct
         ->and(config('truss.diagram.min_zoom'))->toBe(0.7);
 });
 
+it('follows the environment for revealing excluded tables', function () {
+    // The same shape as `truss.enabled` and the `viewTruss` gate: local is
+    // already open to whoever is looking, so the developer gets the reveal with
+    // no configuration, and every other environment has to ask for it.
+    expect(config('truss.reveal_excluded'))->toBeBool()
+        ->and(config('truss.reveal_excluded'))->toBeFalse(); // the suite runs as `testing`
+});
+
 it('exposes no configurable gate name (the viewTruss ability is fixed)', function () {
     expect(config('truss.gate'))->toBeNull();
 });

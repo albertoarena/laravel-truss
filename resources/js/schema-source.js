@@ -34,8 +34,14 @@
 export function readPayload(payload) {
   const envelope = isPlainObject(payload) ? payload : {};
 
+  const tables = Array.isArray(envelope.tables) ? envelope.tables : [];
+
   return {
-    tables: Array.isArray(envelope.tables) ? envelope.tables : [],
+    // Tables the server marked as excluded are held apart rather than drawn.
+    // They arrive only when config allows revealing them, and whether to show
+    // them is the viewer's choice from there.
+    tables: tables.filter((table) => table?.excluded !== true),
+    excludedTables: tables.filter((table) => table?.excluded === true),
     fallback: Boolean(envelope.fallback),
     generatedAt: envelope.generated_at ?? null,
     diff: envelope.diff ?? null,
@@ -45,7 +51,18 @@ export function readPayload(payload) {
     // not report a broken cache store to someone whose cache is fine.
     cacheUnavailable: envelope.cache_unavailable === true,
     diffUnavailable: envelope.diff_unavailable === true,
+    // How many tables config excluded, so the footer can say the diagram is a
+    // view of a larger schema rather than all of it. A payload without the key
+    // predates it or was built by hand, and zero is the only honest guess.
+    excludedCount: excludedCount(envelope.excluded),
   };
+}
+
+/** The excluded-table count, or zero for anything that is not a whole count. */
+function excludedCount(excluded) {
+  const count = isPlainObject(excluded) ? excluded.count : null;
+
+  return Number.isInteger(count) && count > 0 ? count : 0;
 }
 
 /**

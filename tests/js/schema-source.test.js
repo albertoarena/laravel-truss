@@ -60,7 +60,43 @@ describe('readPayload — the API envelope into dashboard state', () => {
       doctor: null,
       cacheUnavailable: false,
       diffUnavailable: false,
+      excludedCount: 0,
+      excludedTables: [],
     });
+  });
+
+  it('holds tables the server marked as excluded apart from the rest', () => {
+    // Marked rather than removed means the client owns the decision to draw
+    // them, so they must not land in the drawn set by default.
+    const state = readPayload({
+      tables: [{ name: 'posts' }, { name: 'sessions', excluded: true }],
+      excluded: { count: 1 },
+    });
+
+    expect(state.tables.map((t) => t.name)).toEqual(['posts']);
+    expect(state.excludedTables.map((t) => t.name)).toEqual(['sessions']);
+    expect(state.excludedCount).toBe(1);
+  });
+
+  it('has no excluded tables to reveal when the server sent none', () => {
+    expect(readPayload({ tables: [{ name: 'posts' }], excluded: { count: 3 } }).excludedTables).toEqual([]);
+  });
+
+  it('reads how many tables the server excluded', () => {
+    expect(readPayload({ tables: [], excluded: { count: 8 } }).excludedCount).toBe(8);
+  });
+
+  it('assumes nothing was excluded when the payload predates the count', () => {
+    // A hand-built payload, or one from an older Truss, carries no `excluded`
+    // key. Guessing anything but zero would make the footer claim a total the
+    // server never reported.
+    expect(readPayload({ tables: [] }).excludedCount).toBe(0);
+  });
+
+  it('ignores an excluded count that is not a usable number', () => {
+    expect(readPayload({ tables: [], excluded: { count: '8' } }).excludedCount).toBe(0);
+    expect(readPayload({ tables: [], excluded: { count: -3 } }).excludedCount).toBe(0);
+    expect(readPayload({ tables: [], excluded: 8 }).excludedCount).toBe(0);
   });
 
   it('treats the unavailability flags as strictly true, never as truthy', () => {

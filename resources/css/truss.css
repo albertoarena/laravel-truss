@@ -23,6 +23,11 @@
 }
 
 :root {
+  /* Auto: the OS decides, and the palette below follows through the media query.
+     The two forced themes override this, because a checkbox, a scrollbar and a
+     focus ring are painted by the browser from `color-scheme` alone: leaving it
+     at `light dark` made a page forced to light keep dark controls on a machine
+     set to dark, which is a black checkbox in a white toolbar. */
   color-scheme: light dark;
 
   --bp-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -92,7 +97,11 @@
     --bp-error-bg: #40201f; --bp-error-fg: #f0a0a0;
   }
 }
+:root[data-theme="light"] { color-scheme: light; }
+
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --bp-bg: #0b1a2b;
   --bp-grid: rgba(120, 200, 230, .055);
   --bp-grid-strong: rgba(120, 200, 230, .11);
@@ -568,6 +577,15 @@ body {
 #truss-canvas svg g.node.truss-focused .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-focus-bg) !important; }
 #truss-canvas svg g.node.truss-focused .outer-path path[stroke]:not([stroke="none"]) { stroke: var(--bp-focus-border) !important; stroke-width: 2.4px !important; }
 #truss-canvas svg g.node.truss-focused g.label.name .nodeLabel { color: var(--bp-focus-border) !important; font-weight: 600; }
+
+/* revealed tables: config hides them, so they are drawn as guests. Muted rather
+   than tinted, because the diff and the doctor run on the filtered set and these
+   carry no marks or badges: an ordinary-looking table with no badges would read
+   as one with nothing wrong instead of one nobody checked. Dashed outline so it
+   survives a custom theme and a monochrome print, and holds up for a reader who
+   cannot pick the opacity difference out. */
+#truss-canvas svg g.node.truss-excluded { opacity: 0.55; }
+#truss-canvas svg g.node.truss-excluded .outer-path path[stroke]:not([stroke="none"]) { stroke-dasharray: 5 3 !important; }
 
 /* schema diff tints: added and changed tables (removed tables are list-only) */
 #truss-canvas svg g.node.truss-diff-added .outer-path path[fill]:not([fill="none"]) { fill: var(--bp-diff-added-bg) !important; }
