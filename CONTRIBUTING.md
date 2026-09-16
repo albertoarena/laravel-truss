@@ -21,6 +21,8 @@ npx playwright test  # Playwright, browser rendering and interaction
 
 The PHP suite uses an in-memory SQLite database and Orchestra Testbench, so no external services are needed.
 
+The frontend tooling needs Node 22.12 or newer (Vitest 5 dropped Node 20). The supported range is declared as `engines` in `package.json` and is what CI runs.
+
 ## Conventions
 
 - Strict types in every PHP file.

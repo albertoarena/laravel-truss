@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '20'
+          node-version: '22'
 
       # package-lock.json is gitignored, so there is no committed lockfile for
       # npm ci; install from package.json instead.
