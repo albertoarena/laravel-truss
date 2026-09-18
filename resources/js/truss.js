@@ -13,6 +13,7 @@ import { hasDiff, changeList, tableStatuses } from './diff-view.js';
 import { hasDoctor, doctorSummary, worstSeverity, tableBadges, findingGroups, columnMarkers } from './doctor-view.js';
 import { createFocusCombobox } from './focus-combobox.js';
 import { labelFaceGate } from './label-face-gate.js';
+import { observeToolbarLayout } from './toolbar-layout.js';
 import { serverExportsAvailable, pngAvailability } from './export-menu.js';
 
 const app = document.getElementById('truss-app');
@@ -93,6 +94,7 @@ const el = {
   statFallback: document.getElementById('truss-stat-fallback'),
   statUpdated: document.getElementById('truss-stat-updated'),
   popover: document.getElementById('truss-popover'),
+  toolbar: document.querySelector('.truss-toolbar'),
 };
 
 const mermaid = window.mermaid;
@@ -1576,6 +1578,12 @@ function wireEvents() {
   el.themeBtn?.addEventListener('click', cycleTheme);
 
   window.addEventListener('resize', debounce(() => applyTransform(), 200));
+
+  // The toolbar's responsive steps follow the bar's own width, not the
+  // window's, so an embedded dashboard (a Filament panel, a split view) folds
+  // its controls away at the width where they stop fitting rather than at the
+  // width where the window would have.
+  observeToolbarLayout(el.toolbar, app);
 }
 
 /* ---- boot ------------------------------------------------------------- */
