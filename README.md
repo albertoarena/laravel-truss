@@ -314,6 +314,10 @@ A cache store Truss cannot reach costs speed, never correctness. If the store is
 
 Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email hello@albertoarena.it rather than opening a public issue.
 
+## Related packages
+
+Using Filament? [albertoarena/filament-truss](https://github.com/albertoarena/filament-truss) puts this diagram inside your admin, as a page rather than a frame around the dashboard. It is built from the panel's own components and takes the panel's own theme, so a custom panel needs no configuration. Access follows Truss, not the panel: `truss.enabled` first, then the `viewTruss` gate outside `local`, so being let into the admin is not on its own permission to read the structure. The guide is at [trussphp.com/filament](https://trussphp.com/filament/?utm_source=github&utm_medium=readme&utm_campaign=filament-truss).
+
 ## Contributing
 
 Contributions are welcome. Feel free to fork, improve, and open a pull request. Forking to contribute needs no permission and keeps this project's name: [TRADEMARK.md](TRADEMARK.md) is about publishing your own distribution, not about pull requests.
