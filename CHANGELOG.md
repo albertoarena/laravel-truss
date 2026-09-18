@@ -10,6 +10,8 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-09-18
+
 ### Fixed
 
 - The toolbar's **Filter** field no longer collapses to nothing when the dashboard is embedded in something narrower than the window, such as a Filament panel. The bar's responsive steps asked the viewport, so a 1280px window with a ~470px panel sidebar left the bar around 810px and none of them fired; every other control is floored at its own content width, so the whole shortfall landed on the Filter field and it rendered as a small empty square. The steps now follow the toolbar's own width, at the same three sizes as before, so an embedded 810px bar folds its secondary controls behind the `...` button exactly as an 810px window already did.
