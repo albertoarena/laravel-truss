@@ -81,5 +81,17 @@
             <div class="truss-diff-body"></div>
         </div>
     </div>
+
+    <!-- The shipped module that decides the responsive step. The steps follow
+         the toolbar's own width, not the window's, so this harness has to run
+         it or it renders the roomy layout at every size. -->
+    <script type="module">
+        import { observeToolbarLayout } from '/resources/js/toolbar-layout.js';
+
+        observeToolbarLayout(
+            document.querySelector('.truss-toolbar'),
+            document.getElementById('truss-app')
+        );
+    </script>
 </body>
 </html>

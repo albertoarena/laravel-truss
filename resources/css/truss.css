@@ -652,46 +652,56 @@ body {
 
 /* ---- responsive ------------------------------------------------------- */
 
+/* These steps key off the toolbar's own width, not the window's. The classes
+   are set by resources/js/toolbar-layout.js, which observes the bar and floors
+   each step at the same widths the media queries used.
+
+   They were media queries, and that was wrong for an embedded dashboard: a
+   Filament panel spends roughly 470px on its sidebar, so a 1280px window leaves
+   the bar about 810px and no step fired. Every child but the Filter field is
+   floored at its min-content width, so the field absorbed the whole shortfall
+   and rendered at a content width of zero. Measuring the bar makes an embedded
+   810px bar behave exactly like an 810px window already did.
+
+   The classes stack the way max-width queries did, so each block below still
+   reads as "this width and narrower". */
+
 /* Small desktop: fold the secondary controls (focus, depth, type labels) behind
    the ⋯ button as a dropdown panel, so a fully-featured toolbar (every control
-   active, long table names) never overflows the viewport. The bar is sticky and
+   active, long table names) never overflows its container. The bar is sticky and
    pins vertically only, so an overflow would otherwise let a horizontal drag
    slide the whole header and clip the brand. The phone block below layers on
    mark-only branding and a full-width search. */
-@media (max-width: 1024px) {
-  .truss-util--more { display: inline-flex; }
+#truss-app.is-compact .truss-util--more { display: inline-flex; }
 
-  .truss-secondary {
-    display: none; position: absolute; top: 100%; right: 8px; margin-top: 6px;
-    flex-direction: column; align-items: flex-start; gap: 14px; padding: 14px 16px;
-    background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, .18); z-index: 25;
-  }
-  .truss-secondary.is-open { display: flex; }
-  .truss-secondary .truss-field-label { display: inline; } /* labels back inside the panel */
+#truss-app.is-compact .truss-secondary {
+  display: none; position: absolute; top: 100%; right: 8px; margin-top: 6px;
+  flex-direction: column; align-items: flex-start; gap: 14px; padding: 14px 16px;
+  background: var(--bp-panel); border: 1px solid var(--bp-panel-line); border-radius: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18); z-index: 25;
 }
+#truss-app.is-compact .truss-secondary.is-open { display: flex; }
+/* labels back inside the panel */
+#truss-app.is-compact .truss-secondary .truss-field-label { display: inline; }
 
-/* Tablet: drop the field labels to reclaim horizontal room; inputs stay. */
-@media (max-width: 900px) {
-  .truss-toolbar { gap: 12px; }
-  .truss-secondary { gap: 12px; }
-  .truss-field-label { display: none; }
-  .truss-field--search input { width: 130px; }
-}
+/* Tablet width: drop the field labels to reclaim horizontal room; inputs stay. */
+#truss-app.is-condensed .truss-toolbar { gap: 12px; }
+#truss-app.is-condensed .truss-secondary { gap: 12px; }
+#truss-app.is-condensed .truss-field-label { display: none; }
+#truss-app.is-condensed .truss-field--search input { width: 130px; }
 
-/* Phone: collapse the secondary controls behind the ⋯ button as a panel;
-   the top bar keeps the mark, filter, and the utility cluster. */
-@media (max-width: 560px) {
-  .truss-toolbar { gap: 10px; padding: 0 12px; }
-  .truss-brand { font-size: 0; gap: 0; } /* mark only, hide the wordmark */
-  .truss-field--search { flex: 1; min-width: 0; }
-  .truss-field--search input { width: 100%; }
-  /* The ⋯ button and the secondary dropdown are already set up at <=1024px. The
-     legend stays a top-right dropdown here too, matching the changes and health
-     panels, rather than becoming a full-width bottom sheet. */
+/* Phone width: the top bar keeps the mark, filter, and the utility cluster;
+   the secondary controls are already behind the ⋯ button from is-compact. */
+#truss-app.is-minimal .truss-toolbar { gap: 10px; padding: 0 12px; }
+#truss-app.is-minimal .truss-brand { font-size: 0; gap: 0; } /* mark only, hide the wordmark */
+#truss-app.is-minimal .truss-field--search { flex: 1; min-width: 0; }
+#truss-app.is-minimal .truss-field--search input { width: 100%; }
+/* The legend stays a top-right dropdown here too, matching the changes and
+   health panels, rather than becoming a full-width bottom sheet. */
 
-  .truss-footer { gap: 10px; font-size: 10px; }
-  #truss-stat-updated { display: none; }
-  .truss-zoom { right: 10px; bottom: 10px; padding: 6px 8px; gap: 8px; }
-  .truss-zoom input[type="range"] { width: 84px; }
-}
+/* The footer and the zoom control follow the same step, since they share the
+   width they are cramped by. */
+#truss-app.is-minimal .truss-footer { gap: 10px; font-size: 10px; }
+#truss-app.is-minimal #truss-stat-updated { display: none; }
+#truss-app.is-minimal .truss-zoom { right: 10px; bottom: 10px; padding: 6px 8px; gap: 8px; }
+#truss-app.is-minimal .truss-zoom input[type="range"] { width: 84px; }
