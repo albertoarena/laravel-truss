@@ -10,6 +10,15 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Added
+
+- `php artisan truss:export --format=html` writes the whole dashboard as a single file: the diagram, the filter, the focus picker, the structure health panel, zoom and pan. It opens by double-clicking it, with no server, no network and no database, and whoever opens it needs neither Truss nor access to your application. Structure only, like every other format. The schema review that used to need a screen share becomes an attachment on a pull request.
+- The exported file carries everything it needs, which is why it is around 3.6 MB: your structure, the stylesheet, the fonts and a copy of Mermaid. `--output` is required for this format alone, since several megabytes of minified JavaScript is not something to discover in a terminal or a CI log.
+- `--mermaid=cdn` leaves Mermaid out of the file and loads it from a URL instead, taking it from megabytes to kilobytes. The file then needs a network to open. It uses `truss.diagram.mermaid_url` when you have set one, so an install that already self-hosts Mermaid points the exported file at its own copy rather than at a public CDN.
+- The structure health findings travel in the file, so whoever opens it sees the same flags you do. One consequence for anyone committing an export: a Truss upgrade that changes a doctor rule changes the file, so `--check` can report drift on an upgrade rather than on a schema change. The generated-at timestamp and the diff against your baseline are deliberately left out for the opposite reason, so a committed file does not report drift on a day when nothing about your schema changed.
+- The HTML export always renders the package's own dashboard view, even in an application that published its copy with `vendor:publish`. A published view is a snapshot of the release it came from, and rendering one into an export produces a file that reaches for a server whoever opens it cannot see. The dashboard itself still honours a published view, which is the point of publishing one.
+- `html` is a command-line format only. The gated export route and the MCP tools continue to serve the six text formats, because a self-contained document carrying its own fonts and scripts is not a useful answer to a `GET` or to a model.
+
 ## [1.13.1] - 2026-09-18
 
 ### Fixed
