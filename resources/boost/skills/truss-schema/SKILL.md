@@ -40,6 +40,11 @@ understands. Send it to a file with `--output=`, and `--check` writes nothing
 and exits non-zero when that file is out of date, which is how a CI job catches
 a schema that has drifted from its committed export.
 
+When the reader is a person rather than a tool, `--format=html --output=x.html`
+writes the whole diagram as one file that opens with no server and no install.
+It is around 3.6 MB, `--output` is required, and it is a poor thing to read
+yourself: use `llm` for that.
+
 ## 2. Check the ground before you build on it
 
     php artisan truss:doctor

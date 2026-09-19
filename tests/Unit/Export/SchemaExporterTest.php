@@ -15,7 +15,7 @@ function threeTables(): array
 }
 
 it('lists the supported formats and reports support', function () {
-    expect(SchemaExporter::formats())->toBe(['dbml', 'json', 'csv', 'markdown', 'mermaid', 'llm'])
+    expect(SchemaExporter::formats())->toBe(['dbml', 'json', 'csv', 'markdown', 'mermaid', 'llm', 'html'])
         ->and(SchemaExporter::supports('dbml'))->toBeTrue()
         ->and(SchemaExporter::supports('yaml'))->toBeFalse();
 });
@@ -80,3 +80,8 @@ it('dispatches to the generator for the requested format', function () {
 it('throws on an unsupported format', function () {
     (new SchemaExporter)->generate('yaml', []);
 })->throws(InvalidArgumentException::class);
+
+it('registers html as a supported format', function () {
+    expect(SchemaExporter::supports('html'))->toBeTrue()
+        ->and(SchemaExporter::formats())->toContain('html');
+});

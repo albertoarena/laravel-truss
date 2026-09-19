@@ -27,7 +27,7 @@ use Throwable;
 class ExportCommand extends Command
 {
     protected $signature = 'truss:export
-        {--format= : dbml, json, csv, markdown, mermaid, or llm (default: truss.export.default_format)}
+        {--format= : dbml, json, csv, markdown, mermaid, llm, or html (default: truss.export.default_format)}
         {--connection= : Export this connection instead of the default}
         {--tables= : Only these tables, comma-separated}
         {--exclude= : Skip these tables, comma-separated (applied after --tables)}
@@ -35,6 +35,7 @@ class ExportCommand extends Command
         {--depth= : Neighbourhood hops for --focus (default: truss.focus.default_depth)}
         {--compact : Drop defaults and non-unique indexes to shrink the output}
         {--no-annotations : Strip config/database annotations from the export}
+        {--mermaid=inline : html only: inline (self-contained, default) or cdn (small file, needs a network)}
         {--output= : Write to this file instead of stdout}
         {--check : Exit non-zero if --output would change; writes nothing}
         {--fresh : Rebuild the cached snapshot before exporting}';
@@ -56,6 +57,25 @@ class ExportCommand extends Command
         $output = $this->option('output') !== null ? (string) $this->option('output') : null;
         if ($check && $output === null) {
             $this->error('--check requires --output: there is nothing to compare against.');
+
+            return 2;
+        }
+
+        // The one format whose stdout default is wrong. An HTML export is a
+        // document of roughly 3.6 MB, almost all of it minified Mermaid, so a
+        // forgotten redirect fills a terminal or a CI log with no way back. The
+        // six text formats are small and pipe cleanly, and they keep stdout.
+        $mermaid = (string) ($this->option('mermaid') ?? 'inline');
+        if (! in_array($mermaid, ['inline', 'cdn'], true)) {
+            $this->error("Unknown --mermaid [{$mermaid}]. Supported: inline, cdn.");
+
+            return 2;
+        }
+
+        if ($format === 'html' && $output === null) {
+            $this->error('--format=html requires --output: the file is around 3.6 MB and is not meant for a terminal.');
+            $this->line('');
+            $this->line('  Try: <comment>truss:export --format=html --output=schema.html</comment>');
 
             return 2;
         }
@@ -86,6 +106,9 @@ class ExportCommand extends Command
         }
         if ($this->option('fresh')) {
             $builder = $builder->fresh();
+        }
+        if ($mermaid === 'cdn') {
+            $builder = $builder->mermaidFromUrl();
         }
 
         try {

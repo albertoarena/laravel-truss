@@ -23,8 +23,11 @@ class GetSchema extends Tool
     public function handle(Request $request): Response
     {
         $format = (string) $request->get('format', '') ?: (string) config('truss.export.default_format', 'dbml');
-        if (! SchemaExporter::supports($format)) {
-            return Response::error("Unknown format [{$format}]. Supported: ".implode(', ', SchemaExporter::formats()).'.');
+        // textFormats, not formats: a document format would put a 3.6 MB
+        // self-contained page in front of a model, which is not a larger answer
+        // but a useless one.
+        if (! in_array($format, SchemaExporter::textFormats(), true)) {
+            return Response::error("Unknown format [{$format}]. Supported: ".implode(', ', SchemaExporter::textFormats()).'.');
         }
 
         $connection = (string) $request->get('connection', '');

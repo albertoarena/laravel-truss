@@ -46,6 +46,19 @@ class AssetController
         'ibm-plex-mono-600.woff2' => 'fonts/ibm-plex-mono-600.woff2',
     ];
 
+    /**
+     * The allow-list, for callers that need the same inventory the dashboard
+     * serves. The HTML export inlines exactly these files, so reading the list
+     * rather than globbing `resources/` is what makes a module added here and
+     * forgotten there fail loudly instead of 404ing in a browser.
+     *
+     * @return array<string, string> asset name => path relative to `resources/`
+     */
+    public static function assets(): array
+    {
+        return self::ASSETS;
+    }
+
     public function __invoke(string $file): BinaryFileResponse
     {
         $relative = self::ASSETS[$file] ?? abort(Response::HTTP_NOT_FOUND);

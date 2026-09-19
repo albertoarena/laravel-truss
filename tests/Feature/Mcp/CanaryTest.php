@@ -35,7 +35,11 @@ it('no MCP tool or resource ever leaks row data', function () {
         TrussSchemaServer::resource(SchemaResource::class),
     ];
 
-    foreach (SchemaExporter::formats() as $format) {
+    // textFormats, not formats: the MCP tools deliberately refuse document
+    // formats, so asking for every registered format would assert that a
+    // refusal leaks no row data, which is true and pointless, while reporting
+    // as a failure here.
+    foreach (SchemaExporter::textFormats() as $format) {
         $responses[] = TrussSchemaServer::tool(GetSchema::class, ['format' => $format]);
     }
 

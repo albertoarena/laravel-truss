@@ -15,27 +15,45 @@
          starts the fetch with the document instead of when the stylesheet is
          parsed, so that wait is usually over before it begins. crossorigin is
          required even same-origin, or the preload is not reused. --}}
-    <link rel="preload" as="font" type="font/woff2"
-          href="{{ route('truss.asset', 'ibm-plex-mono-400.woff2') }}" crossorigin>
+    @if ($export ?? false)
+        {{-- Export mode: one file, nothing to fetch. The faces are data URIs
+             inside the sheet, so there is nothing to preload and no request to
+             start early. --}}
+        <style>{!! $inlineCss !!}</style>
 
-    <link rel="stylesheet" href="{{ route('truss.asset', 'truss.css') }}">
+        @if ($inlineMermaid !== null)
+            <script>{!! $inlineMermaid !!}</script>
+        @else
+            <script src="{{ $mermaidUrl }}"></script>
+        @endif
+    @else
+        <link rel="preload" as="font" type="font/woff2"
+              href="{{ route('truss.asset', 'ibm-plex-mono-400.woff2') }}" crossorigin>
 
-    {{-- Optional custom-theme overrides, generated from truss.theme. Linked after
-         the base sheet so its variables win, and only when a theme is configured
-         (a default install makes no extra request). Same-origin, CSP-safe. --}}
-    @if ($hasCustomTheme ?? false)
-        <link rel="stylesheet" href="{{ route('truss.theme') }}">
+        <link rel="stylesheet" href="{{ route('truss.asset', 'truss.css') }}">
+
+        {{-- Optional custom-theme overrides, generated from truss.theme. Linked after
+             the base sheet so its variables win, and only when a theme is configured
+             (a default install makes no extra request). Same-origin, CSP-safe. --}}
+        @if ($hasCustomTheme ?? false)
+            <link rel="stylesheet" href="{{ route('truss.theme') }}">
+        @endif
+
+        {{-- Mermaid as a global (UMD). Self-hosted from the package by default (no
+             CDN); config('truss.diagram.mermaid_url') opts into a CDN. --}}
+        <script src="{{ config('truss.diagram.mermaid_url') ?: route('truss.asset', 'mermaid.min.js') }}"></script>
     @endif
-
-    {{-- Mermaid as a global (UMD). Self-hosted from the package by default (no
-         CDN); config('truss.diagram.mermaid_url') opts into a CDN. --}}
-    <script src="{{ config('truss.diagram.mermaid_url') ?: route('truss.asset', 'mermaid.min.js') }}"></script>
 </head>
 <body>
     <div
         id="truss-app"
-        data-schema-endpoint="{{ route('truss.api.schema') }}"
-        data-export-endpoint="{{ route('truss.export', ['format' => '__format__']) }}"
+        @unless ($export ?? false)
+            {{-- Omitted in export mode, and the client is built for it: the boot
+                 path reads an embedded payload first, and buildExportUrl returns
+                 null for an empty template so the menu drops server formats. --}}
+            data-schema-endpoint="{{ route('truss.api.schema') }}"
+            data-export-endpoint="{{ route('truss.export', ['format' => '__format__']) }}"
+        @endunless
         data-connections='@json($connections)'
         data-type-labels="{{ config('truss.diagram.type_labels') }}"
         data-warn-above="{{ config('truss.large_schema.warn_above') }}"
@@ -43,6 +61,11 @@
         data-min-zoom="{{ config('truss.diagram.min_zoom') }}"
         data-doctor-flag-tables="{{ config('truss.doctor.flag_tables', true) ? '1' : '0' }}"
     >
+        @if ($export ?? false)
+            {{-- The seam schema-source.js reads before it would ever fetch. --}}
+            <script type="application/json" data-truss-payload>{!! $payloadJson !!}</script>
+        @endif
+
         <div class="truss-toolbar">
             <span class="truss-brand">
                 <svg class="truss-mark" width="20" height="20" viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true">
@@ -168,6 +191,10 @@
         </footer>
     </div>
 
-    <script type="module" src="{{ route('truss.asset', 'truss.js') }}"></script>
+    @if ($export ?? false)
+        <script type="module">{!! $inlineModules !!}</script>
+    @else
+        <script type="module" src="{{ route('truss.asset', 'truss.js') }}"></script>
+    @endif
 </body>
 </html>
