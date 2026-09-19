@@ -8,7 +8,36 @@ paths:
 Loaded when `CHANGELOG.md` is touched, which is the anchor of cutting a release.
 Follow these steps in order. Never skip the CI gate.
 
-## Before any of this: the docs gate at merge time
+## Two gates at merge time, not at release time
+
+**Neither of these is a release step.** Both are things a pull request must carry
+before it merges, and both are here because doing them at tag time is doing them
+under time pressure, which is when they get dropped or done badly.
+
+### The changelog gate
+
+**A pull request that changes user-facing behaviour does not merge until it has
+added its entry under `## [Unreleased]`.** Same test as the docs gate below, and
+the same reason: an entry written at release time is written from a diff, by
+somebody reconstructing intent, days later.
+
+**This was missed on the HTML export PR** (#79, 19/09/2026), which shipped a new
+export format, a new flag and two new usage errors while `[Unreleased]` stayed
+empty. It was caught in review rather than by this file, for a reason worth
+keeping: **this rule loads on `CHANGELOG.md`, so it only appears once somebody
+has already remembered to open it.** A feature PR that never touches the file
+never sees the rule that tells it to. The root `CLAUDE.md` therefore carries the
+requirement in one line, since it is always in context, and this section carries
+the detail.
+
+**Write it as Added, Changed or Fixed by what a reader of the last release
+experiences, not by what the branch did.** A bug introduced and fixed inside the
+same unreleased cycle gets no `Fixed` line: that line tells people the previous
+version was broken, and they read it to decide whether they are affected. Where
+such a fix leaves a deliberate, observable behaviour, document the behaviour
+under the feature that owns it.
+
+### The docs gate
 
 **A pull request that changes user-facing behaviour does not merge until its
 documentation is written.** Either a PR is open against
@@ -43,6 +72,13 @@ no question rather than a writing task.
    `## [X.Y.Z] - YYYY-MM-DD` section (real date), move the relevant Unreleased
    notes into it under `### Added` / `### Changed` / `### Fixed`. Keep an empty
    `## [Unreleased]` at the top. No em or en dashes in the prose.
+
+   **This step moves entries; it does not write them.** If `[Unreleased]` is
+   empty and the release has content, the changelog gate above was missed, and
+   the honest fix is to write the entries from the merged pull requests before
+   going further rather than from `git log --oneline`. A changelog reconstructed
+   from subjects reads like a list of commits, which is the thing a changelog
+   exists not to be.
 
 4. **Commit.** Feature/fix commits land first with their own `type: subject`
    messages. The changelog bump is its own commit: `chore: release vX.Y.Z`, with
