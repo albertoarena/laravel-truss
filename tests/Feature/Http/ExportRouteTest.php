@@ -81,3 +81,12 @@ it('denies access without the viewTruss gate', function () {
 
     $this->get('/truss/export/dbml')->assertNotFound();
 });
+
+it('404s on html, which is a document rather than a streamed export', function () {
+    // Settled when the format was designed: the command ships first and the web
+    // route follows in a later release. It is a second surface with its own
+    // gating and download semantics, and until it is designed, a gated route
+    // that hands back 3.6 MB on a GET is not something to acquire by accident
+    // from a shared registry.
+    $this->get('/truss/export/html')->assertNotFound();
+});

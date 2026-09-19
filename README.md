@@ -26,7 +26,7 @@ Laravel Truss is a live database structure viewer. It scans your live schema and
 - Focus mode: a table and its foreign-key neighbours, centred and highlighted. The picker is searchable, matching anywhere in the table name, so it stays usable on a schema with hundreds of tables.
 - Filter by table name, and toggle native types against Laravel-style labels.
 - Map-style pan and zoom, with auto-fit and a Fit button.
-- Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, DBML, or a token-trimmed `llm` format, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic.
+- Export the diagram as PNG or SVG, or its structure as JSON, CSV, a Markdown data dictionary, DBML, or a token-trimmed `llm` format, from the browser or, for CI and tooling, from the command line with `php artisan truss:export`. Structure-only and deterministic. `--format=html` writes the whole diagram as one self-contained file that opens with no server and no install.
 - Feed your real, live structure to a coding agent as grounding context: annotate it with business meaning, trim it with `--compact`, and narrow it with `--focus`, so the agent stops inventing columns. Structure only, never data.
 - Schema diff: see what changed since your last migration, in a dashboard "Changes" panel and via `php artisan truss:diff`. Structure-only, added / removed / changed tables, columns, indexes, and foreign keys.
 - Schema doctor: review your structure for problems (missing primary keys, unindexed foreign keys, duplicate indexes, risky types) in the terminal or in CI with `php artisan truss:doctor`, and in a dashboard "Health" panel that flags the same problems on the diagram. Deterministic and structure-only, no AI.
@@ -133,7 +133,7 @@ It rides the schema endpoint the diagram already loads, so there is no extra req
 
 ```bash
 php artisan truss:export                                  # DBML to stdout
-php artisan truss:export --format=json                    # dbml, json, csv, markdown, mermaid, or llm
+php artisan truss:export --format=json                    # dbml, json, csv, markdown, mermaid, llm, or html
 php artisan truss:export --format=dbml --output=docs/schema.dbml
 php artisan truss:export --tables=orders,order_lines      # only these (config exclusions still apply)
 php artisan truss:export --connection=mysql --exclude=telemetry
@@ -149,6 +149,21 @@ php artisan truss:export --format=dbml --output=docs/schema.dbml --check
 `--check` regenerates the export, compares it against `--output`, writes nothing, and exits non-zero when they differ, so a migration that changes the schema without refreshing the committed file fails the build. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error (unknown format, unwritable path, an unmanaged connection, `--check` without `--output`, or no tables matched the filters). Add `--fresh` to rebuild the cached snapshot before exporting.
 
 Config `excluded_tables` always wins over `--tables`, so the export never exposes a table the dashboard hides. Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
+
+### The whole diagram as one file
+
+`--format=html` writes the dashboard itself: the diagram, the filter, the focus picker, zoom and pan, in a single file that opens by double-clicking it. No server, no network, no database, and the person opening it does not need Truss installed.
+
+```bash
+php artisan truss:export --format=html --output=schema.html
+php artisan truss:export --format=html --mermaid=cdn --output=schema.html   # small file, needs a network
+```
+
+`--output` is required for this format. The default file is around 3.6 MB because it carries its own stylesheet, fonts and a copy of Mermaid, and that is not something to discover in a terminal or a CI log. `--mermaid=cdn` trades the offline guarantee for a file small enough to attach anywhere: it loads Mermaid from `truss.diagram.mermaid_url` if you have set it, or from a CDN.
+
+It is structure only, like every other format. Worth saying once, though: the file contains your table names, column names, types, defaults and comments, so committing one puts your schema into a pull request diff, where it outlives the branch. That is usually the point. Decide it deliberately.
+
+`--check` works with it, and the embedded snapshot deliberately leaves out the generated-at timestamp and the diff so a committed file does not report drift on a day when nothing changed. The doctor findings are included, so a Truss upgrade that changes a rule can move the file.
 
 ### Truss as AI context
 

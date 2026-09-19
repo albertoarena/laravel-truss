@@ -391,7 +391,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | `default_format`: the format truss:export and the facade use when none is
-    | given. One of dbml, json, csv, markdown, mermaid, or llm.
+    | given. One of dbml, json, csv, markdown, mermaid, or llm. Not html:
+    | that format is a document and requires --output, so it is a poor
+    | default for a command that otherwise writes to stdout.
     |
     */
 

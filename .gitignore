@@ -33,3 +33,6 @@ CLAUDE.*.local.md
 # Workspace snapshot archives: these capture vendor/, node_modules/ and the
 # gitignored .docs/, so one was committed by accident on 18/08/2026.
 *.tar
+
+# Built by tests/e2e/exported-file.spec.js, never committed.
+/tests/e2e/.tmp/

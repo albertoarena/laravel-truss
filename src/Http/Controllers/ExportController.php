@@ -35,7 +35,10 @@ class ExportController
 
     public function __invoke(Request $request, TrussManager $truss, string $format): Response
     {
-        abort_unless(SchemaExporter::supports($format), 404);
+        // A document format is not served here. It ships as a command first and
+        // the route follows in a later release with its own download semantics,
+        // so it must not arrive by accident through the shared registry.
+        abort_unless(SchemaExporter::supports($format) && ! SchemaExporter::isDocument($format), 404);
 
         $builder = $truss->snapshot()
             ->only($this->list($request, 'only'))

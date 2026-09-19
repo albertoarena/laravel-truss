@@ -27,6 +27,22 @@ jobs:
       - name: Unit tests (Vitest)
         run: npm test
 
+      # PHP and the package's own dependencies, for one spec: exported-file
+      # builds its fixture by running truss:export for real, through
+      # vendor/bin/testbench, and then opens the result over file://. It is also
+      # the only spec that drives the shipped Blade markup rather than
+      # tests/e2e/harness.html, so leaving it unable to run here would quietly
+      # remove the one check that sees what users actually load.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
       # Firefox is scoped by testMatch to the label-geometry spec alone. Issue
       # #59 was a Firefox-only clipping bug that Chromium could not reproduce,
       # so that one spec earns a second engine without doubling the run.

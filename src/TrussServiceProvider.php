@@ -65,6 +65,30 @@ class TrussServiceProvider extends PackageServiceProvider
         $this->app->singleton(TrussManager::class);
     }
 
+    /**
+     * A second namespace for the same view files, pointing only at the package.
+     *
+     * `hasViews()` registers `truss::` and a publish group with it, so an
+     * application that ran `vendor:publish` owns a copy of index.blade.php in
+     * `resources/views/vendor/truss` which wins over the package's. For the
+     * dashboard that is the whole point: someone who publishes the view wants
+     * their version served.
+     *
+     * The HTML export is the opposite case. It renders that view into a file
+     * that must carry its own stylesheet, fonts, Mermaid and payload, and a
+     * published copy is a snapshot of whatever release it came from, with
+     * `route()` calls in it and no export mode. Rendering it produces a file
+     * that phones home to an origin whoever opens the file cannot reach, and it
+     * does so silently, because a stale view is still a valid view.
+     *
+     * So the export renders `truss-package::index`, which resolves to one path
+     * and is never published to.
+     */
+    private function registerPackageViewNamespace(): void
+    {
+        $this->app['view']->addNamespace('truss-package', __DIR__.'/../resources/views');
+    }
+
     public function packageBooted(): void
     {
         // Rebuild the cached snapshot after migrations run. The listener itself
@@ -72,6 +96,7 @@ class TrussServiceProvider extends PackageServiceProvider
         // runtime whether to act.
         Event::listen(MigrationsEnded::class, RebuildOnMigrationsEnded::class);
 
+        $this->registerPackageViewNamespace();
         $this->registerGate();
         $this->registerRoutes();
         $this->registerMcpServer();

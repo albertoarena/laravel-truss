@@ -29,7 +29,13 @@ class SchemaExporter
         'markdown' => MarkdownGenerator::class,
         'mermaid' => MermaidGenerator::class,
         'llm' => LlmGenerator::class,
+        'html' => HtmlGenerator::class,
     ];
+
+    /**
+     * @var list<string>
+     */
+    private const DOCUMENT_FORMATS = ['html'];
 
     /**
      * @return list<string>
@@ -42,6 +48,29 @@ class SchemaExporter
     public static function supports(string $format): bool
     {
         return isset(self::GENERATORS[$format]);
+    }
+
+    /**
+     * Formats that are a rendering of the tables, as opposed to a document that
+     * carries its own stylesheet, fonts and scripts.
+     *
+     * The distinction exists because several surfaces stream an export straight
+     * to a caller: the gated web route, and the MCP tools that put the result in
+     * front of a model. Handing either of those a 3.6 MB self-contained page is
+     * not a smaller version of handing it DBML, it is a different thing, so they
+     * ask for this list rather than for every format the exporter can generate.
+     *
+     * @return list<string>
+     */
+    public static function textFormats(): array
+    {
+        return array_values(array_diff(self::formats(), self::DOCUMENT_FORMATS));
+    }
+
+    /** True for a format that produces a document rather than a text rendering. */
+    public static function isDocument(string $format): bool
+    {
+        return in_array($format, self::DOCUMENT_FORMATS, true);
     }
 
     /**
@@ -80,16 +109,25 @@ class SchemaExporter
      *
      * @param  list<array<string, mixed>>  $tables
      * @param  list<string>  $notes
+     * @param  array<string, mixed>  $context  constructor arguments for generators that take them
      */
-    public function generate(string $format, array $tables, array $notes = []): string
+    public function generate(string $format, array $tables, array $notes = [], array $context = []): string
     {
         if (! self::supports($format)) {
             throw new InvalidArgumentException("Unsupported export format [{$format}].");
         }
 
-        $generator = self::GENERATORS[$format];
+        // Resolved rather than constructed: the six text formats take no
+        // dependencies, but the HTML document needs the view factory and the
+        // asset inliner. GeneratorConstructionTest pins that this still returns
+        // exactly what a plainly constructed generator produces for those six.
+        // $context names constructor parameters, so a generator with
+        // dependencies gets them without the six older formats learning about
+        // it: for them the array is empty and this is a plain instantiation,
+        // which GeneratorConstructionTest pins.
+        $generator = app()->make(self::GENERATORS[$format], $context);
 
-        return (new $generator)->generate($tables, $notes);
+        return $generator->generate($tables, $notes);
     }
 
     /**

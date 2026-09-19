@@ -242,3 +242,51 @@ it('never leaks row data: the canary never appears in any format', function () {
         unlink($out);
     }
 });
+
+it('--format=html without --output is a usage error (exit 2)', function () {
+    // The one format whose stdout default is wrong: the file is roughly 3.6 MB
+    // of mostly minified Mermaid, and a forgotten redirect dumps it into a
+    // terminal or a CI log with no undo. The six text formats keep stdout.
+    $this->artisan('truss:export', ['--format' => 'html'])
+        ->expectsOutputToContain('--output')
+        ->assertExitCode(2);
+});
+
+it('embeds the doctor findings in the exported document', function () {
+    // Structural, so the no-data rule does not exclude them, and a reviewer
+    // opening a schema on a pull request is exactly who wants to see them. The
+    // documented cost is that a Truss upgrade which changes a rule moves the
+    // file, so a committed export can drift under --check on an upgrade rather
+    // than on a schema change.
+    Artisan::call('truss:export', ['--format' => 'html', '--output' => $this->tmp]);
+
+    preg_match(
+        '/<script type="application\/json" data-truss-payload>(.*?)<\/script>/s',
+        file_get_contents($this->tmp),
+        $matches,
+    );
+
+    expect(json_decode($matches[1] ?? '', true))->toHaveKey('doctor');
+});
+
+it('--mermaid=cdn trades the offline promise for a small file', function () {
+    Artisan::call('truss:export', [
+        '--format' => 'html',
+        '--mermaid' => 'cdn',
+        '--output' => $this->tmp,
+    ]);
+
+    $document = file_get_contents($this->tmp);
+
+    // Inline Mermaid is 97% of the default export, so dropping it is the whole
+    // point of the flag: what is left is the page, the payload and the modules.
+    expect(strlen($document))->toBeLessThan(400_000)
+        ->and($document)->toMatch('/<script src="https:\/\/[^"]+mermaid[^"]*"/')
+        ->and($document)->toContain('data-truss-payload');
+});
+
+it('rejects an unknown --mermaid value with exit 2', function () {
+    $this->artisan('truss:export', ['--format' => 'html', '--mermaid' => 'maybe', '--output' => $this->tmp])
+        ->expectsOutputToContain('--mermaid')
+        ->assertExitCode(2);
+});

@@ -150,3 +150,12 @@ it('focus_table reads the named managed connection', function () {
         ->assertOk()
         ->assertSee('Table users {');
 });
+
+it('refuses html, which would hand a model a 3.6 MB document', function () {
+    // html is a real format the exporter can generate, so it reaches these tools
+    // through the shared registry unless they ask for the text formats. A
+    // self-contained page with its own fonts and scripts is not a longer answer
+    // for a model, it is a useless one.
+    TrussSchemaServer::tool(GetSchema::class, ['format' => 'html'])->assertHasErrors();
+    TrussSchemaServer::tool(FocusTable::class, ['table' => 'posts', 'format' => 'html'])->assertHasErrors();
+});

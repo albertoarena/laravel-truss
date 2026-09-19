@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlbertoArena\Truss\Export;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Doctor\DoctorReport;
 use AlbertoArena\Truss\Export\Contracts\CommentReader;
 use InvalidArgumentException;
 
@@ -41,11 +42,31 @@ final class ExportBuilder
         private readonly bool $compact = false,
         private readonly bool $annotations = true,
         private readonly bool $fresh = false,
+        private readonly ?string $mermaidUrl = null,
     ) {}
 
     public function connection(string $name): self
     {
         return $this->copy(['connection' => $name]);
+    }
+
+    /**
+     * Load Mermaid from a URL in the HTML export instead of embedding it.
+     *
+     * The default export is self-contained and around 3.6 MB, of which the
+     * vendored Mermaid is roughly 97%. This trades that promise for a file small
+     * enough to attach anywhere, at the cost of needing a network to open and of
+     * rotting when the CDN's version moves. `truss.diagram.mermaid_url` is used
+     * when it is set, since an install that already self-hosts Mermaid has said
+     * where it lives.
+     */
+    public function mermaidFromUrl(?string $url = null): self
+    {
+        return $this->copy([
+            'mermaidUrl' => $url
+                ?? (string) (config('truss.diagram.mermaid_url')
+                    ?: 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js'),
+        ]);
     }
 
     /**
@@ -113,7 +134,41 @@ final class ExportBuilder
     {
         $resolved = $this->resolve();
 
-        return rtrim($this->exporter->generate($format, $resolved['tables'], $resolved['notes']), "\n")."\n";
+        return rtrim(
+            $this->exporter->generate($format, $resolved['tables'], $resolved['notes'], $this->contextFor($format, $resolved)),
+            "\n",
+        )."\n";
+    }
+
+    /**
+     * Constructor arguments for the generator, which only the HTML document
+     * needs today.
+     *
+     * The format test is the one piece of format-awareness in this class, and it
+     * sits here because this is the only place holding both the resolved
+     * connection and the filtered tables. The doctor needs the first and must
+     * run on the second, so a --tables or --focus export reports on what it
+     * actually contains. Doing it inside the generator was the alternative and
+     * it would have put a connection inside a generator documented as pure over
+     * its tables.
+     *
+     * @param  array{tables: list<array<string, mixed>>, notes: list<string>, connection: string}  $resolved
+     * @return array<string, mixed>
+     */
+    private function contextFor(string $format, array $resolved): array
+    {
+        if ($format !== 'html') {
+            return [];
+        }
+
+        $doctor = new DoctorReport;
+
+        return [
+            'mermaidUrl' => $this->mermaidUrl,
+            'doctor' => $doctor->toArray(
+                $doctor->for($resolved['connection'], ['tables' => $resolved['tables']]),
+            ),
+        ];
     }
 
     public function toDbml(): string
@@ -150,7 +205,7 @@ final class ExportBuilder
      * Load the snapshot and run the full pipeline. Memoised, so several terminals
      * on the same instance resolve once.
      *
-     * @return array{tables: list<array<string, mixed>>, notes: list<string>}
+     * @return array{tables: list<array<string, mixed>>, notes: list<string>, connection: string}
      *
      * @throws InvalidArgumentException for an unmanaged connection or a missing focus table
      */
@@ -184,7 +239,11 @@ final class ExportBuilder
 
         [$tables, $notes] = $this->applyAnnotations($tables, (string) $snapshot['connection']);
 
-        return $this->resolved = ['tables' => $tables, 'notes' => $notes];
+        return $this->resolved = [
+            'tables' => $tables,
+            'notes' => $notes,
+            'connection' => (string) $snapshot['connection'],
+        ];
     }
 
     /**
@@ -240,6 +299,7 @@ final class ExportBuilder
             array_key_exists('compact', $with) ? $with['compact'] : $this->compact,
             array_key_exists('annotations', $with) ? $with['annotations'] : $this->annotations,
             array_key_exists('fresh', $with) ? $with['fresh'] : $this->fresh,
+            array_key_exists('mermaidUrl', $with) ? $with['mermaidUrl'] : $this->mermaidUrl,
         );
     }
 }
