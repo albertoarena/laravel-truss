@@ -10,6 +10,8 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-09-19
+
 ### Added
 
 - `php artisan truss:export --format=html` writes the whole dashboard as a single file: the diagram, the filter, the focus picker, the structure health panel, zoom and pan. It opens by double-clicking it, with no server, no network and no database, and whoever opens it needs neither Truss nor access to your application. Structure only, like every other format. The schema review that used to need a screen share becomes an attachment on a pull request.
