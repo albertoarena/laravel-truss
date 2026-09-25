@@ -100,3 +100,39 @@ it('ignores a host application override of the dashboard view', function () {
     expect($document)->not->toContain('HOST COPY')
         ->and($document)->toContain('data-truss-payload');
 });
+
+it('cannot be broken out of by a name or default containing a closing script tag', function () {
+    // A structural value is not always tame. Identifiers can be quoted, and a
+    // column default is application text that happens to be structure (see
+    // docs/DECISIONS.md, "No data" boundary). The exported file is opened in a
+    // browser by whoever it was sent to, so the payload must survive the HTML
+    // parser: a literal </script> inside the block would end the element and
+    // everything after it would be parsed as markup.
+    $hostile = '</script><img src=x onerror=alert(1)>';
+
+    $tables = (new SchemaExporter)->tablesFor(
+        SchemaBuilder::make()
+            ->table('users', fn ($t) => $t->id()
+                ->column($hostile, 'varchar(255)')
+                ->column('bio', 'text', false, $hostile))
+            ->build()['tables'],
+    );
+
+    $document = app(HtmlGenerator::class)->generate($tables);
+
+    // The injected markup must never reach the document as markup.
+    expect($document)->not->toContain('</script><img');
+
+    // And the payload must still be readable: the seam takes everything up to
+    // the first closing tag, exactly as schema-source.js does.
+    preg_match(
+        '/<script type="application\/json" data-truss-payload>(.*?)<\/script>/s',
+        $document,
+        $matches,
+    );
+
+    $payload = json_decode($matches[1] ?? '', true);
+
+    expect($payload)->toBeArray()
+        ->and(array_column($payload['tables'][0]['columns'], 'name'))->toContain($hostile);
+});

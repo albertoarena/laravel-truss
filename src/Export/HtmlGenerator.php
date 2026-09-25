@@ -74,6 +74,16 @@ class HtmlGenerator implements Generator
             $payload['doctor'] = $this->doctor;
         }
 
-        return json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        // JSON_HEX_TAG is load-bearing, not tidiness: this payload is embedded in
+        // a <script> element, and a table name, index name or column default may
+        // legally contain "</script>", which would end the element and leave the
+        // rest of the payload to be parsed as markup in a file someone was sent.
+        // Escaping < and > at the encoder keeps the document safe whatever the
+        // schema holds, and leaves JSON_UNESCAPED_SLASHES free to keep paths and
+        // URLs in defaults readable.
+        return json_encode(
+            $payload,
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG,
+        );
     }
 }
