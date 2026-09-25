@@ -136,3 +136,31 @@ it('cannot be broken out of by a name or default containing a closing script tag
     expect($payload)->toBeArray()
         ->and(array_column($payload['tables'][0]['columns'], 'name'))->toContain($hostile);
 });
+
+it('leaves slashes in a column default readable in the exported document', function () {
+    // JSON_UNESCAPED_SLASHES is on the encoder deliberately, alongside
+    // JSON_HEX_TAG: a column default is often a path or a URL, and the document
+    // is read by a person, so "\/var\/www" would be noise in the one format
+    // whose output is looked at rather than parsed. Without this expectation the
+    // flag could be dropped in a later change and nothing would notice.
+    $path = '/var/www/releases/current/storage';
+
+    $tables = (new SchemaExporter)->tablesFor(
+        SchemaBuilder::make()
+            ->table('settings', fn ($t) => $t->id()->column('root', 'varchar(255)', false, $path))
+            ->build()['tables'],
+    );
+
+    $document = app(HtmlGenerator::class)->generate($tables);
+
+    preg_match(
+        '/<script type="application\/json" data-truss-payload>(.*?)<\/script>/s',
+        $document,
+        $matches,
+    );
+
+    $block = $matches[1] ?? '';
+
+    expect($block)->toContain($path)
+        ->and($block)->not->toContain('\/var\/www');
+});
