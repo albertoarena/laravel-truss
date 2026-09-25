@@ -63,7 +63,23 @@ of arguing with it:
   the cost of changing the serialized payload on SQLite hosts. The suite is green
   because `tests/Support/TableDraft.php:165` fabricates MySQL-style names, so the
   differ has only ever been tested against a shape its own producer never emits
-  on the default driver: fix that fixture in the same change.
+  on the default driver: fix that fixture in the same change. The argument that
+  settles the decision is the baseline on disk: saved baselines hold `name: ""`,
+  so synthesizing names would make the first diff after upgrading report every
+  foreign key in the schema as removed and re-added. `.claude/rules/introspection.md:15`
+  points the same way, but it is written about `Column.type` and reverse-mapping to
+  migration verbs, so reading it as covering a synthesized foreign key name is an
+  extension by analogy rather than a rule that synthesizing would break. Two more
+  things belong in the same change. First, the origin is an asymmetry in the
+  builder: `indexes()` writes `$index['name']` bare (`SnapshotBuilder.php:243`), so
+  a missing index name raises an undefined-key warning and is loud, while
+  `foreignKeys()` substitutes `''` (`:259`), so a missing foreign key name is
+  silent. Somebody already knew the name could be absent and handled it by
+  substituting an empty string, and that substitution is the bug. Second, and
+  because of that, `byName()` should refuse an empty key and refuse a duplicate one
+  rather than overwriting: the guard would have caught this on the first SQLite
+  test, and it protects the next field that grows an optional name. Indexes are
+  safe here only by accident.
 - [ ] 3. `migrate --pretend` destroys the diff baseline, unrecoverably.
   `RebuildOnMigrationsEnded::handle()` (`src/Listeners/RebuildOnMigrationsEnded.php:36-53`)
   never reads `$event->options['pretend']`, and Laravel fires `MigrationsEnded`
@@ -331,7 +347,13 @@ of arguing with it:
   (`tests/Unit/Theme/ThemeStylesheetTest.php:125` pins `rebeccapurple`,
   `transparent`, `currentColor`); only the breadth is wrong. Fix: *Replace Magic
   Literal* with a `NAMED_COLORS` constant checked by membership. **Needs a
-  decision**: about 148 names in a constant, or soften the documented promise.
+  decision**: about 148 names in a constant, or soften the documented promise. If
+  the constant is taken, source the names from the CSS Color specification rather
+  than typing them out, or the list drifts and the documented fallback quietly
+  becomes false again in a new way; keep `transparent` and `currentColor` as
+  explicit extras, since neither is a colour name. Re-read both promises
+  afterwards, the docblock and `config/truss.php:201`, because making them true is
+  the entire point of the change.
 - [ ] 28. `TrussManager` is bound a `singleton`
   (`src/TrussServiceProvider.php:65`) and constructor-injects the `scoped`
   `SchemaCacheRepository` (line 62), whose binding comment says every reader must
