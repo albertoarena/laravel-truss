@@ -10,6 +10,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- `truss:export --format=html` escapes `<` and `>` in the payload it embeds, so a schema whose names or column defaults contain a closing `</script>` can no longer break out of the JSON block. A structural value is not always tame: identifiers can be quoted, and a column default is ordinary application text that happens to be part of the table definition. Before this, such a value ended the script element early, which at best truncated the payload so the file opened blank, and at worst left the remainder of the value to be parsed as markup by whoever opened the file. Exports are made to be sent to other people, so the encoder now protects the document whatever the schema holds. Only the HTML format was affected; `json`, `dbml`, `csv`, `markdown`, `mermaid` and `llm` are not embedded in a document and are unchanged.
+
 ## [1.14.0] - 2026-09-19
 
 ### Added
