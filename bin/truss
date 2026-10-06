@@ -1,0 +1,45 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * The Truss binary.
+ *
+ * Deliberately short, and the order of these four steps is the whole content
+ * of the file.
+ *
+ * **The floor guard runs before the autoloader.** Loading Composer's autoload
+ * parses class files written for a PHP that the running interpreter may not
+ * understand, and a parse error there happens before any code of ours can say
+ * why. The Homebrew formula installs no interpreter, so the version here is
+ * whatever `php` resolves to on the user's machine, and that makes this the
+ * only thing standing between a successful `brew install` and a stack trace.
+ *
+ * **It is not declared as a Composer `bin`.** Declaring it would link
+ * vendor/bin/truss into every application that installs the package, where it
+ * would fatal immediately: the Illuminate components it needs are in the PHAR's
+ * own manifest and not in this package's require. This entry point exists for
+ * the build and for a git checkout, and for nothing else.
+ */
+
+require __DIR__.'/php-floor.php';
+
+$failure = truss_php_floor_failure(PHP_VERSION, '8.2');
+
+if ($failure !== null) {
+    fwrite(STDERR, $failure.PHP_EOL);
+    exit(1);
+}
+
+// Inside the PHAR and in a clone this is the package's own vendor directory.
+// The second path is for a checkout installed as a dependency of something
+// else, which is not a supported way to run the binary but is a cheap thing to
+// tolerate.
+foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoload) {
+    if (file_exists($autoload)) {
+        require $autoload;
+
+        break;
+    }
+}
+
+exit(AlbertoArena\Truss\Cli\Application::create()->run());
