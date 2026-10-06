@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AlbertoArena\Truss\Cli\Bootstrapper;
+use AlbertoArena\Truss\Cli\Dsn;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Filesystem\Filesystem;
@@ -102,4 +103,16 @@ it('compiles Blade to a writable path outside the package', function (): void {
     expect(is_dir($compiled))->toBeTrue()
         ->and(is_writable($compiled))->toBeTrue()
         ->and(str_starts_with($compiled, dirname(__DIR__, 2)))->toBeFalse();
+});
+
+it('accepts what the DSN parser produces, which is the seam between the two', function (): void {
+    // Both sides are tested on their own; this pins that the keys the parser
+    // emits are the keys the Capsule wants. It is the join that would break
+    // silently, because a connection array with a wrong key does not fail
+    // until something queries it.
+    $container = Bootstrapper::boot(Dsn::parse('sqlite::memory:'));
+
+    $container->make('db')->connection(Bootstrapper::CONNECTION)->statement('create table gadgets (id integer primary key)');
+
+    expect(Schema::connection(Bootstrapper::CONNECTION)->hasTable('gadgets'))->toBeTrue();
 });
