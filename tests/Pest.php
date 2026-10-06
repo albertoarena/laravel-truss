@@ -7,7 +7,11 @@ use AlbertoArena\Truss\Doctor\Finding;
 use AlbertoArena\Truss\Doctor\FindingCollection;
 use AlbertoArena\Truss\Tests\TestCase;
 
-uses(TestCase::class)->in(__DIR__);
+// Scoped to the directories that hold application-shaped tests rather than to
+// tests/, because tests/Cli deliberately gets no Testbench and no application:
+// it exercises the container the framework-free binary boots, and applying the
+// package TestCase there would test Laravel instead of the CLI.
+uses(TestCase::class)->in('Feature', 'Unit');
 
 /**
  * Run one doctor rule and collect its findings as a list, for rule unit tests.
