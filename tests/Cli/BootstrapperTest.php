@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Cli\Bootstrapper;
 use AlbertoArena\Truss\Cli\Dsn;
+use AlbertoArena\Truss\Export\Contracts\CommentReader;
+use AlbertoArena\Truss\Export\DatabaseCommentReader;
+use AlbertoArena\Truss\TrussManager;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Filesystem\Filesystem;
@@ -115,4 +119,38 @@ it('accepts what the DSN parser produces, which is the seam between the two', fu
     $container->make('db')->connection(Bootstrapper::CONNECTION)->statement('create table gadgets (id integer primary key)');
 
     expect(Schema::connection(Bootstrapper::CONNECTION)->hasTable('gadgets'))->toBeTrue();
+});
+
+it('mirrors the service provider, so both surfaces resolve one implementation', function (): void {
+    // TrussServiceProvider::packageRegistered() binds exactly these three. The
+    // binary resolves the same classes through the same contracts, which is
+    // what makes a parity test meaningful: it can only compare two callers of
+    // one implementation.
+    $container = Bootstrapper::boot(CONNECTION);
+
+    expect($container->make(CommentReader::class))->toBeInstanceOf(DatabaseCommentReader::class)
+        ->and($container->make(TrussManager::class))->toBeInstanceOf(TrussManager::class);
+});
+
+it('shares one cache repository, because lastError is state somebody reports on', function (): void {
+    // The provider binds this scoped rather than as a singleton, so whoever
+    // reads the snapshot and whoever reports on it see the same lastError().
+    // One CLI invocation is one scope, so two resolutions must be one object:
+    // without that, `export` asks a repository that never read anything why
+    // the read failed, and gets null.
+    $container = Bootstrapper::boot(CONNECTION);
+
+    expect($container->make(SchemaCacheRepository::class))->toBe($container->make(SchemaCacheRepository::class));
+});
+
+it('hands the export builder the same cache repository the command reports on', function (): void {
+    $container = Bootstrapper::boot(CONNECTION);
+
+    // Reaching into the builder is the only way to see this from outside, and
+    // it is worth one reflection call: this is the wiring that decides whether
+    // a cache-store outage is reported or silently swallowed.
+    $builder = $container->make(TrussManager::class)->snapshot();
+    $property = new ReflectionProperty($builder, 'cache');
+
+    expect($property->getValue($builder))->toBe($container->make(SchemaCacheRepository::class));
 });

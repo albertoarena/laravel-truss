@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss\Cli;
 
+use AlbertoArena\Truss\Cache\SchemaCacheRepository;
+use AlbertoArena\Truss\Export\Contracts\CommentReader;
+use AlbertoArena\Truss\Export\DatabaseCommentReader;
+use AlbertoArena\Truss\TrussManager;
 use Illuminate\Cache\CacheManager;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
@@ -84,6 +88,7 @@ final class Bootstrapper
         self::registerCache($container);
         self::registerDatabase($container, $connection);
         self::registerView($container, $files);
+        self::registerPackage($container);
 
         // src/ reaches the schema through facades, so they resolve against this
         // container or not at all.
@@ -186,6 +191,31 @@ final class Bootstrapper
         $container->instance('blade.compiler', $blade);
         $container->instance('view', $factory);
         $container->alias('view', ViewFactoryContract::class);
+    }
+
+    /**
+     * The three bindings `TrussServiceProvider::packageRegistered()` makes,
+     * repeated here because the binary has no provider to make them.
+     *
+     * Kept deliberately identical, including `scoped` rather than `singleton`
+     * for the cache repository. One CLI invocation is one scope, so the two
+     * behave the same here, and matching the provider means a reader comparing
+     * the two surfaces finds the same three lines rather than a variation to
+     * reason about.
+     */
+    private static function registerPackage(Container $container): void
+    {
+        // The DB-comment source behind the export Annotator.
+        $container->bind(CommentReader::class, DatabaseCommentReader::class);
+
+        // Shared, because whoever reads the snapshot and whoever reports on it
+        // need the same lastError(). Resolve a second repository and a cache
+        // outage becomes silence: the command asks an object that never read
+        // anything why the read failed.
+        $container->scoped(SchemaCacheRepository::class);
+
+        // The entry point behind the facade, and what the commands build on.
+        $container->singleton(TrussManager::class);
     }
 
     /**
