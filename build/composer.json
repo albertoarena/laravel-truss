@@ -1,0 +1,35 @@
+{
+    "name": "albertoarena/truss-build",
+    "description": "The runtime dependency manifest for the truss.phar binary. Not published, not installed by anyone, and export-ignored: it exists so Box knows what to bundle.",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": "^8.2",
+        "illuminate/cache": "^12.0",
+        "illuminate/config": "^12.0",
+        "illuminate/container": "^12.0",
+        "illuminate/contracts": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/events": "^12.0",
+        "illuminate/filesystem": "^12.0",
+        "illuminate/log": "^12.0",
+        "illuminate/support": "^12.0",
+        "illuminate/view": "^12.0",
+        "symfony/console": "^7.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "AlbertoArena\\Truss\\": "../src/"
+        },
+        "files": [
+            "../src/Cli/Support/functions.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

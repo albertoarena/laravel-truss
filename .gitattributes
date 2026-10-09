@@ -22,6 +22,7 @@
 # the Illuminate CLI packages that build/composer.json pins for the PHAR alone,
 # while the package's own require stays thin. Guarded by tests/Feature/DistArchiveTest.php.
 /bin                export-ignore
+/box.json           export-ignore
 /build              export-ignore
 /src/Cli            export-ignore
 

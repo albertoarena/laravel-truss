@@ -10,6 +10,18 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Added
+
+- **A framework-free `truss` binary, run from a connection string with no Laravel application and no project.** It serves Symfony and plain PHP developers, CI, and anybody who has a database and a connection string, without Truss becoming a multi-framework package. Four commands: `truss show` prints the structure as a table, `truss export` writes any of the seven formats, `truss doctor` reviews the structure, and `truss diff` compares **two live databases**, which is the one thing the package itself cannot do. Inside an application `truss:diff` answers "what changed since the last migration", a question about time; given two connection strings it answers "what differs between staging and production right now", a question about place, and that one is asked often and is awkward to answer any other way.
+
+- **Nothing about this changes what you install.** The console layer, its entry point and the build manifest are `export-ignore`d, so `composer require albertoarena/laravel-truss` delivers a byte-identical package: no new dependency, no `vendor/bin` link, and nothing new in your application. The binary ships as a `truss.phar` asset on the release, built from the tag by CI so that the binary and the package can never disagree about one database, and smoke-tested on PHP 8.2, 8.4 and 8.5 before it is attached.
+
+- **The binary and the artisan commands produce the same answers, and tests hold them to it.** Every text export is byte-identical through both, the doctor's console report is byte-identical, and its findings arrive in the same order, because both surfaces call one implementation rather than two. The exit codes match too, which matters most in CI: 0 clean, 1 findings or drift, and **2 for anything else**, so an unreachable host can never be mistaken for a schema with problems.
+
+- **Credentials are read from the environment by preference.** `TRUSS_DSN` is the documented path, because a connection string passed as an argument lands in shell history and is visible in `ps` to everyone on the machine; `--dsn` stays as a convenience. No error message ever contains a connection string: a failure names the driver and the host, and never the password. **The binary has no `viewTruss` gate and is never described as having one**: there is no route to protect, and the protection is that whoever runs it already holds the credentials. The structure-only guarantee is unchanged, and it is the line to read first.
+
+- **It needs PHP 8.2 or newer, and says so before anything else can fail.** The binary runs on whatever PHP you have rather than one it installs, so its first act is to check the version and, if it is too old, print one sentence naming both the version required and the version found. That check runs before the autoloader, which is what stops the failure arriving as a parse error from inside a vendored component.
+
 ## [1.14.1] - 2026-09-25
 
 ### Fixed
