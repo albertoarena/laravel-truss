@@ -1,0 +1,211 @@
+name: release
+
+# Builds truss.phar from a tag and attaches it to that tag's GitHub release.
+#
+# Tags only, never a branch. The binary and the package ship from one tag so
+# they cannot disagree about one database: v1.10 recalibrated what the doctor
+# reports, and a binary built from the wrong commit would have described a
+# different schema than the package sitting beside it on the same release page.
+#
+# **Two triggers, because the release does not exist when the tag is pushed.**
+# The documented release order pushes the tag first and creates the GitHub
+# release afterwards, by hand, so that the notes are written and confirmed
+# before anything is published. A build on the tag push therefore has nothing
+# to attach to.
+#
+# So: a tag push builds and smokes, which is the early warning, and a published
+# release builds, smokes and attaches. It compiles twice per release, which
+# costs a couple of minutes and buys knowing the binary is broken before the
+# notes are written rather than after. workflow_dispatch does the same without
+# a version, for exercising the lane.
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile the PHAR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Box stamps the version from `git describe`, which needs the tags
+          # and the history. A shallow clone reports a bare commit hash, and
+          # the smoke lane then fails on the version check, which is the right
+          # failure for the wrong reason.
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          # Box needs 8.2+. The artifact it produces is independent of the PHP
+          # that built it, and the smoke jobs below run it on several.
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          ini-values: phar.readonly=0
+          coverage: none
+
+      - name: Install the runtime the PHAR bundles
+        # install, never update: build/composer.lock is committed so that two
+        # builds of one tag bundle the same Illuminate patch versions. An
+        # update here would make the lock decorative.
+        run: composer install --working-dir=build --no-dev --no-interaction --prefer-dist
+
+      - name: Fetch Box
+        run: |
+          curl -sSL -o box.phar https://github.com/box-project/box/releases/download/4.7.0/box.phar
+          chmod +x box.phar
+          php box.phar --version
+
+      - name: Compile
+        run: php box.phar compile -c box.json
+
+      - name: Record the digest
+        id: digest
+        # The same number the Homebrew formula pins. Printed here so a human can
+        # compare it against the release asset and the formula without
+        # downloading anything.
+        run: |
+          echo "sha256=$(shasum -a 256 truss.phar | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          shasum -a 256 truss.phar
+          ls -lh truss.phar
+
+      - name: Upload the artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: truss-phar
+          path: truss.phar
+          if-no-files-found: error
+          retention-days: 7
+
+    outputs:
+      sha256: ${{ steps.digest.outputs.sha256 }}
+
+  smoke:
+    name: Smoke - PHP ${{ matrix.php }}
+    needs: build
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.2 is the floor the binary promises, 8.4 is the middle, and 8.5 is
+        # what Homebrew currently ships. The last one is the only lane that
+        # tests what a tap install actually executes, because the formula
+        # installs no interpreter and the user's own PHP runs the binary.
+        php: ['8.2', '8.4', '8.5']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Download the artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: truss-phar
+
+      - name: Smoke
+        # The same script a developer runs after a local compile. Given a tag,
+        # the expected version is passed, so --version must report it exactly.
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ -n "${RELEASE_TAG}" ]; then
+            bash build/smoke.sh truss.phar "${RELEASE_TAG}"
+          elif [ "${GITHUB_REF_TYPE}" = 'tag' ]; then
+            bash build/smoke.sh truss.phar "${GITHUB_REF_NAME}"
+          else
+            bash build/smoke.sh truss.phar
+          fi
+
+  floor:
+    name: Below the floor - PHP 8.1
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.1'
+          coverage: none
+
+      - name: Download the artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: truss-phar
+
+      - name: The guard must fire, not Illuminate
+        # The Homebrew formula installs no interpreter, so the binary runs on
+        # whatever PHP the user has, and this is the only thing standing
+        # between a successful brew install and a stack trace. It must name
+        # both versions and exit non-zero, and it must do so before the
+        # autoloader parses a class file written for a newer PHP.
+        run: bash build/floor.sh truss.phar
+
+  release:
+    name: Attach to the release
+    needs: [smoke, floor]
+    # The event, not the ref type: a tag push is also a tag, and on that event
+    # there is no release to upload to yet.
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: truss-phar
+
+      - name: Attach
+        # --clobber so a re-run replaces the asset rather than failing, which
+        # matters when a release is cut, found wanting and re-cut on the same
+        # tag. The release itself is created by hand, per the release rules, so
+        # this only ever adds to one that exists.
+        #
+        # The tag comes from the event rather than from the ref, because that
+        # is the release this run is attaching to.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "${TAG}" truss.phar --clobber --repo "${GITHUB_REPOSITORY}"
+          shasum -a 256 truss.phar
+
+# The formula bump is deliberately not here yet.
+#
+# It belongs in this workflow, and the tap's own instructions say so: CI bumps
+# the formula and a human never does. It is not written now for the reason the
+# plan gives, which is that a bump workflow written before there is a release to
+# bump is a bump workflow written untested, and that is exactly how a tap
+# silently stops upgrading.
+#
+# What the session that writes it needs:
+#   - a job gated on github.ref_type == 'tag', needing [release]
+#   - the HOMEBREW_TAP_TOKEN secret: a fine-grained PAT scoped to
+#     albertoarena/homebrew-truss alone, with Contents: read and write
+#   - the digest from this workflow's build job, available as
+#     needs.build.outputs.sha256
+#   - it edits Formula/truss.rb in that repo: the url version and the sha256,
+#     both of them, every time
