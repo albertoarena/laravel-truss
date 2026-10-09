@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AlbertoArena\Truss\Cli\Support\Helpers;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
+use Illuminate\Support\Carbon;
 
 /*
  * `config()` and `app()` are defined in Illuminate's Foundation helpers, and
@@ -75,6 +76,19 @@ it('says what is wrong when nothing has been bootstrapped', function (): void {
 
     expect(fn (): mixed => Helpers::config('truss.cache.ttl'))
         ->toThrow(RuntimeException::class, 'Truss is not bootstrapped');
+});
+
+it('answers now() with a Carbon instance, because the cache stamps the snapshot', function (): void {
+    // The third Foundation helper, and the one a hand-written inventory
+    // missed: SchemaCacheRepository calls now() to stamp generated_at, so
+    // without it every CLI run fatals on the first cache write. Found by
+    // running the binary against the PHAR's own runtime set, where Foundation
+    // is genuinely absent.
+    expect(Helpers::now())->toBeInstanceOf(Carbon::class);
+});
+
+it('accepts a timezone for now(), as the helper it replaces does', function (): void {
+    expect(Helpers::now('UTC')->timezoneName)->toBe('UTC');
 });
 
 it('guards its definitions, so loading it beside Foundation cannot redeclare', function (): void {

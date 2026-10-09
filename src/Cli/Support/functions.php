@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AlbertoArena\Truss\Cli\Support\Helpers;
+use Illuminate\Support\Carbon;
 
 /*
  * The Foundation helpers the PHAR has to carry, because Foundation is not a
@@ -28,6 +29,13 @@ if (! function_exists('config')) {
     function config(array|string|null $key = null, mixed $default = null): mixed
     {
         return Helpers::config($key, $default);
+    }
+}
+
+if (! function_exists('now')) {
+    function now(DateTimeZone|string|null $timezone = null): Carbon
+    {
+        return Helpers::now($timezone);
     }
 }
 

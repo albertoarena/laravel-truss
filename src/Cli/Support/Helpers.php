@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss\Cli\Support;
 
+use DateTimeZone;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
@@ -63,6 +65,24 @@ final class Helpers
         }
 
         return $container->make($abstract, $parameters);
+    }
+
+    /**
+     * The current moment.
+     *
+     * `SchemaCacheRepository` stamps `generated_at` with this, so without it
+     * every run of the binary fatals on its first cache write. It is the third
+     * Foundation helper the PHAR has to carry and the one a hand-written
+     * inventory missed, which is why the inventory is now derived from the
+     * source instead.
+     *
+     * Carbon directly rather than through the `Date` facade, as Foundation
+     * does: the facade exists so an application can swap the date class, and
+     * nothing swaps it here.
+     */
+    public static function now(DateTimeZone|string|null $timezone = null): Carbon
+    {
+        return Carbon::now($timezone);
     }
 
     /**
