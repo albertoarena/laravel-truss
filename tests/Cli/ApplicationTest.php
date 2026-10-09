@@ -18,7 +18,7 @@ it('ships the commands the binary can actually honour', function (string $name):
     // dataset in the change that implements it, so the list is always what the
     // binary really answers rather than what it is expected to answer one day.
     expect(Application::create()->has($name))->toBeTrue("Expected the binary to ship [{$name}].");
-})->with(['show', 'export']);
+})->with(['show', 'export', 'doctor', 'diff']);
 
 it('ships no open and no rebuild, and that is a decision rather than an omission', function (string $name): void {
     // `open` needs a route and an application URL to open, and framework-free

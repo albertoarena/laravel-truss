@@ -154,3 +154,29 @@ it('hands the export builder the same cache repository the command reports on', 
 
     expect($property->getValue($builder))->toBe($container->make(SchemaCacheRepository::class));
 });
+
+it('can hold a second connection, which is how a two-DSN diff works', function (): void {
+    // Two live databases in one container rather than two containers: booting
+    // a second one would replace the global instance and the facade
+    // application that the first is still resolving through. Both sides then
+    // read through the same services, which is the only reason the two halves
+    // of a diff are comparable.
+    $container = Bootstrapper::boot(CONNECTION);
+    Bootstrapper::registerConnection($container, 'other', CONNECTION);
+
+    $container->make('db')->connection(Bootstrapper::CONNECTION)->statement('create table here (id integer primary key)');
+    $container->make('db')->connection('other')->statement('create table there (id integer primary key)');
+
+    expect(Schema::connection(Bootstrapper::CONNECTION)->hasTable('here'))->toBeTrue()
+        ->and(Schema::connection('other')->hasTable('there'))->toBeTrue()
+        ->and(Schema::connection('other')->hasTable('here'))->toBeFalse();
+});
+
+it('leaves the default connection alone when a second one is added', function (): void {
+    // The second connection must not become the default, or every command
+    // would start reading the wrong database.
+    $container = Bootstrapper::boot(CONNECTION);
+    Bootstrapper::registerConnection($container, 'other', CONNECTION);
+
+    expect(config('database.default'))->toBe(Bootstrapper::CONNECTION);
+});

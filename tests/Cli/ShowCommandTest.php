@@ -78,16 +78,19 @@ it('prefers the explicit option over the environment', function (): void {
 });
 
 it('says how to supply a connection when given none', function (): void {
+    // 2 rather than 1, and every command in the binary agrees on it: 1 is
+    // reserved for a verdict about the schema (doctor findings, export drift),
+    // so a usage error must not be able to impersonate one.
     $tester = trussCliTester('show');
 
-    expect($tester->execute([]))->toBe(Command::FAILURE)
+    expect($tester->execute([]))->toBe(2)
         ->and($tester->getDisplay())->toContain('TRUSS_DSN');
 });
 
 it('reports an unusable connection string as a sentence, not a stack trace', function (): void {
     $tester = trussCliTester('show');
 
-    expect($tester->execute(['--dsn' => 'shop']))->toBe(Command::FAILURE)
+    expect($tester->execute(['--dsn' => 'shop']))->toBe(2)
         ->and($tester->getDisplay())->toContain('could not be understood')
         ->and($tester->getDisplay())->not->toContain('#0 ');
 });
@@ -101,7 +104,7 @@ it('exits cleanly on an unreachable database instead of replaying migrations', f
     $tester = trussCliTester('show');
     $status = $tester->execute(['--dsn' => 'mysql://truss:hunter2@127.0.0.1:1/shop']);
 
-    expect($status)->toBe(Command::FAILURE)
+    expect($status)->toBe(2)
         ->and($tester->getDisplay())->toContain('127.0.0.1')
         ->and($tester->getDisplay())->toContain('mysql')
         ->and($tester->getDisplay())->not->toContain('migrator');

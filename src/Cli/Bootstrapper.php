@@ -149,6 +149,29 @@ final class Bootstrapper
     }
 
     /**
+     * Add a second live connection to an already booted container.
+     *
+     * This is how the two-DSN diff works, and one container rather than two is
+     * the whole point: booting a second would replace the global instance and
+     * the facade application the first is still resolving through, so the two
+     * halves of the comparison would be read by different wiring. Here both
+     * sides go through the same services, which is what makes them comparable.
+     *
+     * A connection is only a config entry, exactly as the Capsule writes it, so
+     * the manager builds it on demand. **The default connection is deliberately
+     * left alone**, or every command would start reading the wrong database.
+     *
+     * @param  array<string, mixed>  $connection
+     */
+    public static function registerConnection(Container $container, string $name, array $connection): void
+    {
+        $config = $container->make('config');
+        $connections = (array) $config->get('database.connections', []);
+        $connections[$name] = $connection;
+        $config->set('database.connections', $connections);
+    }
+
+    /**
      * @param  array<string, mixed>  $connection
      */
     private static function registerDatabase(Container $container, array $connection): void

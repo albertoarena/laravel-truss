@@ -26,6 +26,14 @@ use Throwable;
  * is `TRUSS_DSN`, and the flag exists because sometimes you are typing one
  * command against one database and know what you are doing.
  *
+ * **Every failure here exits 2, never 1.** That is the one thing in this class
+ * worth stating twice: 1 is reserved for a verdict about the schema, which is
+ * doctor findings at or above the fail level and an export that has drifted.
+ * A CI job reading 1 from `truss doctor` concludes the structure has errors, so
+ * an unreachable host returning 1 would report a schema problem that does not
+ * exist and hide an infrastructure one that does. The artisan commands already
+ * draw this line, where 2 is a configuration, connection or snapshot error.
+ *
  * **Reachability is checked here rather than left to the package.**
  * `SnapshotBuilder` answers an unreachable connection by replaying the
  * application's migrations on in-memory SQLite, which is the right answer
@@ -61,7 +69,7 @@ abstract class ConnectionCommand extends Command
         if ($dsn === '') {
             $errors->writeln('<error>No database to read.</error> Set TRUSS_DSN, or pass --dsn=pgsql://user:pass@host/db.');
 
-            return self::FAILURE;
+            return self::INVALID;
         }
 
         try {
@@ -69,7 +77,7 @@ abstract class ConnectionCommand extends Command
         } catch (InvalidDsn $e) {
             $errors->writeln('<error>'.$e->getMessage().'</error>');
 
-            return self::FAILURE;
+            return self::INVALID;
         }
 
         $container = Bootstrapper::boot($connection);
@@ -78,7 +86,7 @@ abstract class ConnectionCommand extends Command
             $errors->writeln('<error>Truss could not reach the database:</error> '.Dsn::describe($connection).'.');
             $errors->writeln('Check the host, the port, and whether this machine needs a VPN or an allow-listed address.');
 
-            return self::FAILURE;
+            return self::INVALID;
         }
 
         return $this->handle($input, $output, $container);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AlbertoArena\Truss\Cli;
 
+use AlbertoArena\Truss\Cli\Commands\DiffCommand;
+use AlbertoArena\Truss\Cli\Commands\DoctorCommand;
 use AlbertoArena\Truss\Cli\Commands\ExportCommand;
 use AlbertoArena\Truss\Cli\Commands\ShowCommand;
 use Symfony\Component\Console\Application as SymfonyApplication;
@@ -32,6 +34,8 @@ final class Application extends SymfonyApplication
         $application->addCommands([
             new ShowCommand,
             new ExportCommand,
+            new DoctorCommand,
+            new DiffCommand,
         ]);
 
         return $application;

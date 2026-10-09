@@ -10,6 +10,7 @@ use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /*
@@ -191,4 +192,93 @@ it('differs on HTML only in the connection name that doctor findings carry', fun
         ->and($cli['doctor']['findings'][0]['connection'])->toBe('truss')
         ->and($artisan['doctor']['findings'][0]['connection'])->toBe('parity')
         ->and($cli['doctor']['findings'][0]['fingerprint'])->not->toBe($artisan['doctor']['findings'][0]['fingerprint']);
+});
+
+/**
+ * The same doctor run through both surfaces.
+ *
+ * @return array{artisan: string, cli: string}
+ */
+function parityDoctor(string $format, string $database): array
+{
+    $application = Container::getInstance();
+
+    config(['database.connections.parity' => ['driver' => 'sqlite', 'database' => $database, 'prefix' => ''], 'database.default' => 'parity']);
+
+    $artisan = new BufferedOutput;
+    Artisan::call('truss:doctor', ['--format' => $format, '--fail-on' => 'never'], $artisan);
+
+    try {
+        Bootstrapper::boot(Dsn::parse('sqlite:'.$database));
+
+        $tester = new CommandTester(Application::create()->find('doctor'));
+        $tester->execute(['--dsn' => 'sqlite:'.$database, '--format' => $format, '--fail-on' => 'never']);
+    } finally {
+        Container::setInstance($application);
+        Facade::clearResolvedInstances();
+        Facade::setFacadeApplication($application);
+    }
+
+    return ['artisan' => $artisan->fetch(), 'cli' => $tester->getDisplay()];
+}
+
+it('prints the same doctor report through both surfaces', function (): void {
+    // Byte for byte, and it can be: ConsoleFormatter builds the whole report
+    // into its own buffer, emits no colour, and never names the connection, so
+    // neither command contributes anything of its own.
+    $report = parityDoctor('console', $this->database);
+
+    expect(trim($report['cli']))->toBe(trim($report['artisan']))
+        ->and($report['cli'])->toContain('TRUSS-IDX-001');
+});
+
+it('finds the same things in the same order, which is the half an order-blind test would miss', function (): void {
+    // The plan asks for the findings AND their ordering, because a report whose
+    // rows are right but shuffled is still a different artifact to anything
+    // diffing it, and ordering bugs are exactly what a set comparison hides.
+    $report = parityDoctor('json', $this->database);
+
+    $identity = static fn (string $json): array => array_map(
+        static fn (array $f): array => [$f['code'], $f['table'], $f['column'], $f['severity']],
+        (array) json_decode($json, true, 512, JSON_THROW_ON_ERROR)['findings'],
+    );
+
+    expect($identity($report['cli']))->toBe($identity($report['artisan']))
+        ->and($identity($report['cli']))->not->toBeEmpty();
+});
+
+it('agrees on the severity summary, which is what a CI gate reads', function (): void {
+    $report = parityDoctor('json', $this->database);
+
+    $summary = static fn (string $json): array => (array) json_decode($json, true, 512, JSON_THROW_ON_ERROR)['summary'];
+
+    expect($summary($report['cli']))->toBe($summary($report['artisan']));
+});
+
+it('differs in the doctor JSON only by the connection name, and here that is correct', function (): void {
+    // The same two values that make an HTML export environment-dependent are
+    // present here too, and this is where they belong. A doctor report is about
+    // a named live connection, so naming it is the point, and the fingerprint
+    // is the suppression identity that has to differ per connection. An export
+    // is a committed artifact and must not carry either. The distinction is the
+    // whole argument of plans/html-export-determinism.md.
+    $report = parityDoctor('json', $this->database);
+
+    $findings = static fn (string $json): array => (array) json_decode($json, true, 512, JSON_THROW_ON_ERROR)['findings'];
+
+    $cli = $findings($report['cli']);
+    $artisan = $findings($report['artisan']);
+
+    expect($cli[0]['connection'])->toBe('truss')
+        ->and($artisan[0]['connection'])->toBe('parity')
+        ->and($cli[0]['fingerprint'])->not->toBe($artisan[0]['fingerprint']);
+
+    // Everything else about the finding is identical.
+    foreach ($cli as $i => $finding) {
+        unset($finding['connection'], $finding['fingerprint']);
+        $expected = $artisan[$i];
+        unset($expected['connection'], $expected['fingerprint']);
+
+        expect($finding)->toBe($expected);
+    }
 });
