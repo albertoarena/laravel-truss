@@ -1,6 +1,11 @@
 # Dependencies
 /vendor/
-composer.lock
+# The package's own lock, and only it: no leading slash would match at every
+# level, which swallowed build/composer.lock. That one IS committed, because it
+# is the bill of materials of a binary people download rather than noise for a
+# library's consumers, and without it two builds of one tag can bundle
+# different Illuminate patch versions under the same version number.
+/composer.lock
 /node_modules/
 /package-lock.json
 

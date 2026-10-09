@@ -34,7 +34,18 @@ if ($failure !== null) {
 // The second path is for a checkout installed as a dependency of something
 // else, which is not a supported way to run the binary but is a cheap thing to
 // tolerate.
-foreach ([__DIR__.'/../vendor/autoload.php', __DIR__.'/../../../autoload.php'] as $autoload) {
+foreach ([
+    // A git checkout: the package's own vendor, which carries the framework.
+    __DIR__.'/../vendor/autoload.php',
+    // Inside the PHAR, and in a local build: the runtime set build/composer.json
+    // declares. Its generated autoloader resolves the package source as
+    // $baseDir/../src, so the archive keeps the repository's shape rather than
+    // flattening vendor to the root, or that path would climb out of the PHAR.
+    __DIR__.'/../build/vendor/autoload.php',
+    // A checkout installed as somebody else's dependency. Not a supported way
+    // to run the binary, and a cheap thing to tolerate.
+    __DIR__.'/../../../autoload.php',
+] as $autoload) {
     if (file_exists($autoload)) {
         require $autoload;
 

@@ -22,7 +22,7 @@ it('keeps the console layer out of the dist archive', function (string $path) {
     // published package carrying Symfony Console and the Illuminate CLI
     // dependencies that build/composer.json pins for the PHAR alone.
     expect(exportIgnoreIsSetFor($path))->toBeTrue("Expected {$path} to be export-ignored.");
-})->with(['src/Cli', 'bin', 'build']);
+})->with(['src/Cli', 'bin', 'build', 'box.json']);
 
 it('still ships the runtime the package needs', function (string $path) {
     // The guard above is one .gitattributes line away from excluding something
@@ -80,9 +80,12 @@ it('ships no console layer in the archive a release is built from', function (st
         $this->markTestSkipped("[{$path}] is not tracked yet, so asserting its absence proves nothing.");
     }
 
+    // Prefix for a directory, exact match for a file: box.json is a file, and
+    // asking whether an entry starts with "box.json/" would pass whatever the
+    // attribute said.
     $shipped = array_values(array_filter(
         distArchiveEntries(),
-        fn (string $entry): bool => str_starts_with($entry, $path.'/'),
+        fn (string $entry): bool => $entry === $path || str_starts_with($entry, $path.'/'),
     ));
 
     expect($shipped)->toBe([], "Expected no {$path} entries in the dist archive.");
