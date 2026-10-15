@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use AlbertoArena\Truss\Tests\Support\FunctionInventory;
+use Composer\Semver\Semver;
 
 /*
  * The PHAR's runtime dependency manifest, guarded.
@@ -242,4 +243,34 @@ it('names a real path and a reason for everything it treats as unreachable', fun
             ->toBeTrue("src/{$path} is on the unreachable list but does not exist.")
             ->and(trim($reason))->not->toBeEmpty("src/{$path} needs a reason, not just an entry.");
     }
+});
+
+it('resolves the lock for the floor, not for whichever PHP ran composer', function (): void {
+    // Found 15/10/2026 by the first hand-run of the release workflow: the lock
+    // had been written on PHP 8.4, so Composer picked symfony/clock, string and
+    // translation 8.x, which need 8.4.1. The binary promised 8.2 and died in
+    // Composer's platform check on 8.2 and 8.3. Pinning the platform makes the
+    // resolver answer for the floor whatever PHP a maintainer happens to run.
+    $package = (array) json_decode((string) file_get_contents(dirname(__DIR__, 2).'/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+    $floor = ltrim((string) $package['require']['php'], '^~>=');
+
+    expect(buildManifest()['config']['platform']['php'] ?? null)->toBe($floor.'.0');
+});
+
+it('locks nothing that refuses to run on the PHP floor', function (): void {
+    // The check the platform pin exists for, asked of the lock itself, because
+    // the lock is what the release workflow installs and the binary carries.
+    $lock = (array) json_decode((string) file_get_contents(dirname(__DIR__, 2).'/build/composer.lock'), true, 512, JSON_THROW_ON_ERROR);
+    $floor = ltrim((string) (buildRequires()['php'] ?? ''), '^~>=').'.0';
+    $refusing = [];
+
+    foreach ((array) $lock['packages'] as $locked) {
+        $constraint = $locked['require']['php'] ?? null;
+
+        if ($constraint !== null && ! Semver::satisfies($floor, $constraint)) {
+            $refusing[] = "{$locked['name']} {$locked['version']} needs php {$constraint}";
+        }
+    }
+
+    expect($refusing)->toBe([]);
 });
