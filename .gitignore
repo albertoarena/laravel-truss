@@ -1,6 +1,11 @@
 # Dependencies
 /vendor/
-composer.lock
+# The package's own lock, and only it: no leading slash would match at every
+# level, which swallowed build/composer.lock. That one IS committed, because it
+# is the bill of materials of a binary people download rather than noise for a
+# library's consumers, and without it two builds of one tag can bundle
+# different Illuminate patch versions under the same version number.
+/composer.lock
 /node_modules/
 /package-lock.json
 
@@ -12,8 +17,14 @@ composer.lock
 # Test / tooling caches
 /.phpunit.cache/
 .phpunit.result.cache
-/build/
 /coverage/
+
+# build/ holds the PHAR's dependency manifest and is tracked source, so only
+# what Composer and Box write inside it is ignored. This entry used to be
+# /build/ outright, which silently swallowed build/composer.json the day it
+# was added: git add -A reported nothing and the manifest existed on one disk.
+/build/vendor/
+/truss.phar
 
 # Private/local docs (note: the tracked docs/ folder is NOT ignored).
 # No trailing slash on purpose: a trailing slash matches directories only, so

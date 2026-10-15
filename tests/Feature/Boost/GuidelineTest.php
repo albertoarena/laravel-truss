@@ -77,6 +77,24 @@ it('keeps the MCP server out of standing context', function () use ($guideline) 
         ->not->toContain('MCP');
 });
 
+it('keeps the framework-free binary out of standing context too', function () use ($guideline) {
+    // Same reasoning as the MCP server above, and it applies more strongly. An
+    // agent reading this file is inside a Laravel application by definition,
+    // because Boost is Laravel tooling: it has artisan, it needs no connection
+    // string, and it already gets the application's own connection config. A
+    // Homebrew-installed binary is outside the application entirely, so the
+    // agent cannot act on the mention without installing software on somebody
+    // else's machine and inventing a DSN.
+    //
+    // The binary's audience is people and agents working where there is no
+    // Laravel application, and reaching them is the README's job and the docs
+    // site's. Asserted as an absence so that adding it has to be a decision.
+    expect($guideline())
+        ->not->toContain('brew')
+        ->not->toContain('truss.phar')
+        ->not->toContain('--dsn');
+});
+
 it('keeps the flags that narrow a large schema', function () use ($guideline) {
     // The format list and --check moved to the skill, which loads on demand.
     // These three stayed, because choosing the right slice of a large schema is

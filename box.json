@@ -1,0 +1,16 @@
+{
+    "main": "bin/truss",
+    "output": "truss.phar",
+    "banner": false,
+    "git-version": "truss_version",
+    "compression": "GZ",
+    "check-requirements": false,
+    "dump-autoload": false,
+    "finder": [
+        { "in": ["src"], "name": "*.php" },
+        { "in": ["config"], "name": "*.php" },
+        { "in": ["resources"] },
+        { "in": ["bin"], "name": "php-floor.php" },
+        { "in": ["build/vendor"] }
+    ]
+}

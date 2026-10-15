@@ -103,7 +103,34 @@ no question rather than a writing task.
    Confirm the exact title with the maintainer before publishing, along
    with the notes, since a release is outward facing and awkward to restate.
 
-7. **Post-release.** Packagist picks up the new tag on its webhook sync (its
+7. **Confirm CI attached the PHAR, from v1.15 onwards.** Pushing the tag starts
+   the `release` workflow, which compiles `truss.phar`, smokes it on PHP 8.2,
+   8.4, 8.5 and asserts the floor guard refuses on 8.1. **It attaches nothing at
+   that point**, because the release does not exist yet: publishing the release
+   in step 6 starts a second run, and that one uploads the asset.
+
+   So the order is the one already written above, and the check is after step 6:
+   `gh release view vX.Y.Z` lists `truss.phar`, and `gh run list --workflow=release`
+   shows the published-release run green. **A red build here is a release that
+   ships a package without its binary**, which is recoverable (re-run the
+   workflow) but only if somebody looks.
+
+   **The tag-push run is the early warning and is worth reading before writing
+   the notes.** If the binary is broken, that run says so while the release is
+   still unpublished.
+
+8. **Confirm the tap formula names the tag just pushed**, on any release that
+   attaches a PHAR. `albertoarena/homebrew-truss`, `Formula/truss.rb`: both the
+   `url` version and the `sha256` move, every time. **The check is that CI did
+   it, never that somebody remembered to**, and a hand edit papers over a broken
+   bump and guarantees the next release is stale too. A tap naming the previous
+   version installs the old binary while `brew upgrade` reports nothing to do,
+   so it fails silently in both directions and is worse than having no tap.
+
+   Compare the digest: the `release` workflow prints the SHA-256 it attached,
+   and the formula must carry the same one.
+
+9. **Post-release.** Packagist picks up the new tag on its webhook sync (its
    "Update" button forces it); this is automatic, just verify. No manual version
    bump exists in `composer.json`; the git tag is the source of truth. The docs
    site is a separate repo (`albertoarena/laravel-truss-docs`) and does NOT
@@ -111,7 +138,7 @@ no question rather than a writing task.
    tag, so trigger a docs rebuild there (push or dispatch its Publish workflow)
    to pull the newly released frontend into the demo.
 
-8. **Bump the docs site's version constant, every single release.** In
+10. **Bump the docs site's version constant, every single release.** In
    `albertoarena/laravel-truss-docs`, `src/config/package.js` holds
    `PACKAGE_VERSION` as a hand-maintained literal, and the landing page badge
    and the structured data both render from it. It does **not** follow the tag.
@@ -128,11 +155,11 @@ no question rather than a writing task.
    went red while Publish succeeded and the stale badge shipped anyway. The guard
    tells you afterwards; only doing the bump prevents it.
 
-   Order matters, for the reason in step 7: publish the package release first, so
+   Order matters, for the reason in step 9: publish the package release first, so
    the docs prebuild resolves the new tag, then bump the constant and let the
    rebuild carry both.
 
-9. **Confirm the site documents what shipped, not just which version.** Step 8 is
+11. **Confirm the site documents what shipped, not just which version.** Step 10 is
    a constant; this is the content. Walk the release's changelog entries and
    check each user-facing one has somewhere on trussphp.com that says so: the
    configuration reference for a config key, the command reference for a command,
@@ -143,7 +170,7 @@ no question rather than a writing task.
    Review the built site, not only the diff. The two layout paths mean a page can
    read correctly in source and render wrong.
 
-10. **Update the public roadmap.** In the docs repo, `src/data/roadmap.ts` moves
+12. **Update the public roadmap.** In the docs repo, `src/data/roadmap.ts` moves
     whatever the release delivered into Shipped with its version, splitting a
     partially delivered item rather than moving it whole. This is in the root
     `CLAUDE.md` too; it is repeated here because it is part of finishing a

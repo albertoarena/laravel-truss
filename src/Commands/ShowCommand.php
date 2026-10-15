@@ -6,6 +6,7 @@ namespace AlbertoArena\Truss\Commands;
 
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Commands\Concerns\WarnsWhenUncached;
+use AlbertoArena\Truss\Support\ExcludedTables;
 use Illuminate\Console\Command;
 
 /**
@@ -33,9 +34,11 @@ class ShowCommand extends Command
         // The cached snapshot is deliberately unfiltered, so that changing the
         // exclusion list needs no rebuild. Filtering is the caller's job, and
         // this caller skipped it for a long time while its docblock said it did
-        // not: the diagram hid a table and the terminal printed it.
+        // not: the diagram hid a table and the terminal printed it. The read
+        // now lives in ExcludedTables, shared with the binary's own show, so
+        // the two cannot answer differently about one database.
         $known = $snapshot['tables'] ?? [];
-        $tables = $this->withoutExcludedTables($known, $connection);
+        $tables = ExcludedTables::filter($known, $connection);
 
         if ($tables === []) {
             $this->warn($known === []
@@ -75,24 +78,5 @@ class ShowCommand extends Command
         }
 
         return '<info>'.$shown.'</info> of <info>'.$known.'</info> '.($known === 1 ? 'table' : 'tables');
-    }
-
-    /**
-     * Drop any table excluded globally or for this connection.
-     *
-     * @param  list<array<string, mixed>>  $tables
-     * @return list<array<string, mixed>>
-     */
-    private function withoutExcludedTables(array $tables, string $connection): array
-    {
-        $excluded = [
-            ...(array) config('truss.excluded_tables', []),
-            ...(array) config("truss.connections.{$connection}.excluded_tables", []),
-        ];
-
-        return array_values(array_filter(
-            $tables,
-            fn (array $table): bool => ! in_array($table['name'], $excluded, true),
-        ));
     }
 }

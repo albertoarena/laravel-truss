@@ -7,6 +7,7 @@ namespace AlbertoArena\Truss\Commands;
 use AlbertoArena\Truss\Cache\SchemaCacheRepository;
 use AlbertoArena\Truss\Commands\Concerns\WarnsWhenUncached;
 use AlbertoArena\Truss\Diff\BaselineStore;
+use AlbertoArena\Truss\Diff\DiffRenderer;
 use AlbertoArena\Truss\Diff\SchemaDiffer;
 use Illuminate\Console\Command;
 
@@ -72,120 +73,13 @@ class DiffCommand extends Command
 
         $this->line("Schema changes on <info>{$name}</info> since the last migration:");
 
-        $this->printTableList('Added tables', '+', $diff['tables_added']);
-        $this->printTableList('Removed tables', '-', $diff['tables_removed']);
-        $this->printChangedTables($diff['tables_changed']);
+        // The headline above is this command's own, because it answers "since
+        // the last migration". The body is shared with the binary's two-DSN
+        // diff, which asks a different question about the same shapes.
+        foreach (DiffRenderer::body($diff) as $line) {
+            $this->line($line);
+        }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * @param  list<array{name: string}>  $tables
-     */
-    private function printTableList(string $heading, string $marker, array $tables): void
-    {
-        if ($tables === []) {
-            return;
-        }
-
-        $this->newLine();
-        $this->line("<comment>{$heading}:</comment>");
-
-        foreach ($tables as $table) {
-            $this->line("  {$marker} {$table['name']}");
-        }
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $tables
-     */
-    private function printChangedTables(array $tables): void
-    {
-        if ($tables === []) {
-            return;
-        }
-
-        $this->newLine();
-        $this->line('<comment>Changed tables:</comment>');
-
-        foreach ($tables as $table) {
-            $this->line("  ~ {$table['name']}");
-
-            foreach ($this->describeTableChanges($table) as $line) {
-                $this->line("      {$line}");
-            }
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $table
-     * @return list<string>
-     */
-    private function describeTableChanges(array $table): array
-    {
-        $lines = [];
-
-        foreach ($table['columns_added'] as $column) {
-            $lines[] = "column added: {$column['name']} ({$column['type']})";
-        }
-        foreach ($table['columns_removed'] as $column) {
-            $lines[] = "column removed: {$column['name']}";
-        }
-        foreach ($table['columns_changed'] as $column) {
-            $lines[] = "column changed: {$column['name']} (".$this->describeChanges($column['changes']).')';
-        }
-
-        foreach ($table['indexes_added'] as $index) {
-            $lines[] = "index added: {$index['name']}";
-        }
-        foreach ($table['indexes_removed'] as $index) {
-            $lines[] = "index removed: {$index['name']}";
-        }
-        foreach ($table['indexes_changed'] as $index) {
-            $lines[] = "index changed: {$index['name']}";
-        }
-
-        foreach ($table['foreign_keys_added'] as $fk) {
-            $lines[] = "foreign key added: {$fk['name']}";
-        }
-        foreach ($table['foreign_keys_removed'] as $fk) {
-            $lines[] = "foreign key removed: {$fk['name']}";
-        }
-        foreach ($table['foreign_keys_changed'] as $fk) {
-            $lines[] = "foreign key changed: {$fk['name']}";
-        }
-
-        if (isset($table['changes']['primary_key'])) {
-            $pk = $table['changes']['primary_key'];
-            $lines[] = 'primary key: ['.implode(', ', $pk['before']).'] -> ['.implode(', ', $pk['after']).']';
-        }
-
-        return $lines;
-    }
-
-    /**
-     * Render a per-field before/after change map as "field: before -> after".
-     *
-     * @param  array<string, array{before: mixed, after: mixed}>  $changes
-     */
-    private function describeChanges(array $changes): string
-    {
-        $parts = [];
-        foreach ($changes as $field => $change) {
-            $parts[] = "{$field}: ".$this->scalar($change['before']).' -> '.$this->scalar($change['after']);
-        }
-
-        return implode(', ', $parts);
-    }
-
-    private function scalar(mixed $value): string
-    {
-        return match (true) {
-            $value === null => 'null',
-            $value === true => 'true',
-            $value === false => 'false',
-            is_array($value) => '['.implode(', ', $value).']',
-            default => (string) $value,
-        };
     }
 }
