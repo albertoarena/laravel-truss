@@ -39,6 +39,7 @@ afterEach(function (): void {
     Facade::clearResolvedInstances();
     Facade::setFacadeApplication(null);
     putenv('TRUSS_DSN');
+    putenv('TRUSS_AGAINST_DSN');
 });
 
 it('reports two identical databases as having no differences', function (): void {
@@ -168,4 +169,41 @@ it('has no --connection option, because both sides are connection strings', func
 
     expect($definition->hasOption('connection'))->toBeFalse()
         ->and($definition->hasOption('against'))->toBeTrue();
+});
+
+it('reads the database to compare against from TRUSS_AGAINST_DSN', function (): void {
+    // The second connection string is a credential exactly like the first, so
+    // it gets the same environment path: an argument is visible in ps and in
+    // shell history, which is why TRUSS_DSN is the documented route.
+    putenv('TRUSS_AGAINST_DSN=sqlite:'.diffFixture(['create table a (id integer primary key)']));
+
+    $tester = trussCliTester('diff');
+    $status = $tester->execute([
+        '--dsn' => 'sqlite:'.diffFixture(['create table a (id integer primary key)', 'create table b (id integer primary key)']),
+    ]);
+
+    expect($status)->toBe(Command::SUCCESS)
+        ->and($tester->getDisplay())->toMatch('/Added tables:\s*\n\s*\+ b/');
+});
+
+it('lets --against override TRUSS_AGAINST_DSN, as --dsn overrides TRUSS_DSN', function (): void {
+    putenv('TRUSS_AGAINST_DSN=sqlite:/nowhere/that/exists.sqlite');
+    $schema = ['create table a (id integer primary key)'];
+
+    $tester = trussCliTester('diff');
+    $status = $tester->execute([
+        '--dsn' => 'sqlite:'.diffFixture($schema),
+        '--against' => 'sqlite:'.diffFixture($schema),
+    ]);
+
+    expect($status)->toBe(Command::SUCCESS)
+        ->and($tester->getDisplay())->toContain('No structural differences');
+});
+
+it('names both ways of passing the second database when it has neither', function (): void {
+    $tester = trussCliTester('diff');
+
+    expect($tester->execute(['--dsn' => 'sqlite:'.diffFixture(['create table a (id integer primary key)'])]))->toBe(2)
+        ->and($tester->getDisplay())->toContain('TRUSS_AGAINST_DSN')
+        ->and($tester->getDisplay())->toContain('--against');
 });
