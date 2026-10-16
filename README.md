@@ -288,6 +288,37 @@ They are additive, and nobody has to choose just one:
 
 Boost cannot install or register the Truss MCP server for you (Boost writes only its own MCP entries), so the two paths stay independent. All three are read-only and structure only.
 
+## Without Laravel: the truss binary
+
+Everything above runs inside a Laravel application. The `truss` binary does not need one: give it a connection string and it reads the database directly, so it works for a Symfony or plain PHP project, a CI job, or anyone who has a database and its credentials. It needs PHP 8.2 or newer, and nothing else.
+
+Each release attaches it as `truss.phar`:
+
+```bash
+curl -L -o truss https://github.com/albertoarena/laravel-truss/releases/latest/download/truss.phar
+chmod +x truss
+./truss --version
+```
+
+Move it onto your `PATH` (for example `/usr/local/bin`) to run it as `truss`, as the examples below do.
+
+It reads the connection from `TRUSS_DSN`. A `--dsn` option exists too, but an argument lands in your shell history and is visible to anyone running `ps` on the machine, so prefer the variable:
+
+```bash
+export TRUSS_DSN="pgsql://user:pass@db.example.com:5432/shop"   # also mysql://, mariadb://, or a SQLite file path
+
+truss show                                   # the structure as a table
+truss export --format=dbml --output=schema.dbml
+truss doctor --fail-on=warning               # the same rules as truss:doctor
+truss diff --against="$STAGING_DSN"          # compare two live databases
+```
+
+`diff` is the one thing the binary does that the package cannot. Inside an application, `truss:diff` compares the structure against the last migration. Given two connection strings, it shows what differs between two databases right now, such as staging and production.
+
+The commands take the same options as their artisan counterparts and run the same code, so the text exports and the doctor report are byte-identical to what artisan prints. The exit codes match too: `0` clean, `1` doctor findings at the fail level or export drift with `--check`, and `2` for anything else, including a bad connection string, an unreachable host, an unknown option, or a PHP older than 8.2. An unreachable database can never be read as a schema with problems. The full reference is on the [docs site](https://trussphp.com/).
+
+It has no `open` command (there is no dashboard to open) and no `rebuild` (there is no cache to keep). And it is unrelated to the BSD and Solaris `truss` syscall tracer, which shares the name.
+
 ## Theming
 
 Truss ships a light and dark "blueprint" theme. To match the app it is embedded in, redefine its colours and fonts from config under `truss.theme`. Everything is optional: you set a few semantic knobs and the rest stay on the default, so a handful of values re-skins the whole dashboard (chrome and diagram) in both light and dark.
@@ -327,7 +358,7 @@ A cache store Truss cannot reach costs speed, never correctness. If the store is
 
 ## Security
 
-Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. If you discover a security issue, please email hello@albertoarena.it rather than opening a public issue.
+Truss exposes structure only and never queries row data. Access is protected by the fixed `viewTruss` gate. The [standalone binary](#without-laravel-the-truss-binary) has no gate: there is no route to protect, and whoever runs it already holds the database credentials. It reads structure only, like the package, and its error messages never contain the connection string. If you discover a security issue, please email hello@albertoarena.it rather than opening a public issue.
 
 ## Related packages
 
