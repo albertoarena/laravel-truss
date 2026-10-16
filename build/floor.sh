@@ -43,6 +43,7 @@ fail() {
 }
 
 [ "$STATUS" -ne 0 ] || fail 'the binary ran: this lane must be run on a PHP below the floor'
+[ "$STATUS" -eq 2 ] || fail 'the refusal must exit 2: 1 is a verdict about the schema'
 
 case "$OUTPUT" in
     *"$FLOOR"*) ;;

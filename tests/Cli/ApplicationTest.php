@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AlbertoArena\Truss\Cli\Application;
 use AlbertoArena\Truss\Cli\Version;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 it('is named for the tool rather than for the file', function (): void {
     expect(Application::create()->getName())->toBe('Truss');
@@ -29,3 +31,21 @@ it('ships no open and no rebuild, and that is a decision rather than an omission
     // rather than merely left out, so that adding one is a deliberate act.
     expect(Application::create()->has($name))->toBeFalse("The binary must not ship [{$name}].");
 })->with(['open', 'rebuild']);
+
+it('exits 2 when it cannot understand the command line, never 1', function (array $argv): void {
+    // 1 is a verdict about the schema: doctor findings at the fail level, or
+    // export drift. Symfony's default for a usage error is also 1, so a typo in
+    // a CI script would read as "the structure has errors". Found 16/10/2026
+    // while writing the Homebrew formula's test.
+    $application = Application::create();
+    $application->setAutoExit(false);
+
+    $output = new BufferedOutput;
+
+    expect($application->run(new ArrayInput($argv), $output))->toBe(2)
+        ->and($output->fetch())->not->toBeEmpty();
+})->with([
+    'an unknown command' => [['command' => 'nosuchcmd']],
+    'an unexpected argument' => [['command' => 'doctor', 'bogus' => 'bogus']],
+    'an unknown option' => [['command' => 'show', '--nope' => true]],
+]);

@@ -52,3 +52,11 @@ it('can be loaded twice without redeclaring', function (): void {
 
     expect(function_exists('truss_php_floor_failure'))->toBeTrue();
 });
+
+it('refuses with exit 2, because 1 is a verdict about the schema', function (): void {
+    // An old interpreter is not a finding. Exit 1 would tell CI the structure
+    // has errors when the binary never looked at it.
+    expect(truss_php_floor_exit_code())->toBe(2)
+        ->and((string) file_get_contents(dirname(__DIR__, 2).'/bin/truss'))
+        ->toContain('exit(truss_php_floor_exit_code());');
+});
