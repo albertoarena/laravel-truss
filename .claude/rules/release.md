@@ -130,6 +130,18 @@ no question rather than a writing task.
    Compare the digest: the `release` workflow prints the SHA-256 it attached,
    and the formula must carry the same one.
 
+   **v1.15.0 is the one exception, decided 16/10/2026, and it does not repeat.**
+   It is the first release to attach a PHAR, so there is no formula yet for a
+   bump job to edit, and a bump job written before one exists is a bump job
+   written untested. The order is therefore: v1.15.0 ships with no bump job in
+   `release.yml`; the formula then lands in the tap by a reviewed pull request,
+   pinned to the digest of v1.15.0's published asset and cross-checked against
+   the digest the build job printed; and the bump job lands before v1.15.1 is
+   tagged, after a dry run that rewrites the real formula to v1.15.0's own `url`
+   and `sha256` and produces an empty diff. **From v1.15.1 the check above
+   applies in full**, so a formula a human edited at v1.15.1 or later is a
+   broken bump, not this exception.
+
 9. **Post-release.** Packagist picks up the new tag on its webhook sync (its
    "Update" button forces it); this is automatic, just verify. No manual version
    bump exists in `composer.json`; the git tag is the source of truth. The docs
