@@ -27,7 +27,7 @@ $failure = truss_php_floor_failure(PHP_VERSION, '8.2');
 
 if ($failure !== null) {
     fwrite(STDERR, $failure.PHP_EOL);
-    exit(1);
+    exit(truss_php_floor_exit_code());
 }
 
 // Inside the PHAR and in a clone this is the package's own vendor directory.

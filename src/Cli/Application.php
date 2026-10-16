@@ -9,6 +9,10 @@ use AlbertoArena\Truss\Cli\Commands\DoctorCommand;
 use AlbertoArena\Truss\Cli\Commands\ExportCommand;
 use AlbertoArena\Truss\Cli\Commands\ShowCommand;
 use Symfony\Component\Console\Application as SymfonyApplication;
+use Symfony\Component\Console\Exception\ExceptionInterface;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * The console application the binary runs.
@@ -39,5 +43,29 @@ final class Application extends SymfonyApplication
         ]);
 
         return $application;
+    }
+
+    /**
+     * A command line it cannot understand exits 2, never 1.
+     *
+     * Symfony reports an unknown command, an unexpected argument or an unknown
+     * option with 1, and 1 is the binary's verdict about the schema: doctor
+     * findings at the fail level, or export drift. A typo in a CI script would
+     * otherwise read as "the structure has errors". The message is rendered
+     * exactly as Symfony renders it; only the status changes.
+     */
+    public function doRun(InputInterface $input, OutputInterface $output): int
+    {
+        try {
+            return parent::doRun($input, $output);
+        } catch (ExceptionInterface $e) {
+            if (! $this->areExceptionsCaught()) {
+                throw $e;
+            }
+
+            $this->renderThrowable($e, $output instanceof ConsoleOutputInterface ? $output->getErrorOutput() : $output);
+
+            return 2;
+        }
     }
 }

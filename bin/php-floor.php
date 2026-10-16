@@ -41,3 +41,17 @@ if (! function_exists('truss_php_floor_failure')) {
         return 'Truss needs PHP '.$required.' or newer, found '.$found.'. Install a newer PHP, or run Truss inside a Laravel application with the package instead.';
     }
 }
+
+if (! function_exists('truss_php_floor_exit_code')) {
+    /**
+     * The status the refusal exits with: 2, like every failure that is not a
+     * verdict about the schema. 1 means doctor findings or export drift, and
+     * an old interpreter is neither.
+     *
+     * @return int
+     */
+    function truss_php_floor_exit_code()
+    {
+        return 2;
+    }
+}
