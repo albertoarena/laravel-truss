@@ -302,7 +302,7 @@ chmod +x truss
 
 Move it onto your `PATH` (for example `/usr/local/bin`) to run it as `truss`, as the examples below do.
 
-It reads the connection from `TRUSS_DSN`. A `--dsn` option exists too, but an argument lands in your shell history and is visible to anyone running `ps` on the machine, so prefer the variable:
+It reads the connection from `TRUSS_DSN` (and, for `diff`, the second one from `TRUSS_AGAINST_DSN`). The `--dsn` and `--against` options exist too, but an argument lands in your shell history and is visible to anyone running `ps` on the machine, so prefer the variables:
 
 ```bash
 export TRUSS_DSN="pgsql://user:pass@db.example.com:5432/shop"   # also mysql://, mariadb://, or a SQLite file path
@@ -310,7 +310,7 @@ export TRUSS_DSN="pgsql://user:pass@db.example.com:5432/shop"   # also mysql://,
 truss show                                   # the structure as a table
 truss export --format=dbml --output=schema.dbml
 truss doctor --fail-on=warning               # the same rules as truss:doctor
-truss diff --against="$STAGING_DSN"          # compare two live databases
+TRUSS_AGAINST_DSN="$STAGING_DSN" truss diff  # compare two live databases
 ```
 
 `diff` is the one thing the binary does that the package cannot. Inside an application, `truss:diff` compares the structure against the last migration. Given two connection strings, it shows what differs between two databases right now, such as staging and production.

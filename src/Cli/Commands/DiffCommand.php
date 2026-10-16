@@ -56,7 +56,7 @@ final class DiffCommand extends ConnectionCommand
             'against',
             null,
             InputOption::VALUE_REQUIRED,
-            'The database to compare against, as a second connection string. --dsn is the current state; this is the baseline',
+            'The database to compare against, as a second connection string. --dsn is the current state; this is the baseline. Prefer TRUSS_AGAINST_DSN: an argument is visible in ps and in shell history',
         );
     }
 
@@ -64,18 +64,18 @@ final class DiffCommand extends ConnectionCommand
     {
         $errors = $this->errors($output);
 
-        $raw = $input->getOption('against');
+        $raw = $this->against($input);
 
-        if (! is_string($raw) || trim($raw) === '') {
-            $errors->writeln('<error>Nothing to compare against.</error> Pass a second connection string with --against.');
+        if ($raw === '') {
+            $errors->writeln('<error>Nothing to compare against.</error> Set TRUSS_AGAINST_DSN, or pass a second connection string with --against.');
             $errors->writeln('');
-            $errors->writeln('  Try: <comment>truss diff --dsn=$STAGING_DSN --against=$PRODUCTION_DSN</comment>');
+            $errors->writeln('  Try: <comment>TRUSS_DSN=$STAGING_DSN TRUSS_AGAINST_DSN=$PRODUCTION_DSN truss diff</comment>');
 
             return self::INVALID;
         }
 
         try {
-            $against = Dsn::parse(trim($raw));
+            $against = Dsn::parse($raw);
         } catch (InvalidDsn $e) {
             $errors->writeln('<error>'.$e->getMessage().'</error>');
 
@@ -122,6 +122,26 @@ final class DiffCommand extends ConnectionCommand
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The second connection string, read the way the first one is.
+     *
+     * It is a credential exactly like `--dsn`, so it gets the same environment
+     * path: an argument is visible in `ps` and in shell history. The option
+     * wins when both are set, as `--dsn` wins over `TRUSS_DSN`.
+     */
+    private function against(InputInterface $input): string
+    {
+        $option = $input->getOption('against');
+
+        if (is_string($option) && trim($option) !== '') {
+            return trim($option);
+        }
+
+        $environment = getenv('TRUSS_AGAINST_DSN');
+
+        return is_string($environment) ? trim($environment) : '';
     }
 
     /**
