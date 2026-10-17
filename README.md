@@ -315,7 +315,7 @@ TRUSS_AGAINST_DSN="$STAGING_DSN" truss diff  # compare two live databases
 
 `diff` is the one thing the binary does that the package cannot. Inside an application, `truss:diff` compares the structure against the last migration. Given two connection strings, it shows what differs between two databases right now, such as staging and production.
 
-The commands take the same options as their artisan counterparts and run the same code, so the text exports and the doctor report are byte-identical to what artisan prints. The exit codes match too: `0` clean, `1` doctor findings at the fail level or export drift with `--check`, and `2` for anything else, including a bad connection string, an unreachable host, an unknown option, or a PHP older than 8.2. An unreachable database can never be read as a schema with problems. The full reference is on the [docs site](https://trussphp.com/).
+The commands take the same options as their artisan counterparts and run the same code, so the text exports and the doctor report are byte-identical to what artisan prints. The exit codes match too: `0` clean, `1` doctor findings at the fail level or export drift with `--check`, and `2` for anything else, including a bad connection string, an unreachable host, an unknown option, or a PHP older than 8.2. An unreachable database can never be read as a schema with problems. The full reference is on the [docs site](https://trussphp.com/binary/commands/).
 
 It has no `open` command (there is no dashboard to open) and no `rebuild` (there is no cache to keep). And it is unrelated to the BSD and Solaris `truss` syscall tracer, which shares the name.
 
