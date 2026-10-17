@@ -129,7 +129,60 @@ class SchemaDiffer
      */
     private function diffColumns(array $baseline, array $current): array
     {
-        return $this->diffKeyed($baseline, $current, ['type', 'nullable', 'default']);
+        return $this->diffKeyed($baseline, $current, ['type', 'nullable', 'default'], [
+            'type' => $this->comparableType(...),
+            'default' => $this->comparableDefault(...),
+        ]);
+    }
+
+    /**
+     * The type as both MySQL and MariaDB would agree on it. MariaDB prints the
+     * integer display width MySQL 8 dropped (`int(11)` against `int`), and the
+     * width never changed what a column holds. Two widths do carry meaning and
+     * are kept: `tinyint(1)`, which both servers and Laravel read as boolean,
+     * and any width on a zerofill column, which decides the padding.
+     */
+    private function comparableType(mixed $type): mixed
+    {
+        if (! is_string($type)) {
+            return $type;
+        }
+
+        $type = strtolower($type);
+
+        if ($type === 'tinyint(1)' || str_contains($type, 'zerofill')) {
+            return $type;
+        }
+
+        return (string) preg_replace('/^(tinyint|smallint|mediumint|int|integer|bigint)\(\d+\)/', '$1', $type);
+    }
+
+    /**
+     * The default as both servers would agree on it. MariaDB writes a string
+     * default as an SQL literal (`'publish'`, with `''` for a quote inside),
+     * writes no default as the bare text NULL, and spells the current time as
+     * a call, `current_timestamp()`, where MySQL writes `CURRENT_TIMESTAMP`.
+     * A quoted `'NULL'` is a string default and stays one.
+     */
+    private function comparableDefault(mixed $default): mixed
+    {
+        if (! is_string($default)) {
+            return $default;
+        }
+
+        if (strcasecmp($default, 'NULL') === 0) {
+            return null;
+        }
+
+        if (preg_match("/^'((?:[^']|'')*)'$/s", $default, $literal) === 1) {
+            return str_replace("''", "'", $literal[1]);
+        }
+
+        if (preg_match('/^current_timestamp(?:\((\d*)\))?$/i', $default, $call) === 1) {
+            return ($call[1] ?? '') === '' ? 'current_timestamp' : 'current_timestamp('.$call[1].')';
+        }
+
+        return $default;
     }
 
     /**
@@ -141,9 +194,11 @@ class SchemaDiffer
      * @param  list<array<string, mixed>>  $baseline
      * @param  list<array<string, mixed>>  $current
      * @param  list<string>  $fields  the fields whose difference marks a change
+     * @param  array<string, callable(mixed): mixed>  $comparable  how to read each
+     *                                                             field before comparing it
      * @return array{0: list<array<string, mixed>>, 1: list<array<string, mixed>>, 2: list<array<string, mixed>>}
      */
-    private function diffKeyed(array $baseline, array $current, array $fields): array
+    private function diffKeyed(array $baseline, array $current, array $fields, array $comparable = []): array
     {
         $baselineByName = $this->byName($baseline);
         $currentByName = $this->byName($current);
@@ -157,7 +212,7 @@ class SchemaDiffer
                 continue;
             }
 
-            $fieldChanges = $this->fieldChanges($baselineByName[$name], $item, $fields);
+            $fieldChanges = $this->fieldChanges($baselineByName[$name], $item, $fields, $comparable);
 
             if ($fieldChanges !== []) {
                 $changed[] = ['name' => $name, 'changes' => $fieldChanges];
@@ -178,13 +233,16 @@ class SchemaDiffer
      * @param  array<string, mixed>  $before
      * @param  array<string, mixed>  $after
      * @param  list<string>  $fields
+     * @param  array<string, callable(mixed): mixed>  $comparable
      * @return array<string, array{before: mixed, after: mixed}>
      */
-    private function fieldChanges(array $before, array $after, array $fields): array
+    private function fieldChanges(array $before, array $after, array $fields, array $comparable): array
     {
         $changes = [];
         foreach ($fields as $field) {
-            if (($before[$field] ?? null) !== ($after[$field] ?? null)) {
+            $read = $comparable[$field] ?? fn (mixed $value): mixed => $value;
+
+            if ($read($before[$field] ?? null) !== $read($after[$field] ?? null)) {
                 $changes[$field] = ['before' => $before[$field] ?? null, 'after' => $after[$field] ?? null];
             }
         }
