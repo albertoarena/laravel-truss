@@ -10,6 +10,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Added
+
+- **The Homebrew tap follows every release.** Installed with `brew install albertoarena/truss/truss`, the binary now moves to each new release through `brew upgrade`, because publishing a release rewrites the tap's formula to the new `truss.phar` and its digest. The digest is read back from the published asset before anything is written, so the formula always describes the file you download. A release on an older line never moves the tap backwards.
+
 ## [1.15.0] - 2026-10-17
 
 ### Added

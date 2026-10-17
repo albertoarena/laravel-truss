@@ -86,23 +86,72 @@ it('asserts the floor guard on a PHP below the floor', function (): void {
         ->and(releaseWorkflow())->toContain('build/floor.sh');
 });
 
-it('runs the two scripts rather than inlining their work', function (string $script): void {
+it('runs the build scripts rather than inlining their work', function (string $script): void {
     // Both are executable by hand against a local compile. A workflow that
     // inlined these assertions could only ever be tested by releasing.
     expect(releaseWorkflow())->toContain($script)
         ->and(dirname(__DIR__, 2).'/'.$script)->toBeFile();
-})->with(['build/smoke.sh', 'build/floor.sh']);
+})->with(['build/smoke.sh', 'build/floor.sh', 'build/bump-formula.sh']);
 
 it('does not attach anything the smoke lanes have not passed', function (): void {
     // needs: both, or a broken binary reaches a release page.
     expect(releaseWorkflow())->toContain('needs: [smoke, floor]');
 });
 
-it('says where the formula bump goes and why it is not here yet', function (): void {
-    // The one deliberate hole in this workflow. A bump written before there is
-    // a release to bump is a bump written untested, which is how a tap
-    // silently stops upgrading; and an undocumented hole is how it is
-    // forgotten instead.
-    expect(releaseWorkflow())->toContain('HOMEBREW_TAP_TOKEN')
-        ->and(releaseWorkflow())->toContain('Formula/truss.rb');
+/**
+ * The bump job alone, so that an assertion about it cannot be satisfied by a
+ * line somewhere else in the workflow.
+ */
+function bumpJob(): string
+{
+    $workflow = releaseWorkflow();
+    $start = strpos($workflow, "\n  bump:\n");
+
+    expect($start)->not->toBeFalse('The release workflow has no bump job.');
+
+    $rest = substr($workflow, $start + 1);
+    $end = preg_match('/\n(  \S|\S)/', $rest, $match, PREG_OFFSET_CAPTURE) ? $match[0][1] : strlen($rest);
+
+    return substr($rest, 0, $end);
+}
+
+it('bumps the formula only on a published release, after the asset is attached', function (): void {
+    // On the tag push there is no asset yet, and a formula pinned to an asset
+    // that does not exist is the stale tap in its purest form.
+    expect(bumpJob())->toContain("if: github.event_name == 'release'")
+        ->and(bumpJob())->toContain('needs: [build, release]');
+});
+
+it('pins the digest this run built and attached, never another build', function (): void {
+    // PHAR builds are not byte-reproducible, so the tag-push run's digest is a
+    // different file. Only this run's build output matches the release asset.
+    expect(bumpJob())->toContain('needs.build.outputs.sha256');
+});
+
+it('checks the published asset against that digest before touching the tap', function (): void {
+    // The formula must describe what a user downloads, so the bump reads the
+    // asset back from the release rather than trusting the build's word.
+    expect(bumpJob())->toContain('releases/download/')
+        ->and(bumpJob())->toContain('shasum -a 256');
+});
+
+it('never moves the tap backwards to an older release', function (): void {
+    // Publishing a patch on an older line must not downgrade every tap user.
+    expect(bumpJob())->toContain('releases/latest');
+});
+
+it('writes to the tap with its own scoped token, not the workflow token', function (): void {
+    // github.token cannot write to another repository, and a token that could
+    // write anywhere is more than this job needs.
+    expect(bumpJob())->toContain('secrets.HOMEBREW_TAP_TOKEN')
+        ->and(bumpJob())->toContain('albertoarena/homebrew-truss')
+        ->and(bumpJob())->toContain('Formula/truss.rb');
+});
+
+it('does the edit in the script, so it can be run by hand', function (): void {
+    expect(bumpJob())->toContain('build/bump-formula.sh');
+});
+
+it('no longer describes the bump as missing', function (): void {
+    expect(releaseWorkflow())->not->toContain('The formula bump is deliberately not here yet');
 });
