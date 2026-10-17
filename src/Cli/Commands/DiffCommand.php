@@ -102,10 +102,12 @@ final class DiffCommand extends ConnectionCommand
             return self::INVALID;
         }
 
-        $here = Dsn::describe($this->connectionOf($container, Bootstrapper::CONNECTION));
+        $connection = $this->connectionOf($container, Bootstrapper::CONNECTION);
+        $here = Dsn::describe($connection);
         $there = Dsn::describe($against);
 
-        $diff = (new SchemaDiffer)->diff($baseline, $current);
+        $diff = SchemaDiffer::forDrivers((string) ($connection['driver'] ?? ''), (string) ($against['driver'] ?? ''))
+            ->diff($baseline, $current);
 
         if (! $diff['has_changes']) {
             $output->writeln("<info>No structural differences</info> between {$here} and {$there}.");

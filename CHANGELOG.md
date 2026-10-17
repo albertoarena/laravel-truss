@@ -14,6 +14,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 - **The Homebrew tap follows every release.** Installed with `brew install albertoarena/truss/truss`, the binary now moves to each new release through `brew upgrade`, because publishing a release rewrites the tap's formula to the new `truss.phar` and its digest. The digest is read back from the published asset before anything is written, so the formula always describes the file you download. A release on an older line never moves the tap backwards.
 
+### Fixed
+
+- **A diff between MySQL and MariaDB reports only what differs.** Comparing a MariaDB database with a MySQL one, such as staging against production with `truss diff`, listed dozens of columns as changed when only the two servers' spelling differed: MariaDB prints an integer display width MySQL 8 dropped (`int(11)` against `int`), quotes a string default, writes the text `NULL` for no default, and writes `current_timestamp()` where MySQL writes `CURRENT_TIMESTAMP`, and reports a foreign key with no `ON UPDATE` clause as `restrict` where MySQL says `no action`, which marked every Laravel foreign key as changed. On a stock WordPress schema that was about 70 false changes. The diff now compares what a column means, so those no longer count, while a real change still shows both sides as each server wrote them. `tinyint(1)` and zerofill widths are still compared, because they change what the column holds, and `restrict` against `no action` still counts on PostgreSQL and SQLite, where the two differ. Exports and snapshots are untouched, so committed `--check` files do not move.
+
 ## [1.15.0] - 2026-10-17
 
 ### Added

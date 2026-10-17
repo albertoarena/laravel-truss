@@ -222,3 +222,162 @@ it('detects a primary key change', function () {
 
     expect($sessions['changes'] ?? null)->toBe(['primary_key' => ['before' => ['id'], 'after' => ['id', 'token']]]);
 });
+
+/*
+ * MySQL and MariaDB describe the same column in different words. MariaDB keeps
+ * the integer display width MySQL 8 dropped, quotes a string default MySQL
+ * leaves bare, writes a missing default as the text NULL, and spells the
+ * current-time default as a call. Diffing a MariaDB staging database against
+ * MySQL production reported about 70 of these on a stock WordPress schema,
+ * which buries the handful of changes that are real.
+ *
+ * The comparison ignores the spelling; the diff still reports each side's own
+ * words when something did change, so a reader sees what each server says.
+ */
+function sdTypeDiff(string $before, string $after): ?array
+{
+    return sdChangedTable((new SchemaDiffer)->diff(
+        sdSnap([sdTable('posts', [sdCol('id', $before)])]),
+        sdSnap([sdTable('posts', [sdCol('id', $after)])]),
+    ), 'posts');
+}
+
+function sdDefaultDiff(mixed $before, mixed $after, string $type = 'varchar(20)'): ?array
+{
+    return sdChangedTable((new SchemaDiffer)->diff(
+        sdSnap([sdTable('posts', [sdCol('status', $type, true, $before)])]),
+        sdSnap([sdTable('posts', [sdCol('status', $type, true, $after)])]),
+    ), 'posts');
+}
+
+it('ignores an integer display width that only one server prints', function (string $mariadb, string $mysql) {
+    expect(sdTypeDiff($mariadb, $mysql))->toBeNull()
+        ->and(sdTypeDiff($mysql, $mariadb))->toBeNull();
+})->with([
+    ['int(11)', 'int'],
+    ['bigint(20) unsigned', 'bigint unsigned'],
+    ['bigint(10)', 'bigint'],
+    ['smallint(6)', 'smallint'],
+    ['mediumint(9)', 'mediumint'],
+    ['tinyint(4)', 'tinyint'],
+    ['INT(11)', 'int'],
+]);
+
+it('still reports a real type change, in each server\'s own words', function () {
+    $table = sdTypeDiff('int(11)', 'bigint unsigned');
+
+    expect($table['columns_changed'])->toBe([
+        ['name' => 'id', 'changes' => ['type' => ['before' => 'int(11)', 'after' => 'bigint unsigned']]],
+    ]);
+});
+
+it('keeps the widths that change what a column means', function (string $before, string $after) {
+    // tinyint(1) is how both servers say boolean, and Laravel reads it that
+    // way. A zerofill width decides how the value is padded. Neither is
+    // spelling, so neither is ignored.
+    expect(sdTypeDiff($before, $after))->not->toBeNull();
+})->with([
+    ['tinyint(1)', 'tinyint'],
+    ['int(5) unsigned zerofill', 'int(8) unsigned zerofill'],
+    ['varchar(191)', 'varchar(255)'],
+    ['decimal(8,2)', 'decimal(10,2)'],
+]);
+
+it('ignores the quotes MariaDB puts around a string default', function (mixed $mariadb, mixed $mysql) {
+    expect(sdDefaultDiff($mariadb, $mysql))->toBeNull()
+        ->and(sdDefaultDiff($mysql, $mariadb))->toBeNull();
+})->with([
+    ["'publish'", 'publish'],
+    ["''", ''],
+    ["'0000-00-00 00:00:00'", '0000-00-00 00:00:00'],
+    ["'1'", '1'],
+    ["'it''s'", "it's"],
+]);
+
+it('treats the text NULL as no default', function () {
+    expect(sdDefaultDiff('NULL', null))->toBeNull()
+        ->and(sdDefaultDiff(null, 'NULL'))->toBeNull()
+        ->and(sdDefaultDiff('null', null))->toBeNull();
+});
+
+it('keeps a quoted NULL, which is a string default and not a missing one', function () {
+    expect(sdDefaultDiff("'NULL'", null))->not->toBeNull();
+});
+
+it('ignores how each server spells the current-time default', function (string $mariadb, string $mysql) {
+    expect(sdDefaultDiff($mariadb, $mysql, 'timestamp'))->toBeNull();
+})->with([
+    ['current_timestamp()', 'CURRENT_TIMESTAMP'],
+    ['current_timestamp(6)', 'CURRENT_TIMESTAMP(6)'],
+]);
+
+it('still reports a real default change, in each server\'s own words', function () {
+    $table = sdDefaultDiff("'draft'", 'publish');
+
+    expect($table['columns_changed'])->toBe([
+        ['name' => 'status', 'changes' => ['default' => ['before' => "'draft'", 'after' => 'publish']]],
+    ]);
+});
+
+it('does not unquote half a value', function () {
+    // A default that only starts or ends with a quote, or holds two literals,
+    // is not one quoted string, so it is compared exactly as written.
+    expect(sdDefaultDiff("'a' || 'b'", "a' || 'b"))->not->toBeNull()
+        ->and(sdDefaultDiff("'open", 'open'))->not->toBeNull();
+});
+
+/*
+ * A foreign key with no ON UPDATE or ON DELETE clause, which is what Laravel's
+ * foreign() writes, reads back as `no action` on MySQL and `restrict` on
+ * MariaDB. On those two servers the two are one check, made at once. On
+ * PostgreSQL and SQLite they are not: `no action` can be deferred to the end of
+ * the transaction and `restrict` cannot. A snapshot does not say which server
+ * produced it, so the equivalence is switched on by whoever knows both drivers,
+ * never assumed.
+ */
+function sdActionDiff(SchemaDiffer $differ, string $before, string $after): ?array
+{
+    $fk = fn (string $onUpdate): array => [
+        'name' => 'pu_user', 'columns' => ['user_id'], 'references_table' => 'users',
+        'references_columns' => ['id'], 'on_update' => $onUpdate, 'on_delete' => 'cascade',
+    ];
+
+    return sdChangedTable($differ->diff(
+        sdSnap([sdTable('posts_users', [], [], [], [$fk($before)])]),
+        sdSnap([sdTable('posts_users', [], [], [], [$fk($after)])]),
+    ), 'posts_users');
+}
+
+it('treats restrict and no action as one check when both sides are MySQL or MariaDB', function (string $current, string $baseline) {
+    $differ = SchemaDiffer::forDrivers($current, $baseline);
+
+    expect(sdActionDiff($differ, 'restrict', 'no action'))->toBeNull()
+        ->and(sdActionDiff($differ, 'no action', 'restrict'))->toBeNull()
+        ->and(sdActionDiff($differ, 'RESTRICT', 'NO ACTION'))->toBeNull();
+})->with([
+    ['mysql', 'mariadb'],
+    ['mariadb', 'mysql'],
+    ['mysql', 'mysql'],
+    ['mariadb', 'mariadb'],
+]);
+
+it('keeps restrict and no action apart anywhere else', function (string $current, string $baseline) {
+    expect(sdActionDiff(SchemaDiffer::forDrivers($current, $baseline), 'restrict', 'no action'))->not->toBeNull();
+})->with([
+    ['pgsql', 'pgsql'],
+    ['sqlite', 'sqlite'],
+    ['mysql', 'pgsql'],
+    ['pgsql', 'mariadb'],
+]);
+
+it('keeps them apart by default, when nobody said which servers these are', function () {
+    expect(sdActionDiff(new SchemaDiffer, 'restrict', 'no action'))->not->toBeNull();
+});
+
+it('still reports a real foreign key action change between MySQL and MariaDB', function () {
+    $table = sdActionDiff(SchemaDiffer::forDrivers('mysql', 'mariadb'), 'restrict', 'cascade');
+
+    expect($table['foreign_keys_changed'])->toBe([
+        ['name' => 'pu_user', 'changes' => ['on_update' => ['before' => 'restrict', 'after' => 'cascade']]],
+    ]);
+});
