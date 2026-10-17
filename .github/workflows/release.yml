@@ -193,19 +193,84 @@ jobs:
           gh release upload "${TAG}" truss.phar --clobber --repo "${GITHUB_REPOSITORY}"
           shasum -a 256 truss.phar
 
-# The formula bump is deliberately not here yet.
-#
-# It belongs in this workflow, and the tap's own instructions say so: CI bumps
-# the formula and a human never does. It is not written now for the reason the
-# plan gives, which is that a bump workflow written before there is a release to
-# bump is a bump workflow written untested, and that is exactly how a tap
-# silently stops upgrading.
-#
-# What the session that writes it needs:
-#   - a job gated on github.ref_type == 'tag', needing [release]
-#   - the HOMEBREW_TAP_TOKEN secret: a fine-grained PAT scoped to
-#     albertoarena/homebrew-truss alone, with Contents: read and write
-#   - the digest from this workflow's build job, available as
-#     needs.build.outputs.sha256
-#   - it edits Formula/truss.rb in that repo: the url version and the sha256,
-#     both of them, every time
+  bump:
+    name: Bump the Homebrew formula
+    # After the asset is attached, never before: a formula pinned to an asset
+    # that does not exist yet is the stale tap in its purest form.
+    needs: [build, release]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Only the latest release moves the tap
+        id: latest
+        # Publishing a patch on an older line must not downgrade every tap
+        # user, so a release that is not releases/latest stops here, green.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          LATEST="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)"
+          if [ "${LATEST}" = "${TAG}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "${TAG} is not the latest release (${LATEST}), so the formula stays where it is."
+          fi
+
+      - name: The published asset is the file this run built
+        if: steps.latest.outputs.current == 'true'
+        # The formula must describe what a user downloads, so the asset is
+        # read back from the release rather than taken on the build's word.
+        # The digest is this run's: PHAR builds are not byte-reproducible, so
+        # the tag-push run compiled a different file.
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          SHA: ${{ needs.build.outputs.sha256 }}
+        run: |
+          PUBLISHED="$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/truss.phar" | shasum -a 256 | cut -d' ' -f1)"
+          echo "built     ${SHA}"
+          echo "published ${PUBLISHED}"
+          [ "${PUBLISHED}" = "${SHA}" ] || { echo "FAIL: the release asset is not the file this run built" >&2; exit 1; }
+
+      - name: Checkout the tap
+        if: steps.latest.outputs.current == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: albertoarena/homebrew-truss
+          # A fine-grained PAT scoped to the tap alone, Contents read and write.
+          # github.token cannot write to another repository.
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Bump
+        if: steps.latest.outputs.current == 'true'
+        # The url and the sha256, both of them, every time, and nothing else.
+        # The script refuses when either line is missing or repeated.
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          SHA: ${{ needs.build.outputs.sha256 }}
+        run: bash build/bump-formula.sh tap/Formula/truss.rb "${TAG}" "${SHA}"
+
+      - name: Push to the tap
+        if: steps.latest.outputs.current == 'true'
+        # Straight to the tap's main. Its required checks exempt admins, so
+        # they cannot block this push, and its own CI runs on the push and
+        # shows a broken bump as a red run there. A re-run of a release that
+        # is already pinned finds nothing to commit and stops green.
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        working-directory: tap
+        run: |
+          if git diff --quiet; then
+            echo "Formula/truss.rb already names ${TAG}."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -q -am "chore: bump truss to ${TAG}"
+          git push origin HEAD:main
+          git log -1 --format='%h %s'
