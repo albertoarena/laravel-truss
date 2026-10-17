@@ -325,3 +325,59 @@ it('does not unquote half a value', function () {
     expect(sdDefaultDiff("'a' || 'b'", "a' || 'b"))->not->toBeNull()
         ->and(sdDefaultDiff("'open", 'open'))->not->toBeNull();
 });
+
+/*
+ * A foreign key with no ON UPDATE or ON DELETE clause, which is what Laravel's
+ * foreign() writes, reads back as `no action` on MySQL and `restrict` on
+ * MariaDB. On those two servers the two are one check, made at once. On
+ * PostgreSQL and SQLite they are not: `no action` can be deferred to the end of
+ * the transaction and `restrict` cannot. A snapshot does not say which server
+ * produced it, so the equivalence is switched on by whoever knows both drivers,
+ * never assumed.
+ */
+function sdActionDiff(SchemaDiffer $differ, string $before, string $after): ?array
+{
+    $fk = fn (string $onUpdate): array => [
+        'name' => 'pu_user', 'columns' => ['user_id'], 'references_table' => 'users',
+        'references_columns' => ['id'], 'on_update' => $onUpdate, 'on_delete' => 'cascade',
+    ];
+
+    return sdChangedTable($differ->diff(
+        sdSnap([sdTable('posts_users', [], [], [], [$fk($before)])]),
+        sdSnap([sdTable('posts_users', [], [], [], [$fk($after)])]),
+    ), 'posts_users');
+}
+
+it('treats restrict and no action as one check when both sides are MySQL or MariaDB', function (string $current, string $baseline) {
+    $differ = SchemaDiffer::forDrivers($current, $baseline);
+
+    expect(sdActionDiff($differ, 'restrict', 'no action'))->toBeNull()
+        ->and(sdActionDiff($differ, 'no action', 'restrict'))->toBeNull()
+        ->and(sdActionDiff($differ, 'RESTRICT', 'NO ACTION'))->toBeNull();
+})->with([
+    ['mysql', 'mariadb'],
+    ['mariadb', 'mysql'],
+    ['mysql', 'mysql'],
+    ['mariadb', 'mariadb'],
+]);
+
+it('keeps restrict and no action apart anywhere else', function (string $current, string $baseline) {
+    expect(sdActionDiff(SchemaDiffer::forDrivers($current, $baseline), 'restrict', 'no action'))->not->toBeNull();
+})->with([
+    ['pgsql', 'pgsql'],
+    ['sqlite', 'sqlite'],
+    ['mysql', 'pgsql'],
+    ['pgsql', 'mariadb'],
+]);
+
+it('keeps them apart by default, when nobody said which servers these are', function () {
+    expect(sdActionDiff(new SchemaDiffer, 'restrict', 'no action'))->not->toBeNull();
+});
+
+it('still reports a real foreign key action change between MySQL and MariaDB', function () {
+    $table = sdActionDiff(SchemaDiffer::forDrivers('mysql', 'mariadb'), 'restrict', 'cascade');
+
+    expect($table['foreign_keys_changed'])->toBe([
+        ['name' => 'pu_user', 'changes' => ['on_update' => ['before' => 'restrict', 'after' => 'cascade']]],
+    ]);
+});

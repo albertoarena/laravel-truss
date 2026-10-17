@@ -207,3 +207,31 @@ it('names both ways of passing the second database when it has neither', functio
         ->and($tester->getDisplay())->toContain('TRUSS_AGAINST_DSN')
         ->and($tester->getDisplay())->toContain('--against');
 });
+
+it('tells the differ which servers it is comparing', function (): void {
+    // On MySQL and MariaDB a foreign key's restrict and no action are one
+    // check, and the two servers report an unstated action differently, so a
+    // diff across them would mark every Laravel foreign key as changed. Only
+    // this command knows both drivers, so it is where the equivalence is
+    // decided. A MariaDB server is not available to the suite; the decision
+    // itself is pinned in SchemaDifferTest, and the SQLite case below proves
+    // the drivers reach it.
+    $source = (string) file_get_contents(dirname(__DIR__, 2).'/src/Cli/Commands/DiffCommand.php');
+
+    expect($source)->toContain('SchemaDiffer::forDrivers(');
+});
+
+it('still reports restrict against no action on SQLite, where they differ', function (): void {
+    $schema = fn (string $action): array => [
+        'create table users (id integer primary key)',
+        "create table posts (id integer primary key, user_id integer references users (id) on update {$action})",
+    ];
+
+    $tester = trussCliTester('diff');
+    $tester->execute([
+        '--dsn' => 'sqlite:'.diffFixture($schema('restrict')),
+        '--against' => 'sqlite:'.diffFixture($schema('no action')),
+    ]);
+
+    expect($tester->getDisplay())->toContain('foreign key changed');
+});

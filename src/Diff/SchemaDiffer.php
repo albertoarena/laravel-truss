@@ -18,6 +18,31 @@ namespace AlbertoArena\Truss\Diff;
 class SchemaDiffer
 {
     /**
+     * `$restrictIsNoAction` reads a foreign key's `restrict` and `no action` as
+     * one action. It is true only when both snapshots come from MySQL or
+     * MariaDB, which is forDrivers()'s decision to make.
+     */
+    public function __construct(private readonly bool $restrictIsNoAction = false) {}
+
+    /**
+     * A differ for two snapshots from these drivers, current first.
+     *
+     * A foreign key with no ON UPDATE or ON DELETE clause, which is what
+     * Laravel's foreign() writes, reads back as `no action` on MySQL and as
+     * `restrict` on MariaDB. On those servers the two are one check, made at
+     * once. On PostgreSQL and SQLite they are not, because `no action` can be
+     * deferred to the end of the transaction, and a snapshot does not record
+     * which server produced it. So the equivalence is decided here, by a caller
+     * that knows both drivers, and never assumed.
+     */
+    public static function forDrivers(string $current, string $baseline): self
+    {
+        $mysqlFamily = ['mysql', 'mariadb'];
+
+        return new self(in_array($current, $mysqlFamily, true) && in_array($baseline, $mysqlFamily, true));
+    }
+
+    /**
      * @param  array<string, mixed>  $baseline
      * @param  array<string, mixed>  $current
      * @return array<string, mixed>
@@ -88,6 +113,10 @@ class SchemaDiffer
             $baseline['foreign_keys'] ?? [],
             $current['foreign_keys'] ?? [],
             ['columns', 'references_table', 'references_columns', 'on_update', 'on_delete'],
+            [
+                'on_update' => $this->comparableAction(...),
+                'on_delete' => $this->comparableAction(...),
+            ],
         );
 
         $changes = [];
@@ -133,6 +162,21 @@ class SchemaDiffer
             'type' => $this->comparableType(...),
             'default' => $this->comparableDefault(...),
         ]);
+    }
+
+    /**
+     * A foreign key action, with `restrict` read as `no action` when both
+     * sides are servers on which they are the same check.
+     */
+    private function comparableAction(mixed $action): mixed
+    {
+        if (! is_string($action)) {
+            return $action;
+        }
+
+        $action = strtolower($action);
+
+        return $this->restrictIsNoAction && $action === 'restrict' ? 'no action' : $action;
     }
 
     /**
