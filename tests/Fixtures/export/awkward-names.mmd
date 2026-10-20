@@ -1,0 +1,27 @@
+erDiagram
+  users {
+    int id PK
+    date _429_error_date "429_error_date"
+    int _pk "pk"
+    int full_name "full name"
+    int a__b "a #126;b"
+  }
+  t_429_logs["429_logs"] {
+    int id
+    int user_id FK
+  }
+  t_a_b["a$b"] {
+    int id
+    int a_b "a$b"
+    int a_b
+  }
+  t_style["style"] {
+    int id FK
+    int parent_id FK "self-ref"
+    int _fk FK "fk, self-ref"
+  }
+  t_50___off_["50#37; #34;off#34;"] {
+    int id
+  }
+  users ||--o{ t_429_logs : "fk #34;quoted#34;"
+  t_a_b ||--o{ t_style : "style_ab"

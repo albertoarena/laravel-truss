@@ -10,6 +10,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **One table or column name Mermaid rejects no longer blanks the whole diagram.** A column starting with a digit (`429_error_date`), a column called `pk`, `fk` or `uk`, a `$`, a space or a quote in a name, or a table called `style`, `one` or `to` made Mermaid reject the whole definition, so the dashboard showed "Diagram failed to render" in place of every table. `truss:export --format=mermaid` (and the `truss` binary, the web export and the MCP `get_schema` tool) wrote the same definition, which failed wherever it was rendered. Such names are now rewritten for Mermaid only. The dashboard still shows every real name. In the Mermaid export a rewritten table keeps its real name as its label, and a rewritten column keeps it in the column's comment. Only names Mermaid would reject are touched, accented and non-Latin names included, so a schema that rendered before exports byte for byte as it did, and a committed `--check` file does not move. Reported by @ddoddsr in #94.
+
 ## [1.15.1] - 2026-10-17
 
 ### Added

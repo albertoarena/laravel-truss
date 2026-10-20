@@ -7,6 +7,137 @@
 
 import { toShortLabel } from './type-labels.js';
 
+// ---- Identifiers -------------------------------------------------------------
+// Mermaid's ER lexer rejects some legal SQL names (a leading digit, `pk`, `$`,
+// whitespace, a table called `style`), and one rejected name fails the whole
+// diagram (issue #94). Names are handled here, at the Mermaid sink only, and
+// ONLY when Mermaid would reject them or record something else: a name that
+// parses today keeps its exact output, even where markdown restyles it. The
+// patterns mirror the ER lexer of the vendored Mermaid, and
+// tests/js/mermaid-identifiers.test.js pins them to it, with a seeded fuzz.
+
+// An attribute name token. Not a `u` regex on purpose: like the lexer, `/i`
+// case-folds `µ` into range and an astral character is two code units in it.
+const ATTRIBUTE_WORD = /^[*A-Za-z_À-￿][A-Za-z0-9\-_[\]().,À-￿*]*$/i;
+const ATTRIBUTE_CHAR = /[^A-Za-z0-9\-_[\]().,À-￿*]/gi;
+const ATTRIBUTE_START = /^[*A-Za-z_À-￿]/i;
+// The key keywords win over a name that starts with them at a word boundary.
+const KEY_KEYWORD = /^(?:PK|FK|UK)(?![A-Za-z0-9_])/i;
+// The lexer's generic-type rule: two `~`, no whitespace before the first or after the last.
+const GENERIC_WORD = /^\S*~.*~\S*$/;
+// The lexer skips whitespace before a name, so a name that starts with any
+// (U+00A0, U+3000 and U+FEFF included) loses it, or is not there at all.
+const LEADING_SPACE = /^\s/;
+// Mermaid swaps `#name;` and `#123;` for the character before it lexes.
+const ENTITY_CODE = /#\w+;/;
+
+// An entity name, and the grammar keywords and operators that win over it.
+const ENTITY_WORD = /^(?:[^\x00-\x7F]|[A-Za-z0-9_\-*.])+$/;
+const ENTITY_CHAR = /[^A-Za-z0-9_\-*.\u0080-￿]|\s/g;
+const ENTITY_KEYWORD = /^(?:(?:erDiagram|classDef|class|style|one|many|to)(?![A-Za-z0-9_])|u[.-]|\.\.|\.-|--|-\.)/i;
+// A leading digit lexes as a cardinality or a number; only a whole number is a name.
+const ENTITY_NUMBER = /^[0-9]+(?:\.[0-9]+)?$/;
+// Anywhere on a line outside an entity block, this is the layout directive and
+// takes the whole line with it.
+const DIRECTION = /direction\s+(?:TB|BT|RL|LR)/i;
+
+/** Whether Mermaid records this column name verbatim. */
+export function isMermaidSafeColumn(name) {
+  const text = String(name);
+  if (LEADING_SPACE.test(text) || KEY_KEYWORD.test(text)) return false;
+
+  return ATTRIBUTE_WORD.test(text) || GENERIC_WORD.test(text);
+}
+
+/** Whether Mermaid records this table name verbatim, in a block and in an edge. */
+export function isMermaidSafeTable(name) {
+  const text = String(name);
+  if (!ENTITY_WORD.test(text) || LEADING_SPACE.test(text) || ENTITY_KEYWORD.test(text) || DIRECTION.test(text)) {
+    return false;
+  }
+
+  return !/^[0-9]/.test(text) || ENTITY_NUMBER.test(text);
+}
+
+/**
+ * A readable token Mermaid accepts for a rejected column name: whitespace and
+ * each rejected character become `_`, and `_` goes in front of a bad first
+ * character or a key keyword. The text exports always use it (they carry the
+ * real name in the comment); the dashboard only when backticks cannot quote.
+ * Kept identical to MermaidGenerator::columnName() by a shared case list.
+ */
+export function mermaidReadableName(name) {
+  let token = String(name).replace(/\s/g, '_').replace(ATTRIBUTE_CHAR, '_');
+  if (!ATTRIBUTE_START.test(token)) token = `_${token}`;
+  if (KEY_KEYWORD.test(token)) token = `_${token}`;
+
+  return token;
+}
+
+/**
+ * The attribute name the dashboard writes for a column. Mermaid 11.16 quotes an
+ * attribute name in backticks, so a rejected name is shown as itself. Backticks
+ * cannot hold a backtick or a carriage return, are claimed first by the generic
+ * `~` rule when a `~` comes before any whitespace, and do not stop entity
+ * decoding; those names fall back to the readable token.
+ */
+export function mermaidColumnName(name) {
+  const text = String(name);
+  if (isMermaidSafeColumn(text)) return text;
+  if (/[`\r]/.test(text) || ENTITY_CODE.test(text) || /^\S*~.*~/.test(`\`${text}`)) {
+    return mermaidReadableName(text);
+  }
+
+  return `\`${text}\``;
+}
+
+/**
+ * The entity id for every table name: the name itself when Mermaid accepts it,
+ * otherwise `t_<name>` with rejected characters as `_`, shown under its real
+ * name through an alias. Ids that collide get `_2`, `_3` in table order, and a
+ * real table name is never taken over.
+ */
+export function mermaidTableIds(names) {
+  const ids = new Map();
+  const taken = new Set(names.filter((name) => isMermaidSafeTable(name)));
+  for (const name of names) {
+    if (taken.has(name)) {
+      ids.set(name, name);
+      continue;
+    }
+    const base = `t_${String(name).replace(ENTITY_CHAR, '_')}`;
+    let id = base;
+    for (let n = 2; taken.has(id); n++) id = `${base}_${n}`;
+    taken.add(id);
+    ids.set(name, id);
+  }
+
+  return ids;
+}
+
+/**
+ * Text for a quoted relationship label: one line, no bare quote, and no
+ * `direction TB` for the lexer to mistake for the layout directive (its `i` is
+ * entity-coded, decoded again when it renders).
+ */
+function mermaidLabel(text) {
+  return String(text)
+    .replace(/[\r\n]+/g, ' ')
+    .replaceAll('"', '#34;')
+    .replace(/(?<=d)i(?=rection\s+(?:TB|BT|RL|LR))/gi, (c) => `#${c.charCodeAt(0)};`);
+}
+
+/**
+ * Text for a quoted alias label. On top of mermaidLabel, what the quoted-string
+ * token cannot hold, and `#code;` text Mermaid would decode, are entity-coded.
+ * The label also goes through markdown, and the dashboard finds a table by its
+ * label text, so the emphasis delimiters are coded too. Only an aliased
+ * (rejected) name gets here, so this changes no existing output.
+ */
+function mermaidText(text) {
+  return mermaidLabel(String(text).replace(/["%\\~_*]|#(?=\w+;)/g, (c) => `#${c.charCodeAt(0)};`));
+}
+
 /**
  * Collapse a native type into a single Mermaid-safe attribute-type token.
  * Mermaid's ER grammar splits attributes on whitespace, so `bigint unsigned`
@@ -43,7 +174,7 @@ function keyBadge(columnName, primaryKey, foreignKeyColumns) {
   return badges.join(', ');
 }
 
-function entityBlock(table, mode) {
+function entityBlock(table, mode, id) {
   const primaryKey = table.primary_key ?? [];
   const foreignKeys = table.foreign_keys ?? [];
   const fkColumns = new Set(foreignKeys.flatMap((fk) => fk.columns));
@@ -59,10 +190,11 @@ function entityBlock(table, mode) {
     const badge = keyBadge(column.name, primaryKey, fkColumns);
     const note = selfRefColumns.has(column.name) ? ' "self-ref"' : '';
 
-    return `    ${type} ${column.name}${badge ? ` ${badge}` : ''}${note}`.trimEnd();
+    return `    ${type} ${mermaidColumnName(column.name)}${badge ? ` ${badge}` : ''}${note}`.trimEnd();
   });
+  const head = id === table.name ? id : `${id}["${mermaidText(table.name)}"]`;
 
-  return [`  ${table.name} {`, ...lines, '  }'].join('\n');
+  return [`  ${head} {`, ...lines, '  }'].join('\n');
 }
 
 /**
@@ -116,16 +248,16 @@ function accessibilityLines(tableCount, relationshipCount, view = {}) {
  */
 export function generateErDiagram(tables, options = {}) {
   const mode = options.typeLabels === 'laravel' ? 'laravel' : 'native';
-  const present = new Set(tables.map((table) => table.name));
+  const ids = mermaidTableIds(tables.map((table) => table.name));
 
-  const entities = tables.map((table) => entityBlock(table, mode));
+  const entities = tables.map((table) => entityBlock(table, mode, ids.get(table.name)));
 
   // Only emit an edge when BOTH endpoints are in the subset, so focus/filter
   // never conjure a phantom entity for an out-of-scope referenced table.
   const relationships = [];
   for (const table of tables) {
     for (const fk of table.foreign_keys ?? []) {
-      if (!present.has(fk.references_table)) {
+      if (!ids.has(fk.references_table)) {
         continue;
       }
       if (fk.references_table === table.name) {
@@ -133,9 +265,9 @@ export function generateErDiagram(tables, options = {}) {
         // not a self-loop edge, which Mermaid draws as a large sweeping curve.
         continue;
       }
-      const label = fk.name || fk.columns.join('_');
+      const label = mermaidLabel(fk.name || fk.columns.join('_'));
       // parent ||--o{ child : "constraint" (child is the referencing table).
-      relationships.push(`  ${fk.references_table} ||--o{ ${table.name} : "${label}"`);
+      relationships.push(`  ${ids.get(fk.references_table)} ||--o{ ${ids.get(table.name)} : "${label}"`);
     }
   }
 
