@@ -1,0 +1,277 @@
+erDiagram
+  users {
+    int id PK
+  }
+  columns_rejected {
+    int _429_error_date "429_error_date"
+    int full_name "full name"
+    int name_ "name?"
+    int a_b "a$b"
+    int _ "£"
+    int _pk "pk"
+    int _PK "PK"
+    int _uk "uk"
+    int _fk "fk"
+    int _Fk "Fk"
+    int _pk-x "pk-x"
+    int _pk.x "pk.x"
+    int _pk(x) "pk(x)"
+    int _tick_ "`tick`"
+    int _-lead "-lead"
+    int _.lead ".lead"
+    int _(lead "(lead"
+    int _[x] "[x]"
+    int a_b "a#34;b"
+    int a_b "a#37;b"
+    int a_b "a#92;b"
+    int a_b "a#b"
+    int a_b "a#126;b"
+    int a_b "a	b"
+    int _9 "9"
+    int _ "　"
+    int _, "　,"
+    int _id "﻿id"
+    int _x " x"
+    int id_ "id "
+    int a_b "a`b"
+    int x__y__z "x#126; y#126; z"
+    int x__35__y "x #35;35; y"
+  }
+  columns_accepted {
+    int città
+    int prezzo_€
+    int naïve_col
+    int größe
+    int 名前
+    int col😀
+    int µs
+    int ſ
+    int K
+    int _429_error_date
+    int my-col
+    int x-pk
+    int PK_id
+    int pk_x
+    int pkx
+    int a.b
+    int a,b
+    int a(b)
+    int a~b~c
+    int a~~
+    int x~ ~
+    int *star
+    int id
+    int user_id
+  }
+  t_429_logs["429_logs"] {
+    int user_id FK
+  }
+  t_1a["1a"] {
+    int user_id FK
+  }
+  t_a_b_2["a b"] {
+    int user_id FK
+  }
+  t_a_b_3["a$b"] {
+    int user_id FK
+  }
+  t_a_b_["a#126;b#126;"] {
+    int user_id FK
+  }
+  t_one["one"] {
+    int user_id FK
+  }
+  t_ONE["ONE"] {
+    int user_id FK
+  }
+  t_many["many"] {
+    int user_id FK
+  }
+  t_to["to"] {
+    int user_id FK
+  }
+  t_class["class"] {
+    int user_id FK
+  }
+  t_classDef["classDef"] {
+    int user_id FK
+  }
+  t_style["style"] {
+    int user_id FK
+  }
+  t_erDiagram["erDiagram"] {
+    int user_id FK
+  }
+  t_one-x["one-x"] {
+    int user_id FK
+  }
+  t_to-do["to-do"] {
+    int user_id FK
+  }
+  t_style-x["style-x"] {
+    int user_id FK
+  }
+  t_u-x["u-x"] {
+    int user_id FK
+  }
+  t_u.x["u.x"] {
+    int user_id FK
+  }
+  t_..x["..x"] {
+    int user_id FK
+  }
+  t_.-x[".-x"] {
+    int user_id FK
+  }
+  t_--x["--x"] {
+    int user_id FK
+  }
+  t_-.x["-.x"] {
+    int user_id FK
+  }
+  t_a_b_4["a#34;b"] {
+    int user_id FK
+  }
+  t_a_b_5["a#37;b"] {
+    int user_id FK
+  }
+  t_a_b_6["a#92;b"] {
+    int user_id FK
+  }
+  t_a_b_7["a]b"] {
+    int user_id FK
+  }
+  t_a_b_8["a#b"] {
+    int user_id FK
+  }
+  t_12.5.6["12.5.6"] {
+    int user_id FK
+  }
+  t__[" "] {
+    int user_id FK
+  }
+  t__style[" style"] {
+    int user_id FK
+  }
+  t__1x[" 1x"] {
+    int user_id FK
+  }
+  t_sort_direction_LR["sort d#105;rection LR"] {
+    int user_id FK
+  }
+  t_users_["users "] {
+    int user_id FK
+  }
+  429 {
+    int user_id FK
+  }
+  1 {
+    int user_id FK
+  }
+  12.5 {
+    int user_id FK
+  }
+  my.table {
+    int user_id FK
+  }
+  my-table {
+    int user_id FK
+  }
+  my--table {
+    int user_id FK
+  }
+  名前 {
+    int user_id FK
+  }
+  città {
+    int user_id FK
+  }
+  only {
+    int user_id FK
+  }
+  zero {
+    int user_id FK
+  }
+  u {
+    int user_id FK
+  }
+  pk {
+    int user_id FK
+  }
+  logs_2026 {
+    int user_id FK
+  }
+  style_x {
+    int user_id FK
+  }
+  erDiagram_x {
+    int user_id FK
+  }
+  oneself {
+    int user_id FK
+  }
+  *x {
+    int user_id FK
+  }
+  x* {
+    int user_id FK
+  }
+  t_a_b {
+    int user_id FK
+  }
+  direction {
+    int user_id FK
+  }
+  users ||--o{ t_429_logs : "429_logs_user"
+  users ||--o{ t_1a : "1a_user"
+  users ||--o{ t_a_b_2 : "a b_user"
+  users ||--o{ t_a_b_3 : "a$b_user"
+  users ||--o{ t_a_b_ : "a~b~_user"
+  users ||--o{ t_one : "one_user"
+  users ||--o{ t_ONE : "ONE_user"
+  users ||--o{ t_many : "many_user"
+  users ||--o{ t_to : "to_user"
+  users ||--o{ t_class : "class_user"
+  users ||--o{ t_classDef : "classDef_user"
+  users ||--o{ t_style : "style_user"
+  users ||--o{ t_erDiagram : "erDiagram_user"
+  users ||--o{ t_one-x : "one-x_user"
+  users ||--o{ t_to-do : "to-do_user"
+  users ||--o{ t_style-x : "style-x_user"
+  users ||--o{ t_u-x : "u-x_user"
+  users ||--o{ t_u.x : "u.x_user"
+  users ||--o{ t_..x : "..x_user"
+  users ||--o{ t_.-x : ".-x_user"
+  users ||--o{ t_--x : "--x_user"
+  users ||--o{ t_-.x : "-.x_user"
+  users ||--o{ t_a_b_4 : "a#34;b_user"
+  users ||--o{ t_a_b_5 : "a%b_user"
+  users ||--o{ t_a_b_6 : "a\b_user"
+  users ||--o{ t_a_b_7 : "a]b_user"
+  users ||--o{ t_a_b_8 : "a#b_user"
+  users ||--o{ t_12.5.6 : "12.5.6_user"
+  users ||--o{ t__ : " _user"
+  users ||--o{ t__style : " style_user"
+  users ||--o{ t__1x : " 1x_user"
+  users ||--o{ t_sort_direction_LR : "sort d#105;rection LR_user"
+  users ||--o{ t_users_ : "users _user"
+  users ||--o{ 429 : "429_user"
+  users ||--o{ 1 : "1_user"
+  users ||--o{ 12.5 : "12.5_user"
+  users ||--o{ my.table : "my.table_user"
+  users ||--o{ my-table : "my-table_user"
+  users ||--o{ my--table : "my--table_user"
+  users ||--o{ 名前 : "名前_user"
+  users ||--o{ città : "città_user"
+  users ||--o{ only : "only_user"
+  users ||--o{ zero : "zero_user"
+  users ||--o{ u : "u_user"
+  users ||--o{ pk : "pk_user"
+  users ||--o{ logs_2026 : "logs_2026_user"
+  users ||--o{ style_x : "style_x_user"
+  users ||--o{ erDiagram_x : "erDiagram_x_user"
+  users ||--o{ oneself : "oneself_user"
+  users ||--o{ *x : "*x_user"
+  users ||--o{ x* : "x*_user"
+  users ||--o{ t_a_b : "t_a_b_user"
+  users ||--o{ direction : "direction_user"

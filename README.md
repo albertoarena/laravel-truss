@@ -148,6 +148,8 @@ php artisan truss:export --format=dbml --output=docs/schema.dbml --check
 
 `--check` regenerates the export, compares it against `--output`, writes nothing, and exits non-zero when they differ, so a migration that changes the schema without refreshing the committed file fails the build. Exit codes: `0` written or up to date, `1` `--check` found drift, `2` a usage or runtime error (unknown format, unwritable path, an unmanaged connection, `--check` without `--output`, or no tables matched the filters). Add `--fresh` to rebuild the cached snapshot before exporting.
 
+Mermaid's diagram grammar rejects some names that are legal in SQL, such as a column that starts with a digit (`429_error_date`), a column called `pk`, a `$` or a space in a name, or a table called `style`. In the `mermaid` format those names are rewritten to a form Mermaid accepts. A rewritten table keeps its real name as its label, and a rewritten column keeps it in the column's comment (`int _429_error_date "429_error_date"`). Only names Mermaid would reject are touched, so a schema without them exports exactly as before. Every other format uses the names unchanged.
+
 Config `excluded_tables` always wins over `--tables`, so the export never exposes a table the dashboard hides. Structure only: it reads the same cached snapshot the diagram uses and never queries row data.
 
 ### The whole diagram as one file

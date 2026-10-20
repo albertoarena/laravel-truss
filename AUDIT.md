@@ -180,7 +180,7 @@ of arguing with it:
   decision**: `Category::Naming` and `Category::Laravel` have no rules
   (`src/Doctor/Category.php:16-17`), so validating against the enum alone still
   exits 0 clean for those two. No test covers `--only` at all.
-- [ ] 11. One column named `full name` blanks the whole diagram. `mermaidType()`
+- [x] 11. One column named `full name` blanks the whole diagram. `mermaidType()`
   collapses non-alphanumerics precisely because "Mermaid's ER grammar splits
   attributes on whitespace" (`resources/js/mermaid-definition.js:12-13`), and
   `accSafe()` guards the filter text for the same reason, but `column.name` and
@@ -193,6 +193,11 @@ of arguing with it:
   quoting entity names and normalising attribute names, applied on both sides.
   **Needs a decision** on label fidelity. No test on either side uses a name
   containing whitespace.
+  **Fixed with issue #94.** Names are handled only where Mermaid rejects them or
+  records something else, on both sides; tables keep their label through an
+  alias, columns are quoted in backticks (dashboard) or rewritten with the real
+  name in the comment (text export). Pinned to real Mermaid, with a seeded fuzz,
+  by `tests/js/mermaid-identifiers.test.js`.
 - [ ] 12. Eight docblocks and a decision entry describe a guard that was deleted.
   `resources/js/{dbml,markdown,table}-export.js`, `tests/js/dbml-export.test.js`
   and `tests/js/markdown-export.test.js` do not exist, and no cross-check test
@@ -209,6 +214,10 @@ of arguing with it:
   and a generator change leaves e2e green against stale bytes. Fix: *Remove Dead
   Comment* on the eight, amend `DECISIONS.md:183`, and add the golden test that
   entry claims exists.
+  **Partly addressed with issue #94:** `MermaidGeneratorTest.php` now pins
+  `schema.mmd` byte for byte, and three committed fixtures produced by the PHP
+  Mermaid generator (curated cases and a seeded fuzz) are parsed by real Mermaid
+  in Vitest, the first real check across the two sides. The other formats and the stale comments are still open.
 - [ ] 13. Migrating one connection re-baselines every managed connection.
   `src/Listeners/RebuildOnMigrationsEnded.php:42-46` scopes the refresh with
   `$event->options['database']`, but no first-party Laravel command puts
@@ -404,6 +413,9 @@ of arguing with it:
   `src/Export/MermaidGenerator.php:46`), so `truss:export --format=mermaid` output
   carries no `accTitle`/`accDescr`. Fix: port the lines or state the difference.
   Related to item 12's stale parity comments.
+  Since issue #94 they also differ on purpose on rejected names (backtick-quoted
+  columns and markdown-safe aliases in the dashboard, a readable token plus the
+  real name as a comment in the export); see `docs/DESIGN.md`.
 - [ ] 37. The dark palette is 28 declarations duplicated byte-identically
   (`resources/css/truss.css:70-98` and `105-133`), and
   `tests/js/palette-contrast.test.js:20-24` reads only the last copy, so a
