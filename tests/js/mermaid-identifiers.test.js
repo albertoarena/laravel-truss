@@ -81,6 +81,17 @@ const FUZZ = JSON.parse(readFileSync(new URL('../Fixtures/export/mermaid-name-fu
 // A quoted label cannot hold a line break, so the generators write it as a space.
 const shown = (name) => name.replace(/[\r\n]+/g, ' ');
 
+// The oracle must be the Mermaid the dashboard ships, not whatever the npm range
+// resolves to: CI installs without a lockfile, and 11.17 already lexes leading
+// whitespace in a table name differently. A bump of one copy without the other
+// fails here, and the fuzz verdicts are then regenerated on purpose.
+it('runs the oracle on the same Mermaid version that is vendored', () => {
+  const vendored = readFileSync(new URL('../../resources/js/vendor/mermaid.min.js', import.meta.url), 'utf8')
+    .match(/\{version:"(\d+\.\d+\.\d+)"\}/)?.[1];
+  const installed = JSON.parse(readFileSync(new URL('../../node_modules/mermaid/package.json', import.meta.url), 'utf8')).version;
+  expect(installed).toBe(vendored);
+});
+
 beforeAll(async () => {
   // The first parse registers the diagram types getDiagramFromText needs.
   await mermaid.parse('erDiagram\n  a {\n    int b\n  }');
