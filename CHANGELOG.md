@@ -10,6 +10,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Security
+
+- **The bundled Mermaid is now 11.16.1.** It fixes GHSA-c4c3-pg64-4m4v, a low-severity prototype pollution in Mermaid's configuration APIs. Truss only ever passes Mermaid its own fixed configuration, so the dashboard was not exposed in practice, but the copy it served is the one dependency scanners flag. Nothing in how Truss draws your diagram changes: every name Mermaid accepted before is still accepted, and the Mermaid export is byte for byte the same. If you load Mermaid from a CDN through `TRUSS_MERMAID_URL`, point it at 11.16.1 or later.
+
 ## [1.15.2] - 2026-10-28
 
 ### Fixed
