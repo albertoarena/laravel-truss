@@ -30,6 +30,16 @@ it('list_tables lists each table with a structural summary', function () {
         ->assertSee('columns');
 });
 
+it('list_tables writes the singular for one column and one foreign key', function () {
+    Schema::create('flags', fn ($table) => $table->id());
+
+    TrussSchemaServer::tool(ListTables::class)
+        ->assertOk()
+        ->assertSee('flags: 1 column, has PK, 0 FKs')
+        ->assertSee('posts: 3 columns, has PK, 1 FK')
+        ->assertDontSee('1 columns');
+});
+
 it('list_tables never includes an excluded table', function () {
     config()->set('truss.excluded_tables', ['posts']);
 

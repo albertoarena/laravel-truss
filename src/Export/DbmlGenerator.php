@@ -10,10 +10,9 @@ use AlbertoArena\Truss\Export\Contracts\Generator;
  * DBML serializer: a Table block per table, then Ref lines for the foreign keys.
  * Opens in dbdiagram.io and other DBML tools, which read DBML as a standard.
  *
- * A faithful PHP port of resources/js/dbml-export.js. The two must agree
- * byte-for-byte while both exist (the browser download still uses the JS
- * version); the cross-check test pins that. Type mapping is deliberately lossy:
- * the native type passes through, quoted only when it would otherwise misparse.
+ * Type mapping is deliberately lossy: the native type passes through, quoted
+ * only when it would otherwise misparse. A table or column name is written bare
+ * when DBML reads it bare and double-quoted otherwise (see name()).
  */
 class DbmlGenerator implements Generator
 {
@@ -44,7 +43,7 @@ class DbmlGenerator implements Generator
      */
     private function tableToDbml(array $table): string
     {
-        $lines = ["Table {$table['name']} {"];
+        $lines = ['Table '.$this->name($table['name']).' {'];
 
         foreach ($table['columns'] ?? [] as $column) {
             $lines[] = $this->columnLine($table, $column);
@@ -54,13 +53,10 @@ class DbmlGenerator implements Generator
         $pk = $table['primary_key'] ?? [];
         // A composite PK is expressed in the indexes block, not on the column.
         if (count($pk) > 1) {
-            $idx[] = '    ('.implode(', ', $pk).') [pk]';
+            $idx[] = '    '.$this->columnList($pk).' [pk]';
         }
         foreach ($table['indexes'] ?? [] as $index) {
-            $cols = count($index['columns']) > 1
-                ? '('.implode(', ', $index['columns']).')'
-                : $index['columns'][0];
-            $idx[] = '    '.$cols.($index['unique'] ? ' [unique]' : '');
+            $idx[] = '    '.$this->columnList($index['columns']).($index['unique'] ? ' [unique]' : '');
         }
         if ($idx !== []) {
             $lines = [...$lines, '', '  indexes {', ...$idx, '  }'];
@@ -100,7 +96,36 @@ class DbmlGenerator implements Generator
 
         $settings = $parts !== [] ? ' ['.implode(', ', $parts).']' : '';
 
-        return '  '.$col['name'].' '.$this->typeToken($col['type']).$settings;
+        return '  '.$this->name($col['name']).' '.$this->typeToken($col['type']).$settings;
+    }
+
+    /**
+     * A table or column name as DBML reads it. Bare only when it is ASCII
+     * letters, digits and `_` (a leading digit is fine); anything else is
+     * double-quoted. DBML has no escape inside a quoted name, not for a double
+     * quote and not for a line break, so those become `_`, the same fallback
+     * the Mermaid export uses for a backtick. Checked against @dbml/core 11.
+     */
+    private function name(string $name): string
+    {
+        if (preg_match('/^[A-Za-z0-9_]+$/D', $name) === 1) {
+            return $name;
+        }
+
+        return '"'.preg_replace('/["\r\n]/', '_', $name).'"';
+    }
+
+    /**
+     * One name, or several in parentheses, as the indexes block and Ref lines
+     * write a column list.
+     *
+     * @param  list<string>  $columns
+     */
+    private function columnList(array $columns): string
+    {
+        $names = array_map($this->name(...), $columns);
+
+        return count($names) > 1 ? '('.implode(', ', $names).')' : $names[0];
     }
 
     /**
@@ -157,13 +182,9 @@ class DbmlGenerator implements Generator
                 if (! isset($present[$fk['references_table']])) {
                     continue;
                 }
-                $src = count($fk['columns']) > 1
-                    ? '('.implode(', ', $fk['columns']).')'
-                    : $fk['columns'][0];
-                $tgt = count($fk['references_columns']) > 1
-                    ? '('.implode(', ', $fk['references_columns']).')'
-                    : $fk['references_columns'][0];
-                $refs[] = "Ref: {$table['name']}.{$src} > {$fk['references_table']}.{$tgt}";
+                $src = $this->name($table['name']).'.'.$this->columnList($fk['columns']);
+                $tgt = $this->name($fk['references_table']).'.'.$this->columnList($fk['references_columns']);
+                $refs[] = "Ref: {$src} > {$tgt}";
             }
         }
 

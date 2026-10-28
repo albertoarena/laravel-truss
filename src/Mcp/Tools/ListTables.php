@@ -42,7 +42,7 @@ class ListTables extends Tool
             $hasPk = ($table['primary_key'] ?? []) !== [] ? 'has PK' : 'no PK';
             $fks = count($table['foreign_keys'] ?? []);
 
-            return "{$table['name']}: {$columns} columns, {$hasPk}, {$fks} FK".($fks === 1 ? '' : 's');
+            return "{$table['name']}: {$columns} column".($columns === 1 ? '' : 's').", {$hasPk}, {$fks} FK".($fks === 1 ? '' : 's');
         }, $tables);
 
         return Response::text(implode("\n", $lines));

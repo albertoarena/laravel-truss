@@ -6,9 +6,8 @@ use AlbertoArena\Truss\Export\DbmlGenerator;
 use AlbertoArena\Truss\Tests\Support\SchemaBuilder;
 
 /**
- * PHP port of the browser DBML serializer (resources/js/dbml-export.js). These
- * cases mirror tests/js/dbml-export.test.js so the two implementations stay in
- * step; the byte-for-byte guarantee is pinned separately by the cross-check test.
+ * The DBML serializer, the only implementation since the browser download moved
+ * to the gated export route.
  */
 function dbml(array $tables): string
 {
@@ -136,4 +135,62 @@ it('keeps an enum as a quoted type with no Enum block', function () {
 
     expect($out)->toContain('"enum(\'draft\',\'published\',\'archived\')"')
         ->and($out)->not->toContain('Enum ');
+});
+
+it('quotes table and column names DBML cannot read bare, everywhere they appear', function () {
+    $tables = SchemaBuilder::make()
+        ->table('t94 users', function ($t) {
+            $t->column('id', 'int', nullable: false);
+            $t->column('full name', 'int');
+            $t->column('città', 'int');
+            $t->column('a$b', 'int');
+            $t->primary(['id', 'full name']);
+            $t->unique(['a$b']);
+        })
+        ->table('sort direction LR', function ($t) {
+            $t->id();
+            $t->column('user id', 'int');
+            $t->foreign('user id', 't94 users', 'id');
+        })->build()['tables'];
+
+    $out = dbml($tables);
+
+    expect($out)->toContain('Table "t94 users" {')
+        ->and($out)->toContain('  "full name" int')
+        ->and($out)->toContain('  "città" int')
+        ->and($out)->toContain('  "a$b" int')
+        ->and($out)->toContain('    (id, "full name") [pk]')
+        ->and($out)->toContain('    "a$b" [unique]')
+        ->and($out)->toContain('Table "sort direction LR" {')
+        ->and($out)->toContain('Ref: "sort direction LR"."user id" > "t94 users".id');
+});
+
+it('leaves names DBML reads bare unchanged, a leading digit included', function () {
+    $tables = SchemaBuilder::make()
+        ->table('429_logs', function ($t) {
+            $t->id();
+            $t->column('429_error_date', 'date');
+        })->build()['tables'];
+
+    $out = dbml($tables);
+
+    expect($out)->toContain('Table 429_logs {')
+        ->and($out)->toContain('  429_error_date date')
+        ->and($out)->not->toContain('"429');
+});
+
+// DBML has no escape for a double quote or a line break inside a quoted name
+// (@dbml/core 11 rejects `\"`, a doubled quote, and a newline alike), so those
+// fall back to `_`, the same fallback the Mermaid export uses for a backtick.
+it('writes a quote or line break DBML cannot hold as an underscore', function () {
+    $tables = SchemaBuilder::make()
+        ->table('50% "off"', function ($t) {
+            $t->id();
+            $t->column("two\nlines", 'int');
+        })->build()['tables'];
+
+    $out = dbml($tables);
+
+    expect($out)->toContain('Table "50% _off_" {')
+        ->and($out)->toContain('  "two_lines" int');
 });
