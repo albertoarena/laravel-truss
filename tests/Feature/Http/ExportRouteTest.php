@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
@@ -62,6 +63,14 @@ it('never serves an excluded table', function () {
     $body = $this->get('/truss/export/dbml')->assertOk()->getContent();
 
     expect($body)->toContain('Table users {')->not->toContain('Table posts {');
+});
+
+it('serves dbml for a table with an expression index (#107)', function () {
+    // Every driver reports an expression index with no columns. The doubled
+    // parentheses are what MySQL requires and SQLite and Postgres accept.
+    DB::statement('create index users_email_lower_idx on users ((lower(email)))');
+
+    expect($this->get('/truss/export/dbml')->assertOk()->getContent())->toContain('Table users {');
 });
 
 it('404s on an unknown format', function () {
