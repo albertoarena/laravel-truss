@@ -21,6 +21,13 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # Pest spans majors (^3.5 || ^4.0 || ^5.3) because each one needs a newer
+    # PHP: 3 keeps the PHP 8.2 lane, 5 needs 8.4. A major bump would replace the
+    # whole range and break the older lanes, so a new major is added by hand.
+    ignore:
+      - dependency-name: pestphp/pest
+        update-types:
+          - version-update:semver-major
     groups:
       composer-minor-patch:
         update-types:
