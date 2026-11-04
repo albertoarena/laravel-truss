@@ -53,3 +53,28 @@ it('round-trips a native column comment where the driver supports it', function 
 
     expect($status['comment'])->toBe('0 draft, 1 paid, 2 refunded');
 });
+
+/*
+ * A torn-down test's application holds its database connection in reference
+ * cycles, so without an explicit disconnect the PDO stays open until PHP's
+ * cycle collector happens to run. On the Postgres lane that let dead tests pile
+ * up past max_connections ("too many clients already") once Pest 4 changed when
+ * the collector runs. The pair below runs in file order: the first keeps a
+ * reference to its connection, the second checks it was closed when the first
+ * test ended, rather than left to garbage collection.
+ */
+it('opens a connection that the next test can inspect', function () {
+    DB::connection()->getPdo();
+
+    $GLOBALS['truss_lane_previous_connection'] = DB::connection();
+
+    expect(DB::connection()->getRawPdo())->not->toBeNull();
+});
+
+it('closes the previous test\'s connection when that test ends', function () {
+    $previous = $GLOBALS['truss_lane_previous_connection'] ?? null;
+    unset($GLOBALS['truss_lane_previous_connection']);
+
+    expect($previous)->not->toBeNull()
+        ->and($previous->getRawPdo())->toBeNull();
+});
