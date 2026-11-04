@@ -124,3 +124,14 @@ it('renders the title only for an empty schema', function () {
     expect($md)->toContain('# Data dictionary')
         ->and($md)->not->toContain('## ');
 });
+
+it('lists an expression index by its key parts', function () {
+    $tables = SchemaBuilder::make()->table('members', function ($t) {
+        $t->id();
+        $t->integer('tenant_id');
+        $t->string('email');
+        $t->expressionIndex(['tenant_id', ['expression' => 'lower(email)']], 'members_tenant_email_unique', unique: true);
+    })->build()['tables'];
+
+    expect(markdown($tables))->toContain('Indexes: members_tenant_email_unique (tenant_id, lower(email)) UNIQUE');
+});

@@ -381,3 +381,24 @@ it('still reports a real foreign key action change between MySQL and MariaDB', f
         ['name' => 'pu_user', 'changes' => ['on_update' => ['before' => 'restrict', 'after' => 'cascade']]],
     ]);
 });
+
+it('detects a change to the expression in an index', function () {
+    $index = fn (string $expression): array => [
+        'name' => 'users_email_lower_index',
+        'columns' => [],
+        'parts' => [['expression' => $expression]],
+        'unique' => false,
+    ];
+    $baseline = sdSnap([sdTable('users', [sdCol('id'), sdCol('email')], ['id'], [$index('lower(email)')])]);
+    $current = sdSnap([sdTable('users', [sdCol('id'), sdCol('email')], ['id'], [$index('upper(email)')])]);
+
+    $users = sdChangedTable((new SchemaDiffer)->diff($baseline, $current), 'users');
+
+    expect($users['indexes_changed'])->toBe([[
+        'name' => 'users_email_lower_index',
+        'changes' => ['parts' => [
+            'before' => [['expression' => 'lower(email)']],
+            'after' => [['expression' => 'upper(email)']],
+        ]],
+    ]]);
+});

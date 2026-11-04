@@ -24,3 +24,13 @@ it('is clean when no index matches the primary key', function () {
 
     expect(doctorCheck(new IndexDuplicatingPrimaryKey, $snapshot))->toBeClean();
 });
+
+it('does not call an index on the key column plus an expression a duplicate of the key', function () {
+    $snapshot = SchemaBuilder::make()
+        ->table('accounts', fn ($t) => $t->integer('code')->string('name')
+            ->primary(['code'])
+            ->expressionIndex(['code', ['expression' => 'lower(name)']], 'accounts_code_name_index'))
+        ->build();
+
+    expect(doctorCheck(new IndexDuplicatingPrimaryKey, $snapshot))->toBeClean();
+});

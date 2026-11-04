@@ -7,6 +7,7 @@ namespace AlbertoArena\Truss\Introspection;
 use AlbertoArena\Truss\Introspection\Data\Column;
 use AlbertoArena\Truss\Introspection\Data\ForeignKey;
 use AlbertoArena\Truss\Introspection\Data\Index;
+use AlbertoArena\Truss\Introspection\Data\IndexPart;
 use AlbertoArena\Truss\Introspection\Data\Table;
 
 /**
@@ -60,9 +61,19 @@ class SchemaSerializer
      */
     private function index(Index $index): array
     {
+        $parts = array_map(
+            fn (IndexPart $part): array => $part->column !== null
+                ? ['column' => $part->column]
+                : ['expression' => (string) $part->expression],
+            $index->parts,
+        );
+
+        // Only an index with an expression has parts, so every other index
+        // serializes exactly as it did before they existed.
         return [
             'name' => $index->name,
             'columns' => array_values($index->columns),
+            ...($parts !== [] ? ['parts' => $parts] : []),
             'unique' => $index->unique,
         ];
     }

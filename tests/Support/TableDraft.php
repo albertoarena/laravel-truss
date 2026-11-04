@@ -128,6 +128,24 @@ final class TableDraft
         return $this->addIndex($columns, true, $name);
     }
 
+    /**
+     * An index with an expression key part, shaped as the snapshot carries it:
+     * a string is a column part, `['expression' => ...]` an expression part.
+     *
+     * @param  list<string|array{expression: string}>  $parts
+     */
+    public function expressionIndex(array $parts, string $name, bool $unique = false): self
+    {
+        $this->indexes[] = [
+            'name' => $name,
+            'columns' => array_values(array_filter($parts, 'is_string')),
+            'parts' => array_map(fn (string|array $p): array => is_string($p) ? ['column' => $p] : $p, $parts),
+            'unique' => $unique,
+        ];
+
+        return $this;
+    }
+
     /** The two columns and composite index that Laravel's morphs() creates. */
     public function morphs(string $name): self
     {

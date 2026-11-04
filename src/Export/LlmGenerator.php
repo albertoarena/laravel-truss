@@ -77,7 +77,9 @@ class LlmGenerator implements Generator
     {
         $columns = [];
         foreach ($table['indexes'] ?? [] as $index) {
-            if (($index['unique'] ?? false) && count($index['columns']) === 1) {
+            // A unique index with an expression part makes no column unique on
+            // its own, even when its only column part is a single column.
+            if (($index['unique'] ?? false) && count($index['columns']) === 1 && ($index['parts'] ?? []) === []) {
                 $columns[] = $index['columns'][0];
             }
         }

@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Doctor\Category;
 use AlbertoArena\Truss\Doctor\Confidence;
 use AlbertoArena\Truss\Doctor\Contracts\Rule;
 use AlbertoArena\Truss\Doctor\Finding;
+use AlbertoArena\Truss\Doctor\IndexKey;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
@@ -83,7 +84,7 @@ final class PolymorphicWithoutIndex implements Rule
     private function hasLeadingIndex(array $table, string $typeColumn, string $idColumn): bool
     {
         foreach ($table['indexes'] ?? [] as $index) {
-            if (array_slice($index['columns'] ?? [], 0, 2) === [$typeColumn, $idColumn]) {
+            if (array_slice(IndexKey::of($index), 0, 2) === [$typeColumn, $idColumn]) {
                 return true;
             }
         }

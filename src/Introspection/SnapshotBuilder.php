@@ -233,6 +233,7 @@ class SnapshotBuilder
     private function indexes(Builder $builder, string $table): array
     {
         $indexes = [];
+        $parts = (new IndexParts)->forTable($builder->getConnection(), $table);
 
         foreach ($builder->getIndexes($table) as $index) {
             if ($index['primary'] ?? false) {
@@ -243,6 +244,7 @@ class SnapshotBuilder
                 name: $index['name'],
                 columns: array_values($index['columns']),
                 unique: (bool) $index['unique'],
+                parts: $parts[strtolower($index['name'])] ?? [],
             );
         }
 

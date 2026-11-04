@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Doctor\Category;
 use AlbertoArena\Truss\Doctor\Confidence;
 use AlbertoArena\Truss\Doctor\Contracts\Rule;
 use AlbertoArena\Truss\Doctor\Finding;
+use AlbertoArena\Truss\Doctor\IndexKey;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
@@ -48,10 +49,10 @@ final class DuplicateIndex implements Rule
             $seen = [];
 
             foreach ($table['indexes'] ?? [] as $index) {
-                $key = implode(',', $index['columns'] ?? []);
+                $key = implode(',', IndexKey::of($index));
 
                 if (isset($seen[$key])) {
-                    $columns = implode(', ', $index['columns'] ?? []);
+                    $columns = IndexKey::describe($index);
 
                     yield new Finding(
                         code: $this->code(),

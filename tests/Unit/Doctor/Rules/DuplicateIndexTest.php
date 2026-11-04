@@ -33,3 +33,24 @@ it('treats a different column order as not a duplicate', function () {
 
     expect(doctorCheck(new DuplicateIndex, $snapshot))->toBeClean();
 });
+
+it('does not call an index with an expression a duplicate of one on its columns alone', function () {
+    $snapshot = SchemaBuilder::make()
+        ->table('members', fn ($t) => $t->id()->integer('tenant_id')->string('email')
+            ->index('tenant_id', 'members_tenant_id_index')
+            ->expressionIndex(['tenant_id', ['expression' => 'lower(email)']], 'members_tenant_email_index'))
+        ->build();
+
+    expect(doctorCheck(new DuplicateIndex, $snapshot))->toBeClean();
+});
+
+it('flags two indexes with the same expression key', function () {
+    $snapshot = SchemaBuilder::make()
+        ->table('members', fn ($t) => $t->id()->string('email')
+            ->expressionIndex([['expression' => 'lower(email)']], 'members_email_lower_index')
+            ->expressionIndex([['expression' => 'lower(email)']], 'members_email_lower_copy'))
+        ->build();
+
+    expect(doctorCheck(new DuplicateIndex, $snapshot))
+        ->toHaveFinding('TRUSS-IDX-002', table: 'members');
+});

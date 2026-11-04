@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Doctor\Category;
 use AlbertoArena\Truss\Doctor\Confidence;
 use AlbertoArena\Truss\Doctor\Contracts\Rule;
 use AlbertoArena\Truss\Doctor\Finding;
+use AlbertoArena\Truss\Doctor\IndexKey;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
@@ -53,15 +54,15 @@ final class RedundantPrefixIndex implements Rule
                     continue;
                 }
 
-                $columns = $index['columns'] ?? [];
+                $columns = IndexKey::of($index);
                 $covered = $this->coveringIndex($indexes, $index, $columns);
 
                 if ($covered === null) {
                     continue;
                 }
 
-                $shorter = implode(', ', $columns);
-                $longer = implode(', ', $covered['columns']);
+                $shorter = IndexKey::describe($index);
+                $longer = IndexKey::describe($covered);
 
                 yield new Finding(
                     code: $this->code(),
@@ -94,7 +95,7 @@ final class RedundantPrefixIndex implements Rule
                 continue;
             }
 
-            $otherColumns = $other['columns'] ?? [];
+            $otherColumns = IndexKey::of($other);
 
             if (count($otherColumns) > $count && array_slice($otherColumns, 0, $count) === $columns) {
                 return $other;

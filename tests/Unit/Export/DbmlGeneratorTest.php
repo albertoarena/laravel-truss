@@ -217,3 +217,27 @@ it('leaves out the indexes block when every index has no columns', function () {
 
     expect(dbml($tables))->not->toContain('indexes {');
 });
+
+it('writes an expression key part as a DBML expression, in key order', function () {
+    $tables = SchemaBuilder::make()->table('members', function ($t) {
+        $t->id();
+        $t->integer('tenant_id');
+        $t->string('email');
+        $t->expressionIndex(['tenant_id', ['expression' => 'lower(email)']], 'members_tenant_email_unique', unique: true);
+        $t->expressionIndex([['expression' => 'lower(email)']], 'members_email_lower_index');
+    })->build()['tables'];
+
+    expect(dbml($tables))->toContain("indexes {\n    (tenant_id, `lower(email)`) [unique]\n    `lower(email)`\n  }");
+});
+
+// A DBML expression is delimited by backticks and cannot hold one, so the
+// identifier quotes MySQL prints inside an expression are dropped.
+it('drops the backticks MySQL writes inside an expression', function () {
+    $tables = SchemaBuilder::make()->table('members', function ($t) {
+        $t->id();
+        $t->string('email');
+        $t->expressionIndex([['expression' => 'lower(`email`)']], 'members_email_lower_index');
+    })->build()['tables'];
+
+    expect(dbml($tables))->toContain('    `lower(email)`');
+});
