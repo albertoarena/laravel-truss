@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Doctor\Category;
 use AlbertoArena\Truss\Doctor\Confidence;
 use AlbertoArena\Truss\Doctor\Contracts\Rule;
 use AlbertoArena\Truss\Doctor\Finding;
+use AlbertoArena\Truss\Doctor\IndexKey;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
@@ -51,7 +52,7 @@ final class IndexDuplicatingPrimaryKey implements Rule
             }
 
             foreach ($table['indexes'] ?? [] as $index) {
-                if (($index['columns'] ?? []) !== $primaryKey) {
+                if (IndexKey::of($index) !== $primaryKey) {
                     continue;
                 }
 

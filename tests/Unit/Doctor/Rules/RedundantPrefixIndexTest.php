@@ -34,3 +34,13 @@ it('is clean when no index is a prefix of another', function () {
 
     expect(doctorCheck(new RedundantPrefixIndex, $snapshot))->toBeClean();
 });
+
+it('does not call an index with an expression a prefix of a longer column index', function () {
+    $snapshot = SchemaBuilder::make()
+        ->table('events', fn ($t) => $t->id()->string('a')->string('b')
+            ->expressionIndex(['a', ['expression' => 'lower(b)']], 'events_a_lower_b_index')
+            ->index(['a', 'b'], 'events_a_b_index'))
+        ->build();
+
+    expect(doctorCheck(new RedundantPrefixIndex, $snapshot))->toBeClean();
+});

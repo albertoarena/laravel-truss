@@ -65,7 +65,7 @@ class MarkdownGenerator implements Generator
         if ($indexes !== []) {
             $lines[] = '';
             $lines[] = 'Indexes: '.implode('; ', array_map(
-                fn (array $i): string => trim(((string) $i['name']).' (').implode(', ', $i['columns']).')'.($i['unique'] ? ' UNIQUE' : ''),
+                fn (array $i): string => trim(((string) $i['name']).' (').implode(', ', $this->indexKey($i)).')'.($i['unique'] ? ' UNIQUE' : ''),
                 $indexes,
             ));
         }
@@ -118,6 +118,25 @@ class MarkdownGenerator implements Generator
             in_array($name, $pk, true) ? 'PK' : null,
             in_array($name, $fk, true) ? 'FK' : null,
         ]));
+    }
+
+    /**
+     * An index's key parts: its columns, or for an index with an expression
+     * every part in order, the expression as the database printed it.
+     *
+     * @param  array<string, mixed>  $index
+     * @return list<string>
+     */
+    private function indexKey(array $index): array
+    {
+        if (($index['parts'] ?? []) === []) {
+            return $index['columns'];
+        }
+
+        return array_map(
+            fn (array $part): string => (string) ($part['column'] ?? $part['expression']),
+            $index['parts'],
+        );
     }
 
     /**

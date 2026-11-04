@@ -202,3 +202,18 @@ it('still flags a pivot whose unique column is nullable', function () {
     expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
         ->toHaveFinding('TRUSS-INT-007', table: 'invites');
 });
+
+it('does not count a unique index on one key plus an unrelated expression as covering the pair', function () {
+    $snapshot = SchemaBuilder::make()
+        ->table('teams', fn ($t) => $t->id())
+        ->table('users', fn ($t) => $t->id())
+        ->table('team_user', fn ($t) => $t
+            ->foreignId('team_id')->on('teams')
+            ->foreignId('user_id')->on('users')
+            ->string('role')
+            ->expressionIndex(['team_id', ['expression' => 'lower(role)']], 'team_user_team_role_unique', unique: true))
+        ->build();
+
+    expect(doctorCheck(new PivotWithoutUniqueKey, $snapshot))
+        ->toHaveFinding('TRUSS-INT-007', table: 'team_user');
+});

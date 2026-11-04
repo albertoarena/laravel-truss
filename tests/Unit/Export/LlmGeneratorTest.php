@@ -61,3 +61,14 @@ it('has no trailing whitespace on any line and is deterministic', function () {
         ->and($out)->not->toEndWith("\n")
         ->and((new LlmGenerator)->generate(llmTables(), ['a note']))->toBe($out);
 });
+
+it('does not mark a column unique when its unique index also has an expression', function () {
+    $tables = SchemaBuilder::make()->table('members', function ($t) {
+        $t->id();
+        $t->integer('tenant_id');
+        $t->string('email');
+        $t->expressionIndex(['tenant_id', ['expression' => 'lower(email)']], 'members_tenant_email_unique', unique: true);
+    })->build()['tables'];
+
+    expect((new LlmGenerator)->generate($tables))->not->toMatch('/tenant_id \S+ unique/');
+});

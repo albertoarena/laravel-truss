@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Doctor\Category;
 use AlbertoArena\Truss\Doctor\Confidence;
 use AlbertoArena\Truss\Doctor\Contracts\Rule;
 use AlbertoArena\Truss\Doctor\Finding;
+use AlbertoArena\Truss\Doctor\IndexKey;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
@@ -72,7 +73,7 @@ final class UnindexedSoftDelete implements Rule
     private function anyIndexIncludes(array $table, string $column): bool
     {
         foreach ($table['indexes'] ?? [] as $index) {
-            if (in_array($column, $index['columns'] ?? [], true)) {
+            if (in_array($column, IndexKey::of($index), true)) {
                 return true;
             }
         }

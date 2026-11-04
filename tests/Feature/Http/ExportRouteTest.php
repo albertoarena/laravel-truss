@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\MySqlConnection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -66,8 +67,13 @@ it('never serves an excluded table', function () {
 });
 
 it('serves dbml for a table with an expression index (#107)', function () {
-    // Every driver reports an expression index with no columns. The doubled
-    // parentheses are what MySQL requires and SQLite and Postgres accept.
+    // MariaDB has no expression indexes. The doubled parentheses are what
+    // MySQL requires and SQLite and Postgres accept.
+    $connection = DB::connection();
+    if ($connection instanceof MySqlConnection && $connection->isMaria()) {
+        $this->markTestSkipped('MariaDB has no expression indexes.');
+    }
+
     DB::statement('create index users_email_lower_idx on users ((lower(email)))');
 
     expect($this->get('/truss/export/dbml')->assertOk()->getContent())->toContain('Table users {');

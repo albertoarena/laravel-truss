@@ -56,12 +56,13 @@ class DbmlGenerator implements Generator
             $idx[] = '    '.$this->columnList($pk).' [pk]';
         }
         foreach ($table['indexes'] ?? [] as $index) {
-            // An expression index arrives with no columns (Laravel drops the
-            // expression on every driver), and DBML has nothing to write for it.
-            if ($index['columns'] === []) {
+            $key = $this->indexKey($index);
+            // An index with no key at all has nothing DBML can write. It only
+            // happens on a driver whose expression parts Truss cannot read.
+            if ($key === null) {
                 continue;
             }
-            $idx[] = '    '.$this->columnList($index['columns']).($index['unique'] ? ' [unique]' : '');
+            $idx[] = '    '.$key.($index['unique'] ? ' [unique]' : '');
         }
         if ($idx !== []) {
             $lines = [...$lines, '', '  indexes {', ...$idx, '  }'];
@@ -131,6 +132,30 @@ class DbmlGenerator implements Generator
         $names = array_map($this->name(...), $columns);
 
         return count($names) > 1 ? '('.implode(', ', $names).')' : $names[0];
+    }
+
+    /**
+     * An index key as the indexes block writes it: its columns, or for an index
+     * with an expression every key part in order, each expression in backticks.
+     * A DBML expression cannot hold a backtick, so the identifier quotes MySQL
+     * prints inside one are dropped.
+     *
+     * @param  array<string, mixed>  $index
+     */
+    private function indexKey(array $index): ?string
+    {
+        if (($index['parts'] ?? []) === []) {
+            return $index['columns'] === [] ? null : $this->columnList($index['columns']);
+        }
+
+        $parts = array_map(
+            fn (array $part): string => isset($part['column'])
+                ? $this->name((string) $part['column'])
+                : '`'.str_replace('`', '', (string) $part['expression']).'`',
+            $index['parts'],
+        );
+
+        return count($parts) > 1 ? '('.implode(', ', $parts).')' : $parts[0];
     }
 
     /**

@@ -106,7 +106,7 @@ class SchemaDiffer
         [$indexesAdded, $indexesRemoved, $indexesChanged] = $this->diffKeyed(
             $baseline['indexes'] ?? [],
             $current['indexes'] ?? [],
-            ['columns', 'unique'],
+            ['columns', 'parts', 'unique'],
         );
 
         [$foreignKeysAdded, $foreignKeysRemoved, $foreignKeysChanged] = $this->diffKeyed(

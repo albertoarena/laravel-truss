@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Doctor\Category;
 use AlbertoArena\Truss\Doctor\Confidence;
 use AlbertoArena\Truss\Doctor\Contracts\Rule;
 use AlbertoArena\Truss\Doctor\Finding;
+use AlbertoArena\Truss\Doctor\IndexKey;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
@@ -163,7 +164,7 @@ final class PivotWithoutUniqueKey implements Rule
                 continue;
             }
 
-            $columns = $index['columns'] ?? [];
+            $columns = IndexKey::of($index);
 
             if ($this->sameSet($columns, $pair)) {
                 return true;
