@@ -341,13 +341,17 @@ it('renders every fuzz name exactly as the committed fixture Vitest parses', fun
         ->toBe(file_get_contents(dirname(__DIR__, 2).'/Fixtures/export/mermaid-name-fuzz.mmd'));
 });
 
+// Except a table name that starts with non-ASCII whitespace: Mermaid 11.17
+// records it verbatim, 11.16 did not, and the export keeps aliasing it so the
+// file still parses on the older renderers it may land in.
 it('passes a fuzz name through exactly when Mermaid records it verbatim', function () {
     $fuzz = json_decode((string) file_get_contents(dirname(__DIR__, 2).'/Fixtures/export/mermaid-name-fuzz.json'), true);
 
     foreach ($fuzz['names'] as $i => $name) {
         $column = str_contains(mermaid([awkwardTable('t', [[$name]])]), "\n    int {$name}\n");
         $table = str_contains(mermaid([awkwardTable($name, [['id']])]), "\n  {$name} {\n");
+        $stricter = preg_match('/^[\x{A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]/u', $name) === 1;
 
-        expect([$column, $table])->toBe([$fuzz['columns'][$i], $fuzz['tables'][$i]], json_encode($name));
+        expect([$column, $table])->toBe([$fuzz['columns'][$i], $fuzz['tables'][$i] && ! $stricter], json_encode($name));
     }
 });

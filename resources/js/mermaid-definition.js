@@ -25,8 +25,10 @@ const ATTRIBUTE_START = /^[*A-Za-z_À-￿]/i;
 const KEY_KEYWORD = /^(?:PK|FK|UK)(?![A-Za-z0-9_])/i;
 // The lexer's generic-type rule: two `~`, no whitespace before the first or after the last.
 const GENERIC_WORD = /^\S*~.*~\S*$/;
-// The lexer skips whitespace before a name, so a name that starts with any
-// (U+00A0, U+3000 and U+FEFF included) loses it, or is not there at all.
+// The lexer skips whitespace before a name, so a column that starts with any
+// (U+00A0, U+3000 and U+FEFF included) loses it, or is not there at all. Since
+// Mermaid 11.17 a table name keeps leading non-ASCII whitespace, but it is still
+// aliased on purpose, so the definition parses on 11.16 as well.
 const LEADING_SPACE = /^\s/;
 // Mermaid swaps `#name;` and `#123;` for the character before it lexes.
 const ENTITY_CODE = /#\w+;/;

@@ -128,6 +128,8 @@ class MermaidGenerator implements Generator
     {
         $lower = strtolower($name);
         if (preg_match('/^(?:[^\x00-\x7F]|[A-Za-z0-9_\-*.])+$/uD', $name) !== 1
+            // Mermaid 11.17 keeps leading non-ASCII whitespace in a table name
+            // and 11.16 did not; aliased on purpose so both renderers parse it.
             || preg_match('/^['.self::SPACE.']/u', $name) === 1
             || preg_match(self::ENTITY_KEYWORD, $lower) === 1
             || preg_match('/direction['.self::SPACE.']+(?:tb|bt|rl|lr)/u', $lower) === 1) {
