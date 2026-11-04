@@ -194,3 +194,26 @@ it('writes a quote or line break DBML cannot hold as an underscore', function ()
     expect($out)->toContain('Table "50% _off_" {')
         ->and($out)->toContain('  "two_lines" int');
 });
+
+it('skips an index with no columns, which is how an expression index arrives', function () {
+    $tables = SchemaBuilder::make()->table('t', function ($t) {
+        $t->id();
+        $t->string('name');
+        $t->index([], 't_name_lower_idx');
+        $t->index('name', 't_name_index');
+    })->build()['tables'];
+
+    $out = dbml($tables);
+
+    expect($out)->toContain("indexes {\n    name\n  }");
+});
+
+it('leaves out the indexes block when every index has no columns', function () {
+    $tables = SchemaBuilder::make()->table('t', function ($t) {
+        $t->id();
+        $t->string('name');
+        $t->index([], 't_name_lower_idx');
+    })->build()['tables'];
+
+    expect(dbml($tables))->not->toContain('indexes {');
+});

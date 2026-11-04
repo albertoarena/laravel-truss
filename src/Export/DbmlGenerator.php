@@ -56,6 +56,11 @@ class DbmlGenerator implements Generator
             $idx[] = '    '.$this->columnList($pk).' [pk]';
         }
         foreach ($table['indexes'] ?? [] as $index) {
+            // An expression index arrives with no columns (Laravel drops the
+            // expression on every driver), and DBML has nothing to write for it.
+            if ($index['columns'] === []) {
+                continue;
+            }
             $idx[] = '    '.$this->columnList($index['columns']).($index['unique'] ? ' [unique]' : '');
         }
         if ($idx !== []) {

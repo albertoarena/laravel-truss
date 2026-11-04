@@ -17,6 +17,7 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 ### Fixed
 
 - **The theme and legend buttons look the same in every browser.** Their icons were text characters no Truss font carries, so each browser drew them from its own fallback font: in Firefox the half circle was smaller, the sun was a thin asterisk and the moon was filled. They are now drawn as SVG at the same size and stroke as the other toolbar icons.
+- **The DBML export no longer fails on a table with an expression index.** An index on an expression, such as `lower(email)`, made `truss:export --format=dbml`, the web export, the `truss` binary and the MCP `get_schema` tool stop with "Undefined array key 0", on Postgres, MySQL and SQLite alike. Laravel reports such an index with no columns, and DBML has nothing to write for it, so the DBML export now leaves it out. The other formats were not affected. Reported by @hmzisb in #107.
 
 ## [1.15.3] - 2026-10-28
 
