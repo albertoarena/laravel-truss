@@ -49,7 +49,7 @@ jobs:
       - name: Run tests
         run: vendor/bin/pest
 
-  # Dedicated MySQL and Postgres lanes. The main matrix above runs SQLite, which
+  # Dedicated MySQL, MariaDB and Postgres lanes. The main matrix above runs SQLite, which
   # cannot exercise native schema comments. These lanes point the `testing`
   # connection (DB_CONNECTION + DB_*) at a service container, so the suite runs
   # against real MySQL/Postgres, which the workstream A `database` annotation
@@ -90,6 +90,52 @@ jobs:
       - name: Run tests
         env:
           DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: truss_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: vendor/bin/pest
+
+  # MariaDB through Laravel's own mariadb driver. It reports structure
+  # differently from MySQL (defaults, display widths, foreign key actions) and
+  # has no expression indexes, so MySQL passing says nothing about it.
+  test-mariadb:
+    runs-on: ubuntu-latest
+    name: MariaDB - PHP 8.4 - Laravel 12
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: truss_test
+          MARIADB_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, pdo_mysql, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:12.*" "orchestra/testbench:10.*" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: mariadb
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_DATABASE: truss_test

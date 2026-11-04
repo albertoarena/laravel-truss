@@ -71,7 +71,7 @@ abstract class TestCase extends Orchestra
 
     /**
      * The `testing` connection config, selected by DB_CONNECTION. Unset (local
-     * default) is in-memory SQLite; 'mysql' and 'pgsql' read the DB_* vars the CI
+     * default) is in-memory SQLite; 'mysql', 'mariadb' and 'pgsql' read the DB_* vars the CI
      * service lanes provide. Every branch is a disposable test database.
      *
      * @return array<string, mixed>
@@ -81,6 +81,15 @@ abstract class TestCase extends Orchestra
         return match (env('DB_CONNECTION', 'sqlite')) {
             'mysql' => [
                 'driver' => 'mysql',
+                'host' => env('DB_HOST', '127.0.0.1'),
+                'port' => (string) env('DB_PORT', '3306'),
+                'database' => env('DB_DATABASE', 'truss_test'),
+                'username' => env('DB_USERNAME', 'root'),
+                'password' => (string) env('DB_PASSWORD', ''),
+                'prefix' => '',
+            ],
+            'mariadb' => [
+                'driver' => 'mariadb',
                 'host' => env('DB_HOST', '127.0.0.1'),
                 'port' => (string) env('DB_PORT', '3306'),
                 'database' => env('DB_DATABASE', 'truss_test'),
