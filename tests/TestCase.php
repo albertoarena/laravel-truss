@@ -23,6 +23,19 @@ abstract class TestCase extends Orchestra
         Schema::dropAllTables();
     }
 
+    protected function tearDown(): void
+    {
+        // The torn-down application holds its connections in reference cycles,
+        // so they would stay open until PHP's cycle collector runs. Close them
+        // now, or a persistent lane piles up dead connections: Postgres refused
+        // new ones ("too many clients already") once Pest 4 moved the collector.
+        foreach (array_keys($this->app?->make('db')->getConnections() ?? []) as $name) {
+            $this->app->make('db')->disconnect($name);
+        }
+
+        parent::tearDown();
+    }
+
     protected function getPackageProviders($app): array
     {
         // laravel/mcp is an optional dependency, installed here as require-dev so
