@@ -21,6 +21,12 @@ afterEach(function () {
     Schema::dropIfExists('truss_lane_probe');
 });
 
+it('runs on the driver DB_CONNECTION names', function () {
+    // An unknown DB_CONNECTION falls back to SQLite, so a lane that names a
+    // driver TestCase does not map would pass while testing nothing new.
+    expect(DB::connection()->getDriverName())->toBe(env('DB_CONNECTION', 'sqlite'));
+});
+
 it('creates and introspects a table on the active connection', function () {
     Schema::create('truss_lane_probe', function ($table) {
         $table->id();
