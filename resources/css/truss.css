@@ -240,6 +240,7 @@ body {
   background: var(--bp-field); border: 1px solid var(--bp-field-line); border-radius: 2px; cursor: pointer;
 }
 .truss-util:hover { border-color: var(--bp-ink); }
+.truss-util svg[hidden] { display: none; } /* the theme button holds one icon per state */
 .truss-util[aria-expanded="true"] { background: var(--bp-ink); color: var(--bp-panel); border-color: var(--bp-ink); }
 .truss-util--more { display: none; } /* only on phone */
 

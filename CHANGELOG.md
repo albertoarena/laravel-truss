@@ -14,6 +14,10 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 - **The bundled Mermaid is now 11.17.2.** Nothing in how Truss draws your diagram changes, and the Mermaid export is byte for byte the same. Mermaid 11.17 now accepts a table name that starts with a non-ASCII space (a no-break space, an ideographic space or a byte order mark), which 11.16 rejected. Truss keeps rewriting such a name for Mermaid, with the real name as its label, so the diagram and the export still render on 11.16. If you load Mermaid from a CDN through `TRUSS_MERMAID_URL`, 11.16.1 or later still works.
 
+### Fixed
+
+- **The theme and legend buttons look the same in every browser.** Their icons were text characters no Truss font carries, so each browser drew them from its own fallback font: in Firefox the half circle was smaller, the sun was a thin asterisk and the moon was filled. They are now drawn as SVG at the same size and stroke as the other toolbar icons.
+
 ## [1.15.3] - 2026-10-28
 
 ### Security
