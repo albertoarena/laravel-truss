@@ -9,6 +9,9 @@ on:
 jobs:
   frontend:
     runs-on: ubuntu-latest
+    # A normal run takes about two minutes. Without a limit, a stalled step
+    # waits for the six-hour job limit of GitHub Actions.
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -46,8 +49,31 @@ jobs:
       # Firefox is scoped by testMatch to the label-geometry spec alone. Issue
       # #59 was a Firefox-only clipping bug that Chromium could not reproduce,
       # so that one spec earns a second engine without doubling the run.
+      # package-lock.json is gitignored, so the Playwright version is known only
+      # after npm install. The browser cache is keyed on that version.
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # The install downloads browsers and system packages. A slow mirror held
+      # it for 14 minutes once, so it fails after 10 and the run can be retried.
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 10
         run: npx playwright install --with-deps chromium firefox
+
+      # The cache holds the browsers but not the system packages they need.
+      - name: Install Playwright system packages
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        timeout-minutes: 10
+        run: npx playwright install-deps chromium firefox
 
       - name: Browser tests (Playwright)
         run: npm run test:e2e
