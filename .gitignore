@@ -37,9 +37,10 @@
 /.vscode/
 *.iml
 
-# Local Claude files
+# Local Claude and agent files
 CLAUDE.local.md
 CLAUDE.*.local.md
+AGENTS.local.md
 
 # Workspace snapshot archives: these capture vendor/, node_modules/ and the
 # gitignored .docs/, so one was committed by accident on 18/08/2026.

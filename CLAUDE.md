@@ -48,6 +48,7 @@ Frontend-specific conventions (keeping the live demo aligned, the no-build/no-CD
 
 ## Pointers
 
+- Rules for every AI agent, including the confidentiality and clarity pass before each commit, pull request and post: `AGENTS.md`
 - Architecture and domain model: `docs/DESIGN.md`
 - Phased build plan: `docs/INSTRUCTIONS.md`
 - Decision log: `docs/DECISIONS.md`
