@@ -1363,7 +1363,12 @@ function applyTheme() {
   if (t === 'light' || t === 'dark') app.ownerDocument.documentElement.setAttribute('data-theme', t);
   else app.ownerDocument.documentElement.removeAttribute('data-theme');
   if (el.themeBtn) {
-    el.themeBtn.textContent = t === 'light' ? '☀' : t === 'dark' ? '☾' : '◐';
+    // One inline SVG per state, shown by name: the glyphs these replaced came
+    // from a different system font in each browser.
+    const current = `theme-${t || 'auto'}`;
+    el.themeBtn.querySelectorAll('svg[data-icon]').forEach((icon) => {
+      icon.toggleAttribute('hidden', icon.dataset.icon !== current);
+    });
     el.themeBtn.title = `Theme: ${t || 'auto'}`;
   }
 }

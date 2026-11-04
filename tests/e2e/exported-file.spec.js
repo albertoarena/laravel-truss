@@ -99,3 +99,37 @@ test('offers no server export, because there is no server', async ({ page }) => 
   await expect(app).not.toHaveAttribute('data-export-endpoint', /./);
   await expect(app).not.toHaveAttribute('data-schema-endpoint', /./);
 });
+
+// The toolbar icons are inline SVG, not text. The theme and legend buttons used
+// to be Unicode glyphs (◐ ☀ ☾ ▤) that no Truss font carries, so each browser
+// drew them from a different system fallback: Firefox showed a smaller half
+// circle, a thin asterisk for the sun and a filled moon. An SVG is drawn the
+// same everywhere, at the 15px the other toolbar icons use.
+async function expectSvgIcon(button, name) {
+  const icon = button.locator('svg:visible');
+  await expect(icon).toHaveCount(1);
+  if (name) await expect(icon).toHaveAttribute('data-icon', name);
+  expect((await button.textContent()).trim()).toBe('');
+  const box = await icon.boundingBox();
+  expect(Math.round(box.width)).toBe(15);
+  expect(Math.round(box.height)).toBe(15);
+}
+
+test('draws the theme icon as an SVG in every theme state', async ({ page }) => {
+  await page.goto(`file://${out}`);
+  await expect(page.locator('#truss-canvas svg')).toBeVisible();
+
+  const button = page.locator('#truss-theme-btn');
+  for (const state of ['auto', 'light', 'dark', 'auto']) {
+    await expect(button).toHaveAttribute('title', `Theme: ${state}`);
+    await expectSvgIcon(button, `theme-${state}`);
+    await button.click();
+  }
+});
+
+test('draws the legend icon as an SVG', async ({ page }) => {
+  await page.goto(`file://${out}`);
+  await expect(page.locator('#truss-canvas svg')).toBeVisible();
+
+  await expectSvgIcon(page.locator('#truss-legend-btn'));
+});
