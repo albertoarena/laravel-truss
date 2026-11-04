@@ -182,6 +182,12 @@ class DbmlGenerator implements Generator
     {
         $s = (string) $value;
 
+        // SQLite, Postgres and MariaDB report a string default as an SQL
+        // literal, quotes doubled inside and, on Postgres, a cast after it.
+        if (preg_match("/^'((?:[^']|'')*)'(?:::[a-z_][\\w .\"\\[\\]]*)?$/is", $s, $literal) === 1) {
+            return "'".str_replace("'", "\\'", str_replace("''", "'", $literal[1]))."'";
+        }
+
         if (preg_match('/^-?\d+(\.\d+)?$/', $s) === 1) {
             return $s;                                    // number, bare
         }

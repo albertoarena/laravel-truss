@@ -241,3 +241,23 @@ it('drops the backticks MySQL writes inside an expression', function () {
 
     expect(dbml($tables))->toContain('    `lower(email)`');
 });
+
+// SQLite, Postgres and MariaDB report a string default as an SQL literal,
+// Postgres with a cast. DBML wants the value as a DBML string.
+it('writes a string default reported as an SQL literal as a DBML string', function () {
+    $tables = SchemaBuilder::make()->table('t', function ($t) {
+        $t->column('status', 'varchar(20)', nullable: false, default: "'draft'");
+        $t->column('quote', 'varchar(20)', nullable: false, default: "'it''s'");
+        $t->column('pg', 'varchar(20)', nullable: false, default: "'draft'::character varying");
+        $t->column('word', 'varchar(20)', nullable: false, default: "'NULL'");
+        $t->column('day', 'date', nullable: false, default: "'2026-01-01'::date");
+    })->build()['tables'];
+
+    $out = dbml($tables);
+
+    expect($out)->toContain("status varchar(20) [not null, default: 'draft']")
+        ->and($out)->toContain("quote varchar(20) [not null, default: 'it\\'s']")
+        ->and($out)->toContain("pg varchar(20) [not null, default: 'draft']")
+        ->and($out)->toContain("word varchar(20) [not null, default: 'NULL']")
+        ->and($out)->toContain("day date [not null, default: '2026-01-01']");
+});
