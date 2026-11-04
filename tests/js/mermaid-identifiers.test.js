@@ -78,6 +78,14 @@ const TABLE_CASES = [...CASES.tables.rejected, ...CASES.tables.accepted];
 // Seeded fuzz names, with what Mermaid does with each (see support/mermaid-name-fuzz.mjs).
 const FUZZ = JSON.parse(readFileSync(new URL('../Fixtures/export/mermaid-name-fuzz.json', import.meta.url), 'utf8'));
 
+// Mermaid 11.17 stopped skipping non-ASCII whitespace (U+00A0, U+3000, U+FEFF
+// and the rest of \s) before a table name, so it records such a name verbatim.
+// Truss still aliases it on purpose: the alias shows the same real name, and a
+// definition that keeps it parses on 11.16 too (a CDN TRUSS_MERMAID_URL, or the
+// renderer an export lands in). This is the one place the predicates are
+// stricter than the vendored Mermaid; ASCII whitespace it rejects anyway.
+const STRICTER_TABLE = /^\s/;
+
 // A quoted label cannot hold a line break, so the generators write it as a space.
 const shown = (name) => name.replace(/[\r\n]+/g, ' ');
 
@@ -106,8 +114,8 @@ describe('the safe-name predicates agree with real Mermaid', () => {
 
   it.each(TABLE_CASES)('table %j', async (name) => {
     const verbatim = (await recordedTable(name)) === name;
-    expect(isMermaidSafeTable(name)).toBe(verbatim);
-    expect(CASES.tables.accepted.includes(name)).toBe(verbatim);
+    expect(isMermaidSafeTable(name)).toBe(verbatim && !STRICTER_TABLE.test(name));
+    expect(CASES.tables.accepted.includes(name)).toBe(isMermaidSafeTable(name));
   });
 });
 
@@ -159,7 +167,7 @@ describe('the stored fuzz verdicts match real Mermaid, and so do the predicates'
     const column = (await recordedColumn(name)) === name;
     const table = (await recordedTable(name)) === name;
     expect([FUZZ.columns[i], FUZZ.tables[i]]).toEqual([column, table]);
-    expect([isMermaidSafeColumn(name), isMermaidSafeTable(name)]).toEqual([column, table]);
+    expect([isMermaidSafeColumn(name), isMermaidSafeTable(name)]).toEqual([column, table && !STRICTER_TABLE.test(name)]);
   });
 });
 
