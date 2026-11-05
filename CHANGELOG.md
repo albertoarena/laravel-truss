@@ -10,6 +10,8 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+## [1.15.4] - 2026-11-05
+
 ### Changed
 
 - **The bundled Mermaid is now 11.17.2.** Nothing in how Truss draws your diagram changes, and the Mermaid export is byte for byte the same. Mermaid 11.17 now accepts a table name that starts with a non-ASCII space (a no-break space, an ideographic space or a byte order mark), which 11.16 rejected. Truss keeps rewriting such a name for Mermaid, with the real name as its label, so the diagram and the export still render on 11.16. If you load Mermaid from a CDN through `TRUSS_MERMAID_URL`, 11.16.1 or later still works.
