@@ -8,6 +8,7 @@ use AlbertoArena\Truss\Introspection\Data\Column;
 use AlbertoArena\Truss\Introspection\Data\ForeignKey;
 use AlbertoArena\Truss\Introspection\Data\Index;
 use AlbertoArena\Truss\Introspection\Data\Table;
+use Illuminate\Database\MySqlConnection;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -198,15 +199,33 @@ class SnapshotBuilder
      */
     private function columns(Builder $builder, string $table): array
     {
+        $connection = $builder->getConnection();
+        $maria = $connection instanceof MySqlConnection && $connection->isMaria();
+
         return array_map(
             fn (array $column): Column => new Column(
                 name: $column['name'],
                 type: $column['type'],
                 nullable: (bool) $column['nullable'],
-                default: $column['default'] !== null ? (string) $column['default'] : null,
+                default: $this->columnDefault($column['default'], $maria),
             ),
             $builder->getColumns($table),
         );
+    }
+
+    /**
+     * MariaDB reports a nullable column with no default as the default NULL,
+     * spelled as the bare keyword, where every other driver reports none. A
+     * string default of the word NULL is quoted there ('NULL'), so the bare
+     * keyword is never a string. Every other default is kept as reported.
+     */
+    private function columnDefault(mixed $default, bool $maria): ?string
+    {
+        if ($default === null || ($maria && strcasecmp((string) $default, 'NULL') === 0)) {
+            return null;
+        }
+
+        return (string) $default;
     }
 
     /**
