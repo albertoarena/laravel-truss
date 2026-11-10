@@ -142,3 +142,31 @@ it('describes a connection without its credentials', function (): void {
 it('describes a sqlite connection by its file', function (): void {
     expect(Dsn::describe(Dsn::parse('sqlite:///var/db/app.sqlite')))->toBe('sqlite at /var/db/app.sqlite');
 });
+
+it('removes the password from a message that carries it', function (): void {
+    // The last line of defence for "Could not load the schema: {message}": a
+    // driver or a wrapper can echo the password back, and the binary prints
+    // whatever the exception says.
+    $connection = Dsn::parse('mysql://shop_ro:hunter2@db.internal/shop');
+
+    expect(Dsn::redact('login failed with hunter2 for shop_ro', $connection))
+        ->toBe('login failed with [redacted] for shop_ro');
+});
+
+it('removes the password in its encoded form as well as its decoded one', function (): void {
+    // The DSN carries the encoded form and the connection the decoded one, and
+    // a message can quote either.
+    $connection = Dsn::parse('mysql://shop_ro:p%40ss%2Fword@db.internal/shop');
+
+    $redacted = Dsn::redact('typed p%40ss%2Fword, sent p@ss/word', $connection);
+
+    expect($redacted)->not->toContain('p@ss/word')
+        ->and($redacted)->not->toContain('p%40ss%2Fword');
+});
+
+it('leaves a message alone when the connection has no password', function (): void {
+    expect(Dsn::redact('no such table: users', Dsn::parse('mysql://root@localhost/shop')))
+        ->toBe('no such table: users')
+        ->and(Dsn::redact('no such table: users', Dsn::parse('sqlite:/tmp/app.sqlite')))
+        ->toBe('no such table: users');
+});

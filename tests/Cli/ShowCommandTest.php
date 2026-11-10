@@ -116,3 +116,22 @@ it('never prints the password of a connection it could not reach', function (): 
 
     expect($tester->getDisplay())->not->toContain('hunter2');
 });
+
+it('reports a schema that cannot be read instead of throwing', function (): void {
+    // A file that is not a database opens as a connection, since SQLite reads
+    // nothing until the first query, and then fails when the schema is read.
+    // That is the snapshot path, past the connection check, and it must end in
+    // the same redacted sentence and exit 2 as doctor and export.
+    $path = (string) tempnam(sys_get_temp_dir(), 'truss-cli-garbage-');
+    file_put_contents($path, str_repeat('not a database ', 64));
+
+    try {
+        $tester = trussCliTester('show');
+        $status = $tester->execute(['--dsn' => 'sqlite:'.$path]);
+    } finally {
+        @unlink($path);
+    }
+
+    expect($status)->toBe(2)
+        ->and($tester->getDisplay())->toContain('Could not load the schema');
+});

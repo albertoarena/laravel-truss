@@ -124,6 +124,34 @@ final class Dsn
     }
 
     /**
+     * A message with the connection's password taken out, for printing text
+     * this class did not write.
+     *
+     * `describe()` covers what the binary says itself; this covers what it
+     * repeats, such as an exception's message, which a driver or a wrapper can
+     * fill with anything. Both spellings go: the decoded password the
+     * connection holds, and the encoded one the connection string carried.
+     *
+     * @param  array<string, mixed>  $connection
+     */
+    public static function redact(string $message, array $connection): string
+    {
+        $password = (string) ($connection['password'] ?? '');
+
+        if ($password === '') {
+            return $message;
+        }
+
+        $spellings = array_unique([$password, rawurlencode($password), urlencode($password)]);
+
+        // Longest first, so a password that contains its own decoded form is
+        // replaced whole rather than leaving its encoded remainder behind.
+        usort($spellings, fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        return str_replace($spellings, '[redacted]', $message);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private static function sqlite(string $database): array
