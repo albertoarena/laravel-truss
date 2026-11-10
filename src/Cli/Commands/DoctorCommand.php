@@ -72,9 +72,7 @@ final class DoctorCommand extends ConnectionCommand
             // The connection is already known good: the base command refused to
             // get this far without one. So this is a snapshot failure, which is
             // a different thing from being unable to connect.
-            $errors->writeln("<error>Could not load the schema:</error> {$e->getMessage()}");
-
-            return self::INVALID;
+            return $this->schemaLoadFailed($output, $e);
         }
 
         $findings = (new DoctorReport)->for(

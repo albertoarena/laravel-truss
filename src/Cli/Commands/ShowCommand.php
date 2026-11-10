@@ -11,6 +11,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 /**
  * The database structure as a terminal table: the binary's counterpart to
@@ -30,7 +31,14 @@ final class ShowCommand extends ConnectionCommand
 {
     protected function handle(InputInterface $input, OutputInterface $output, Container $container): int
     {
-        $snapshot = $container->make(SchemaCacheRepository::class)->get();
+        try {
+            $snapshot = $container->make(SchemaCacheRepository::class)->get();
+        } catch (Throwable $e) {
+            // Past the connection check, so this is a snapshot failure, reported
+            // exactly as doctor and export report one.
+            return $this->schemaLoadFailed($output, $e);
+        }
+
         $connection = (string) $snapshot['connection'];
 
         // The snapshot is deliberately unfiltered, so filtering is the caller's

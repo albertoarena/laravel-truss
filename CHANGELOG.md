@@ -10,6 +10,11 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The `truss` binary says when a database refused the password, or has no database by that name.** A wrong user name, password or database name used to be reported as "Truss could not reach the database", with advice to check the host, the port and the VPN. The binary now says the server refused the credentials, or that the database does not exist on its server, on MySQL, MariaDB and PostgreSQL, and for both databases in `truss diff`. A SQLite path with no file behind it is reported as exactly that, rather than as a database the binary could not reach. The exit code is still `2`, and the message still names only the driver, host and database. A schema that fails to load after connecting is still reported as "Could not load the schema", now with any password from the connection strings taken out of the error message.
+- **`truss show` exits `2` when the schema cannot be read.** It used to let the error through, printing Symfony's raw exception and exiting `1`, which the binary reserves for a verdict about the schema. It now prints "Could not load the schema", exactly as `truss doctor` and `truss export` do.
+
 ## [1.15.4] - 2026-11-05
 
 ### Changed

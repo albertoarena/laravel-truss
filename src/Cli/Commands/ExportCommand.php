@@ -126,9 +126,7 @@ final class ExportCommand extends ConnectionCommand
 
             return self::INVALID;
         } catch (Throwable $e) {
-            $errors->writeln("<error>Could not load the schema:</error> {$e->getMessage()}");
-
-            return self::INVALID;
+            return $this->schemaLoadFailed($output, $e);
         }
 
         if ($tables === []) {

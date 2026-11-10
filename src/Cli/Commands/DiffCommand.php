@@ -84,10 +84,7 @@ final class DiffCommand extends ConnectionCommand
 
         Bootstrapper::registerConnection($container, self::AGAINST, $against);
 
-        if (! $this->isReachable($container, self::AGAINST)) {
-            $errors->writeln('<error>Truss could not reach the database to compare against:</error> '.Dsn::describe($against).'.');
-            $errors->writeln('Check the host, the port, and whether this machine needs a VPN or an allow-listed address.');
-
+        if (! $this->connects($output, $container, self::AGAINST, $against, 'the database to compare against')) {
             return self::INVALID;
         }
 
@@ -97,9 +94,7 @@ final class DiffCommand extends ConnectionCommand
             $current = $cache->get();
             $baseline = $cache->get(self::AGAINST);
         } catch (Throwable $e) {
-            $errors->writeln("<error>Could not load the schema:</error> {$e->getMessage()}");
-
-            return self::INVALID;
+            return $this->schemaLoadFailed($output, $e);
         }
 
         $connection = $this->connectionOf($container, Bootstrapper::CONNECTION);
@@ -155,17 +150,6 @@ final class DiffCommand extends ConnectionCommand
     private function connectionOf(Container $container, string $name): array
     {
         return (array) $container->make('config')->get("database.connections.{$name}", []);
-    }
-
-    private function isReachable(Container $container, string $name): bool
-    {
-        try {
-            $container->make('db')->connection($name)->getPdo();
-
-            return true;
-        } catch (Throwable) {
-            return false;
-        }
     }
 
     private function errors(OutputInterface $output): OutputInterface
