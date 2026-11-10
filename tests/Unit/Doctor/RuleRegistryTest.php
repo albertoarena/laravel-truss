@@ -11,22 +11,29 @@ function ruleCodes(array $rules): array
     return array_map(fn (Rule $rule): string => $rule->code(), $rules);
 }
 
-it('registers the phase 1 rules by default', function () {
-    expect(RuleRegistry::default()->all())->toHaveCount(14);
+it('registers every rule by default, in code order', function () {
+    expect(ruleCodes(RuleRegistry::default()->all()))->toBe([
+        'TRUSS-INT-001', 'TRUSS-INT-002', 'TRUSS-INT-003', 'TRUSS-INT-004',
+        'TRUSS-INT-007', 'TRUSS-INT-008', 'TRUSS-INT-009', 'TRUSS-INT-010',
+        'TRUSS-IDX-001', 'TRUSS-IDX-002', 'TRUSS-IDX-003', 'TRUSS-IDX-004',
+        'TRUSS-IDX-005', 'TRUSS-IDX-006',
+        'TRUSS-TYP-001', 'TRUSS-TYP-002', 'TRUSS-TYP-009',
+    ]);
 });
 
 it('recommended runs high-confidence rules only', function () {
     $codes = ruleCodes(RuleRegistry::default()->resolve('recommended'));
 
     expect($codes)
-        ->toContain('TRUSS-INT-001', 'TRUSS-INT-003', 'TRUSS-IDX-001')
+        ->toContain('TRUSS-INT-001', 'TRUSS-INT-003', 'TRUSS-INT-004', 'TRUSS-INT-008', 'TRUSS-IDX-001')
         ->not->toContain('TRUSS-INT-002')  // heuristic
         ->not->toContain('TRUSS-IDX-006')  // heuristic
-        ->not->toContain('TRUSS-TYP-001'); // heuristic
+        ->not->toContain('TRUSS-TYP-001')  // heuristic
+        ->not->toContain('TRUSS-TYP-009'); // heuristic
 });
 
 it('strict runs every rule and none runs nothing', function () {
-    expect(RuleRegistry::default()->resolve('strict'))->toHaveCount(14);
+    expect(RuleRegistry::default()->resolve('strict'))->toHaveCount(17);
     expect(RuleRegistry::default()->resolve('none'))->toBe([]);
 });
 
@@ -39,7 +46,7 @@ it('only keeps the given categories', function () {
 it('skip drops the given categories', function () {
     $codes = ruleCodes(RuleRegistry::default()->resolve('strict', skip: ['type']));
 
-    expect($codes)->not->toContain('TRUSS-TYP-001', 'TRUSS-TYP-002');
+    expect($codes)->not->toContain('TRUSS-TYP-001', 'TRUSS-TYP-002', 'TRUSS-TYP-009');
 });
 
 it('lets an explicit enable include a heuristic rule the preset would skip', function () {

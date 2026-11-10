@@ -10,6 +10,13 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Added
+
+- **Three new schema doctor rules.** The first two are on by default under the `recommended` preset, so a `truss:doctor` run in CI can report findings it did not report before. `--fail-on=error` turns the build red on `TRUSS-INT-008`.
+  - `TRUSS-INT-004` (warning): the same foreign key declared more than once on a table, usually a migration that ran twice. Composite keys are compared as a set of column pairs, so listing the columns in another order is still a duplicate.
+  - `TRUSS-INT-008` (error): a foreign key that references columns which are neither the primary key nor the key of a unique index. MySQL, MariaDB and SQLite accept this, and one child row can then match several parent rows. A unique index on an expression, such as `lower(email)`, does not count as making the plain column unique.
+  - `TRUSS-TYP-009` (warning, heuristic, `strict` preset only): a `uuid`, `*_uuid`, `ulid` or `*_ulid` column stored as `varchar(255)`. The hint points at `char(36)` or `char(26)` on MySQL and MariaDB, and at the native `uuid` type on PostgreSQL. SQLite is skipped, because it reads every string back without a length.
+
 ## [1.15.5] - 2026-11-10
 
 ### Fixed

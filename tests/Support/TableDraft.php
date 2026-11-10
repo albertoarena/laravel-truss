@@ -21,10 +21,10 @@ final class TableDraft
     /** @var list<array<string, mixed>> */
     private array $indexes = [];
 
-    /** @var list<array{column: string, table: string, column_ref: string}> */
+    /** @var list<array{column: string, table: string, column_ref: string, name: ?string}> */
     private array $fkDrafts = [];
 
-    /** @var list<array{columns: list<string>, table: string, columns_ref: list<string>}> */
+    /** @var list<array{columns: list<string>, table: string, columns_ref: list<string>, name: ?string}> */
     private array $compositeFkDrafts = [];
 
     private ?string $pendingFk = null;
@@ -74,10 +74,14 @@ final class TableDraft
         return $this;
     }
 
-    /** Add a foreign key on an existing column, whatever type it was given. */
-    public function foreign(string $column, string $table, string $referencedColumn = 'id'): self
+    /**
+     * Add a foreign key on an existing column, whatever type it was given. The
+     * constraint name defaults to Laravel's; pass one to declare a second
+     * constraint on the same column.
+     */
+    public function foreign(string $column, string $table, string $referencedColumn = 'id', ?string $name = null): self
     {
-        $this->fkDrafts[] = ['column' => $column, 'table' => $table, 'column_ref' => $referencedColumn];
+        $this->fkDrafts[] = ['column' => $column, 'table' => $table, 'column_ref' => $referencedColumn, 'name' => $name];
 
         return $this;
     }
@@ -90,12 +94,13 @@ final class TableDraft
      * @param  list<string>  $columns
      * @param  list<string>|null  $referencedColumns  defaults to `id` per column
      */
-    public function compositeForeign(array $columns, string $table, ?array $referencedColumns = null): self
+    public function compositeForeign(array $columns, string $table, ?array $referencedColumns = null, ?string $name = null): self
     {
         $this->compositeFkDrafts[] = [
             'columns' => $columns,
             'table' => $table,
             'columns_ref' => $referencedColumns ?? array_fill(0, count($columns), 'id'),
+            'name' => $name,
         ];
 
         return $this;
@@ -180,7 +185,7 @@ final class TableDraft
             'foreign_keys' => [
                 ...array_map(
                     fn (array $fk): array => [
-                        'name' => "{$name}_{$fk['column']}_foreign",
+                        'name' => $fk['name'] ?? "{$name}_{$fk['column']}_foreign",
                         'columns' => [$fk['column']],
                         'references_table' => $fk['table'],
                         'references_columns' => [$fk['column_ref']],
@@ -191,7 +196,7 @@ final class TableDraft
                 ),
                 ...array_map(
                     fn (array $fk): array => [
-                        'name' => "{$name}_".implode('_', $fk['columns']).'_foreign',
+                        'name' => $fk['name'] ?? "{$name}_".implode('_', $fk['columns']).'_foreign',
                         'columns' => $fk['columns'],
                         'references_table' => $fk['table'],
                         'references_columns' => $fk['columns_ref'],
