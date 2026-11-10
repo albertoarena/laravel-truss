@@ -82,7 +82,12 @@ it('flags a foreign key onto a non-unique column where the database accepts it',
     createCodesParent();
     createCodeChild();
 
-    expect(realDriverFindings('TRUSS-INT-008'))->toHaveFinding('TRUSS-INT-008', table: 'usages', column: 'code');
+    $findings = realDriverFindings('TRUSS-INT-008');
+
+    expect($findings)->toHaveFinding('TRUSS-INT-008', table: 'usages', column: 'code');
+    expect($findings[0]->hint)->toContain(
+        DB::connection('testing')->getDriverName() === 'sqlite' ? 'foreign key mismatch' : 'several parent rows',
+    );
 });
 
 it('flags it on MySQL 8.4 once restrict_fk_on_non_standard_key is off', function () {
@@ -191,11 +196,12 @@ it('is clean when one column references two different tables', function () {
 
 // TRUSS-TYP-009
 
-it('flags a uuid and a ulid stored as a 255-character string, except on SQLite', function () {
+it('flags a uuid and a ulid stored as a wider string, except on SQLite', function () {
     Schema::create('accounts', function (Blueprint $table) {
         $table->id();
         $table->string('uuid');
         $table->string('public_ulid');
+        $table->string('legacy_uuid', 191);
     });
 
     $findings = realDriverFindings('TRUSS-TYP-009');
@@ -206,9 +212,10 @@ it('flags a uuid and a ulid stored as a 255-character string, except on SQLite',
         return;
     }
 
-    expect($findings)->toHaveCount(2)
+    expect($findings)->toHaveCount(3)
         ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'uuid')
-        ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'public_ulid');
+        ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'public_ulid')
+        ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'legacy_uuid');
 });
 
 it('is clean on every driver for the columns uuid() and ulid() create', function () {

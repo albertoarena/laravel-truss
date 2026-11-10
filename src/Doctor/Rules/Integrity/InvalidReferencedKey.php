@@ -78,11 +78,36 @@ final class InvalidReferencedKey implements Rule
                     message: $single
                         ? "Foreign key \"{$table['name']}.{$fk['columns'][0]}\" references \"{$target}\", which is not a primary key or unique."
                         : "Foreign key on ({$label}) in \"{$table['name']}\" references \"{$target}\", which is not a primary key or unique together.",
-                    hint: 'A foreign key should reference a primary key or a unique key. Otherwise one row can match several parent rows, and the relationship is not the one-to-many it appears to be.',
+                    hint: $this->hint($referenced, $fk['references_columns'], (string) ($snapshot['driver'] ?? '')),
                     suggestion: null,
                 );
             }
         }
+    }
+
+    /**
+     * Why the finding matters. Three cases, because the effect differs: a key
+     * wider than a unique key still matches one parent, and SQLite fails the
+     * write instead of letting a row match several parents.
+     *
+     * @param  array<string, mixed>  $referenced
+     * @param  list<string>  $columns
+     */
+    private function hint(array $referenced, array $columns, string $driver): string
+    {
+        $inner = $this->uniqueKeyWithin($referenced, $columns);
+
+        if ($inner !== null) {
+            $key = implode(', ', $inner);
+
+            return "The referenced columns contain the unique key ({$key}), but a foreign key should reference exactly a primary key or a unique key. PostgreSQL and MySQL 8.4 refuse such a key, and SQLite fails writes to the child table. Reference ({$key}) alone, or add a unique index on exactly these columns.";
+        }
+
+        if ($driver === 'sqlite') {
+            return 'SQLite accepts this key, then fails every write to the child table with "foreign key mismatch" while foreign keys are enforced. Add a unique index on the referenced columns, or reference the primary key.';
+        }
+
+        return 'A foreign key should reference a primary key or a unique key. Otherwise one row can match several parent rows, and the relationship is not the one-to-many it appears to be.';
     }
 
     /**
@@ -91,17 +116,50 @@ final class InvalidReferencedKey implements Rule
      */
     private function isUniqueKey(array $table, array $columns): bool
     {
-        if ($this->sameSet($table['primary_key'] ?? [], $columns)) {
-            return true;
-        }
-
-        foreach ($table['indexes'] ?? [] as $index) {
-            if (($index['unique'] ?? false) && $this->sameSet(IndexKey::of($index), $columns)) {
+        foreach ($this->uniqueKeys($table) as $key) {
+            if ($this->sameSet($key, $columns)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * A primary or unique key made only of some of the given columns, if any.
+     *
+     * @param  array<string, mixed>  $table
+     * @param  list<string>  $columns
+     * @return list<string>|null
+     */
+    private function uniqueKeyWithin(array $table, array $columns): ?array
+    {
+        foreach ($this->uniqueKeys($table) as $key) {
+            if ($key !== [] && array_diff($key, $columns) === []) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The primary key, then every unique index key, as IndexKey reads them.
+     *
+     * @param  array<string, mixed>  $table
+     * @return list<list<string>>
+     */
+    private function uniqueKeys(array $table): array
+    {
+        $keys = [array_values($table['primary_key'] ?? [])];
+
+        foreach ($table['indexes'] ?? [] as $index) {
+            if ($index['unique'] ?? false) {
+                $keys[] = IndexKey::of($index);
+            }
+        }
+
+        return $keys;
     }
 
     /**

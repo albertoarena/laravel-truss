@@ -18,6 +18,36 @@ it('flags a foreign key that references a column with only a plain index', funct
         ->toHaveFinding('TRUSS-INT-008', table: 'posts', column: 'user_code');
     expect($findings[0]->severity)->toBe(Severity::Error);
     expect($findings[0]->message)->toContain('users.code');
+    expect($findings[0]->hint)->toContain('several parent rows');
+});
+
+it('says on SQLite that writes fail, not that rows match several parents', function () {
+    // SQLite accepts the DDL, then fails the first write to the child table
+    // with "foreign key mismatch" while foreign keys are enforced.
+    $snapshot = SchemaBuilder::make(driver: 'sqlite')
+        ->table('users', fn ($t) => $t->id()->string('code', 20))
+        ->table('posts', fn ($t) => $t->id()->string('user_code', 20)->foreign('user_code', 'users', 'code'))
+        ->build();
+
+    $hint = doctorCheck(new InvalidReferencedKey, $snapshot)[0]->hint;
+
+    expect($hint)->toContain('foreign key mismatch')->not->toContain('several parent rows');
+});
+
+it('flags a key wider than a unique key, and says why without claiming several parents', function () {
+    // (tenant_id, code) can match only one parent when code alone is unique,
+    // but it is still not exactly a key, which PostgreSQL and MySQL 8.4 reject.
+    $snapshot = SchemaBuilder::make()
+        ->table('users', fn ($t) => $t->id()->column('tenant_id', 'bigint unsigned')->string('code', 20)
+            ->unique('code')->index(['code', 'tenant_id']))
+        ->table('posts', fn ($t) => $t->id()->column('tenant_id', 'bigint unsigned')->string('user_code', 20)
+            ->compositeForeign(['user_code', 'tenant_id'], 'users', ['code', 'tenant_id'], name: 'posts_user_foreign'))
+        ->build();
+
+    $findings = doctorCheck(new InvalidReferencedKey, $snapshot);
+
+    expect($findings)->toHaveFinding('TRUSS-INT-008', table: 'posts', column: 'posts_user_foreign');
+    expect($findings[0]->hint)->toContain('code')->toContain('exactly')->not->toContain('several parent rows');
 });
 
 it('is clean when the foreign key references the primary key', function () {
