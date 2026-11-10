@@ -12,6 +12,7 @@
 /CLAUDE.md          export-ignore
 /CONTRIBUTING.md    export-ignore
 /package.json       export-ignore
+/package-lock.json  export-ignore
 /phpunit.xml        export-ignore
 /pint.json          export-ignore
 /playwright.config.js export-ignore

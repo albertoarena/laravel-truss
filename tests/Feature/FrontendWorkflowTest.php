@@ -8,6 +8,11 @@ declare(strict_types=1);
  * The Playwright browser install downloads two browsers and system packages.
  * A slow mirror once held it for 14 minutes, and with no timeout a stalled
  * download waits for the six-hour job limit of GitHub Actions.
+ *
+ * The install runs from the committed lockfile. Without one, every run took the
+ * newest version package.json allowed: Mermaid 11.17 broke the stored fuzz
+ * verdicts, and Playwright 1.65 brought a Chromium that measures inputs
+ * differently, both on pull requests that touched no JavaScript.
  */
 
 function frontendWorkflow(): string
@@ -31,6 +36,25 @@ function frontendStep(string $name): string
 
     return substr($workflow, $start, $next === false ? null : $next - $start);
 }
+
+it('installs exactly the versions in the committed lockfile', function (): void {
+    expect(frontendStep('Install dependencies'))
+        ->toContain('run: npm ci')
+        ->not->toContain('npm install');
+});
+
+it('caches the npm downloads, keyed on that lockfile', function (): void {
+    expect(frontendStep('Setup Node'))->toContain('cache: npm');
+});
+
+it('commits the lockfile it installs from', function (): void {
+    $root = dirname(__DIR__, 2);
+
+    exec('git -C '.escapeshellarg($root).' ls-files --error-unmatch package-lock.json 2>/dev/null', $output, $status);
+
+    expect($root.'/package-lock.json')->toBeFile()
+        ->and($status)->toBe(0, 'package-lock.json exists but is not tracked.');
+});
 
 it('limits the whole job, so no step can hold it for six hours', function (): void {
     expect(frontendWorkflow())->toMatch('/\n    timeout-minutes: (\d|1\d|20)\n/');
