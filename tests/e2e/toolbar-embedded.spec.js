@@ -15,11 +15,19 @@ import { test, expect } from '@playwright/test';
 
 const URL = '/tests/e2e/toolbar.html';
 
-/** Content width of an input: clientWidth less its own padding. */
+/**
+ * Content width of an input: its rendered box less its own borders and padding.
+ *
+ * Not clientWidth less padding. Chrome 158 reports an input's clientWidth
+ * without its padding, while drawing the field pixel for pixel as Chrome 149
+ * did, so subtracting the padding again read a 130px field as 112px.
+ */
 const contentWidth = (page, selector) =>
   page.locator(selector).evaluate((el) => {
     const cs = getComputedStyle(el);
-    return Math.round(el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    const edges = ['borderLeftWidth', 'borderRightWidth', 'paddingLeft', 'paddingRight']
+      .reduce((sum, side) => sum + parseFloat(cs[side]), 0);
+    return Math.round(el.getBoundingClientRect().width - edges);
   });
 
 const overflows = (page) =>
