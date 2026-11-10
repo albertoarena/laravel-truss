@@ -21,11 +21,12 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+          cache: npm
 
-      # package-lock.json is gitignored, so there is no committed lockfile for
-      # npm ci; install from package.json instead.
+      # Exactly the committed lockfile, so a run cannot pick up a newer
+      # Playwright or Mermaid than the one the tests were written against.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Unit tests (Vitest)
         run: npm test
@@ -49,8 +50,8 @@ jobs:
       # Firefox is scoped by testMatch to the label-geometry spec alone. Issue
       # #59 was a Firefox-only clipping bug that Chromium could not reproduce,
       # so that one spec earns a second engine without doubling the run.
-      # package-lock.json is gitignored, so the Playwright version is known only
-      # after npm install. The browser cache is keyed on that version.
+      # The browser cache is keyed on the Playwright version the lockfile
+      # installed, so it changes only when the lockfile does.
       - name: Read the Playwright version
         id: playwright
         run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"

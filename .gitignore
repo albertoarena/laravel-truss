@@ -7,7 +7,10 @@
 # different Illuminate patch versions under the same version number.
 /composer.lock
 /node_modules/
-/package-lock.json
+# package-lock.json IS committed. Nothing in package.json reaches an installer
+# (it is export-ignored), so the lock pins only the test toolchain, and without
+# it CI took whatever package.json allowed on the day: Mermaid 11.17 and
+# Playwright 1.65 each turned an unrelated pull request red.
 
 # Playwright
 /test-results/

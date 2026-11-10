@@ -24,6 +24,12 @@ it('keeps the console layer out of the dist archive', function (string $path) {
     expect(exportIgnoreIsSetFor($path))->toBeTrue("Expected {$path} to be export-ignored.");
 })->with(['src/Cli', 'bin', 'build', 'box.json']);
 
+it('keeps the JavaScript toolchain out of the dist archive', function (string $path) {
+    // Nothing under package.json reaches an installer: the frontend ships as
+    // plain files in resources/. The lockfile only pins the test toolchain.
+    expect(exportIgnoreIsSetFor($path))->toBeTrue("Expected {$path} to be export-ignored.");
+})->with(['package.json', 'package-lock.json']);
+
 it('still ships the runtime the package needs', function (string $path) {
     // The guard above is one .gitattributes line away from excluding something
     // installers depend on. src/ and resources/ (views, css, js, the vendored
