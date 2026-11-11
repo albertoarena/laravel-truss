@@ -8,7 +8,10 @@ on:
 
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: on 26.04 the apt mirrors that Playwright's
+    # system packages come from stalled until the step timed out, on three
+    # runs in two days (November 2026). Move up once that has settled.
+    runs-on: ubuntu-24.04
     # A normal run takes about two minutes. Without a limit, a stalled step
     # waits for the six-hour job limit of GitHub Actions.
     timeout-minutes: 20
