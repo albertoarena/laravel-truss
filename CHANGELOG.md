@@ -10,6 +10,8 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-11
+
 ### Added
 
 - **Three new schema doctor rules.** The first two are on by default under the `recommended` preset, so a `truss:doctor` run in CI can report findings it did not report before. `--fail-on=error` turns the build red on `TRUSS-INT-008`.
