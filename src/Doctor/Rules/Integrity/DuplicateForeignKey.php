@@ -11,14 +11,14 @@ use AlbertoArena\Truss\Doctor\Finding;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
- * TRUSS-INT-004: the same foreign key declared more than once, usually a
- * migration that ran twice or a copy-paste. Every write checks the constraint
- * twice and schema diffs get confusing. Compared as the set of column pairs and
- * the referenced table, so composite keys are covered and the order they were
- * listed in does not matter. Each extra copy is reported under its own
- * constraint name; the first one declared is kept. Where the database reports
- * no constraint names (SQLite), the copies cannot be told apart, so the key is
- * reported once, under its columns.
+ * TRUSS-INT-004: the same foreign key declared more than once, usually two
+ * migrations that each add the same key, or a copy-paste. Every write checks
+ * the constraint twice and schema diffs get confusing. Compared as the set of
+ * column pairs and the referenced table, so composite keys are covered and
+ * the order they were listed in does not matter. Each extra copy is reported
+ * under its own constraint name; the first one declared is kept. Where the
+ * database reports no constraint names (SQLite), the copies cannot be told
+ * apart, so the key is reported once, under its columns.
  */
 final class DuplicateForeignKey implements Rule
 {
