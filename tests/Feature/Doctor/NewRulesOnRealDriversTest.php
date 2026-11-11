@@ -196,12 +196,19 @@ it('is clean when one column references two different tables', function () {
 
 // TRUSS-TYP-009
 
-it('flags a uuid and a ulid stored as a wider string, except on SQLite', function () {
+it('flags a uuid, a ulid and a *_uuid foreign key stored as a wider string, except on SQLite', function () {
     Schema::create('accounts', function (Blueprint $table) {
         $table->id();
         $table->string('uuid');
-        $table->string('public_ulid');
+        $table->string('ulid');
         $table->string('legacy_uuid', 191);
+        $table->unique('legacy_uuid');
+    });
+    Schema::create('notes', function (Blueprint $table) {
+        $table->id();
+        $table->string('account_uuid', 191);
+        $table->foreign('account_uuid')->references('legacy_uuid')->on('accounts');
+        $table->string('distant_uuid', 256);
     });
 
     $findings = realDriverFindings('TRUSS-TYP-009');
@@ -214,8 +221,8 @@ it('flags a uuid and a ulid stored as a wider string, except on SQLite', functio
 
     expect($findings)->toHaveCount(3)
         ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'uuid')
-        ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'public_ulid')
-        ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'legacy_uuid');
+        ->toHaveFinding('TRUSS-TYP-009', table: 'accounts', column: 'ulid')
+        ->toHaveFinding('TRUSS-TYP-009', table: 'notes', column: 'account_uuid');
 });
 
 it('is clean on every driver for the columns uuid() and ulid() create', function () {

@@ -11,14 +11,19 @@ use AlbertoArena\Truss\Doctor\Finding;
 use AlbertoArena\Truss\Doctor\Severity;
 
 /**
- * TRUSS-TYP-009: a column named `uuid`, `*_uuid`, `ulid` or `*_ulid` stored as
- * a varchar wider than the identifier: more than 36 characters for a UUID, or
- * 26 for a ULID. That covers Laravel's string() default of 255 and the 191 of
- * Schema::defaultStringLength(191). Heuristic: the extra width costs index
- * space on exactly the columns most likely to be indexed. The target differs
- * per driver: the native uuid type on PostgreSQL and MariaDB 10.7+, char(36)
- * on MySQL, and char(26) for a ULID everywhere. Skipped on SQLite, which reads
- * every string back as a bare varchar, so the type carries no signal.
+ * TRUSS-TYP-009: a column named `uuid` or `ulid`, or a `*_uuid` / `*_ulid`
+ * column that is part of a foreign key, stored as a varchar wider than the
+ * identifier: more than 36 characters for a UUID, or 26 for a ULID. That
+ * covers Laravel's string() default of 255 and the 191 of
+ * Schema::defaultStringLength(191). A plain `*_uuid` column is left alone: in
+ * the field study every one held somebody else's identifier (a CardDAV UID, a
+ * handle an author wrote), which is not a UUID and is wide on purpose, while a
+ * foreign key column holds this schema's own. Heuristic: the extra width
+ * costs index space on exactly the columns most likely to be indexed. The
+ * target differs per driver: the native uuid type on PostgreSQL and MariaDB
+ * 10.7+, char(36) on MySQL, and char(26) for a ULID everywhere. Skipped on
+ * SQLite, which reads every string back as a bare varchar, so the type
+ * carries no signal.
  */
 final class UuidAsVarchar implements Rule
 {
@@ -67,8 +72,15 @@ final class UuidAsVarchar implements Rule
         }
 
         foreach ($snapshot['tables'] ?? [] as $table) {
+            $foreignKeyColumns = [];
+            foreach ($table['foreign_keys'] ?? [] as $fk) {
+                foreach ($fk['columns'] as $fkColumn) {
+                    $foreignKeyColumns[strtolower($fkColumn)] = true;
+                }
+            }
+
             foreach ($table['columns'] ?? [] as $column) {
-                $kind = $this->kind($column['name']);
+                $kind = $this->kind($column['name'], $foreignKeyColumns);
                 $length = $this->varcharLength($column['type'], $varchar);
 
                 if ($kind === null || $length === null || $length <= self::LENGTHS[$kind]) {
@@ -91,12 +103,13 @@ final class UuidAsVarchar implements Rule
         }
     }
 
-    private function kind(string $name): ?string
+    /** @param array<string, true> $foreignKeyColumns */
+    private function kind(string $name, array $foreignKeyColumns): ?string
     {
         $name = strtolower($name);
 
         foreach (array_keys(self::LENGTHS) as $kind) {
-            if ($name === $kind || str_ends_with($name, "_{$kind}")) {
+            if ($name === $kind || (str_ends_with($name, "_{$kind}") && isset($foreignKeyColumns[$name]))) {
                 return $kind;
             }
         }
