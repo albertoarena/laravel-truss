@@ -11,14 +11,17 @@ use AlbertoArena\Truss\Doctor\Rules\Index\IndexDuplicatingPrimaryKey;
 use AlbertoArena\Truss\Doctor\Rules\Index\MissingUniqueConstraint;
 use AlbertoArena\Truss\Doctor\Rules\Index\RedundantPrefixIndex;
 use AlbertoArena\Truss\Doctor\Rules\Index\UnindexedSoftDelete;
+use AlbertoArena\Truss\Doctor\Rules\Integrity\DuplicateForeignKey;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\ForeignKeyPointsAtWrongTable;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\ForeignKeyTypeMismatch;
+use AlbertoArena\Truss\Doctor\Rules\Integrity\InvalidReferencedKey;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\LikelyMissingForeignKey;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\MissingPrimaryKey;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\PivotWithoutUniqueKey;
 use AlbertoArena\Truss\Doctor\Rules\Integrity\PolymorphicWithoutIndex;
 use AlbertoArena\Truss\Doctor\Rules\Type\BooleanAsString;
 use AlbertoArena\Truss\Doctor\Rules\Type\MoneyAsFloat;
+use AlbertoArena\Truss\Doctor\Rules\Type\UuidAsVarchar;
 
 /**
  * Holds the available rules and resolves the active set for a run. Selection is
@@ -37,7 +40,7 @@ final class RuleRegistry
     }
 
     /**
-     * The Phase 1 rule set, in code order.
+     * The full rule set, in code order.
      */
     public static function default(): self
     {
@@ -45,7 +48,9 @@ final class RuleRegistry
             new MissingPrimaryKey,
             new LikelyMissingForeignKey,
             new ForeignKeyTypeMismatch,
+            new DuplicateForeignKey,
             new PivotWithoutUniqueKey,
+            new InvalidReferencedKey,
             new PolymorphicWithoutIndex,
             new ForeignKeyPointsAtWrongTable,
             new ForeignKeyWithoutIndex,
@@ -56,6 +61,7 @@ final class RuleRegistry
             new MissingUniqueConstraint,
             new MoneyAsFloat,
             new BooleanAsString,
+            new UuidAsVarchar,
         );
     }
 

@@ -10,6 +10,13 @@ lives in its commit, and the decisions behind a feature in `docs/`.
 
 ## [Unreleased]
 
+### Added
+
+- **Three new schema doctor rules.** The first two are on by default under the `recommended` preset, so a `truss:doctor` run in CI can report findings it did not report before. `--fail-on=error` turns the build red on `TRUSS-INT-008`.
+  - `TRUSS-INT-004` (warning): the same foreign key declared more than once on a table, usually two migrations that each add the same key. Composite keys are compared as a set of column pairs, so listing the columns in another order is still a duplicate.
+  - `TRUSS-INT-008` (error): a foreign key that references columns which are not exactly the primary key or the key of a unique index. MySQL up to 8.3 (or 8.4 with `restrict_fk_on_non_standard_key` off), MariaDB and SQLite accept this. On MySQL and MariaDB one child row can then match several parent rows, and SQLite fails writes to the child table with "foreign key mismatch". A unique index on an expression, such as `lower(email)`, does not count as making the plain column unique.
+  - `TRUSS-TYP-009` (warning, heuristic, `strict` preset only): a `uuid` or `ulid` column, or a `*_uuid` or `*_ulid` foreign key column, stored as a varchar wider than the identifier (more than 36 characters for a UUID, 26 for a ULID). That includes the `varchar(191)` of `Schema::defaultStringLength(191)`. The hint points at the native `uuid` type on PostgreSQL and MariaDB 10.7 and later, `char(36)` on MySQL, and `char(26)` for a ULID. SQLite is skipped, because it reads every string back without a length.
+
 ## [1.15.5] - 2026-11-10
 
 ### Fixed
